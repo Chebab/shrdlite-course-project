@@ -60,6 +60,31 @@ function aStarSearch<Node> (
         path: [start],
         cost: 0
     };
+    var closedNodes : Node[]; // List with evaluated nodes
+    var openNodes : Node[]; // Fronteir and/or List with nodes to be evaluated
+
+    var closedEdge : Edge<Node>[]; // Backwards edge for nodes in the closed list
+    var openEdge : Edge<Node>[]; // Backwards edge for nodes in the open list
+    //console.log(graph.compareNodes(start,start));
+
+    var gScore : number[]; // Real cost of fronteir
+    var fScore : number[]; // Cost + heuristic of the fronteir
+
+    var current : Node; // The current observed node
+    var cgScore : number; // current gScore of observed node
+
+    openNodes.push(start); // Put the starting element in the fronteir
+    gScore.push(0);
+
+    while (openNodes.length > 0) {
+      current = openNodes.pop();
+
+    }
+
+
+
+
+
     while (result.path.length < 3) {
         var edge : Edge<Node> = graph.outgoingEdges(start) [0];
         if (! edge) break;
@@ -67,6 +92,7 @@ function aStarSearch<Node> (
         result.path.push(start);
         result.cost += edge.cost;
     }
+
     return result;
 }
 
