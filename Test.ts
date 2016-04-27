@@ -202,12 +202,13 @@ function runTests() : void {
     var cs = <TestCase[]>JSON.parse(fs.readFileSync('aStarTestCases.json','utf8'));
     var n = 0;
     var total = cs.length;
-    for (var c of cs) {
+	var c = cs[0];
+    //for (var c of cs) {
 	if (test(c))
 	    n++;
-	else
-	    continue;
-    }
+	//else
+	//    continue;
+    //}
     console.log("Summary: " + n + " tests passed out of " + total);
 }
 
