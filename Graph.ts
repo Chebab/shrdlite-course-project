@@ -70,6 +70,7 @@ function aStarSearch<Node> (
 	var goalNode : Node;
 	var gScores = new collections.Dictionary<Node,number>();	
 	var priorNodes = new collections.Dictionary<Node, Node>();
+	var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
 	
 	function edgeScore (
 		e : Edge<Node>
@@ -83,26 +84,13 @@ function aStarSearch<Node> (
 	) : number {
 		return edgeScore(e2) - edgeScore(e1);
 	}
-	
-	// A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [],
-        cost: 0
-    };
-	
-	var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
-	
+		
 	function addTargetOfEdgeToFrontier(
 		e : Edge<Node>
 	) : void {
 		var outEdges = graph.outgoingEdges(e.to);
 		var oldCost : number;
-		if (e.from == null)
-		{
-			oldCost = 0;
-		} else {
-			oldCost = gScores.getValue(e.from);
-		}
+		oldCost = gScores.getValue(e.from);
 		//console.log('Adding node ' + e.to + ' with cost ' + (oldCost +e.cost));
 		priorNodes.setValue(e.to, e.from);
 		gScores.setValue(e.to, oldCost + e.cost);
@@ -111,16 +99,11 @@ function aStarSearch<Node> (
 				frontier.add(outEdge);
 			}
 		}
-
 	}
 	
 	gScores.setValue(start, 0);
-	
-	var e : Edge<Node> = {from: null, to: start, cost: 0};
-	
+	var e : Edge<Node> = {from: start, to: start, cost: 0};
 	addTargetOfEdgeToFrontier(e);	
-	
-	var i : number = 0;
 	
 	while(frontier.peek()) {
 		var nextEdge : Edge<Node> = frontier.dequeue();
@@ -132,27 +115,23 @@ function aStarSearch<Node> (
 				break;
 			}
 		}
-		/*i++;
-		if (i == 100000) {
-			break;
-			
-		}*/
+		
 	}
 	
-	for (var k of gScores.keys()) {
-		console.log('Node ' + k + ' costs ' + gScores.getValue(k));
-	}
+	var result : SearchResult<Node> = {
+        path: [],
+        cost: 0
+    };
 	
 	var n : Node = goalNode;
 	result.cost = gScores.getValue(goalNode);
 	do {
-		console.log('node ' + n + ' with cost ' + gScores.getValue(n));
+		//console.log('node ' + n + ' with cost ' + gScores.getValue(n));
 		result.path.push(n);
 		n = priorNodes.getValue(n);
 	} while (gScores.getValue(n) != 0);
 	
 	result.path = result.path.reverse();
-	console.log(n);
 	
     return result;
 }
