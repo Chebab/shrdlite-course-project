@@ -2550,16 +2550,88 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         path: [start],
         cost: 0
     };
-    console.log(graph.compareNodes(start, start));
-    while (result.path.length < 3) {
-        var edge = graph.outgoingEdges(start)[0];
-        if (!edge)
-            break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+    // Mapping discovered nodes and their values Edge<Node>. Edge contain the
+    // gScore value as cost and the taken edge to get there
+    var nodes = new collections.Dictionary();
+    // Class for mapping nodes to an fscore value
+    var NodeMap = (function () {
+        function NodeMap() {
+        }
+        return NodeMap;
+    }());
+    // The fronteir were cost = fScore
+    var fronteir;
+    var usedNodes = []; // Nodes which we have evaluated
+    fronteir = new collections.PriorityQueue(function (n1, n2) { return n2.fScore - n1.fScore; });
+    fronteir.enqueue({ node: start, fScore: 0 });
+    nodes.setValue(start, { from: start, to: start, cost: 0 });
+    var current;
+    var counter = 0;
+    while (fronteir.size() > 0) {
+        current = fronteir.dequeue();
+        if (goal(current.node)) {
+            // Do some fancy shit to return the path
+            var newpath = [];
+            var prevNode = current.node;
+            //var nextNode : Node =nodes.getValue(prevNode).from;
+            while (graph.compareNodes(prevNode, start) != 0) {
+                newpath.push(prevNode);
+                prevNode = nodes.getValue(prevNode).from;
+            }
+            result.path = newpath.reverse();
+            result.cost = current.fScore;
+            return result;
+        }
+        usedNodes.push(current.node);
+        var neighbours = graph.outgoingEdges(current.node);
+        //for(var i :number = 0;i < neighbours.length;i++)
+        for (var _i = 0, neighbours_1 = neighbours; _i < neighbours_1.length; _i++) {
+            var edge = neighbours_1[_i];
+            var neighbour = edge.to; //= neighbours[i].to;
+            if (nodeInList(neighbour, usedNodes, graph)) {
+                // if the node has already been calculated, skip this iteration
+                continue;
+            }
+            var temp_gScore = nodes.getValue(current.node).cost + edge.cost; //neighbours[i].cost;
+            var fetchval = nodes.getValue(neighbour);
+            if (fetchval == null) {
+                // Place it in the openNodes list
+                fronteir.enqueue({ node: neighbour, fScore: 0 });
+                nodes.setValue(neighbour, { from: current.node, to: neighbour, cost: 0 });
+            }
+            else if (temp_gScore >= fetchval.cost) {
+                continue;
+            }
+            nodes.setValue(neighbour, { from: current.node, to: neighbour, cost: temp_gScore });
+            fronteir.forEach(function (queueval) {
+                if (graph.compareNodes(queueval.node, neighbour) == 0) {
+                    queueval.fScore = temp_gScore;
+                    +heuristics(neighbour);
+                    return;
+                }
+            });
+        }
     }
+    /*
+        while (result.path.length < 3) {
+            var edge : Edge<Node> = graph.outgoingEdges(start) [0];
+            if (! edge) break;
+            start = edge.to;
+            result.path.push(start);
+            result.cost += edge.cost;
+        }
+    */
     return result;
+}
+function nodeInList(node, list, graph) {
+    return list.some(function (arrval) {
+        if (graph.compareNodes(arrval, node) == 0) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    });
 }
 var GridNode = (function () {
     function GridNode(pos) {
