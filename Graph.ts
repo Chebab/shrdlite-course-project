@@ -86,7 +86,7 @@ function aStarSearch<Node> (
 	
 	// A dummy search result: it just picks the first possible neighbour
     var result : SearchResult<Node> = {
-        path: [start],
+        path: [],
         cost: 0
     };
 	
@@ -144,10 +144,14 @@ function aStarSearch<Node> (
 	}
 	
 	var n : Node = goalNode;
+	result.cost = gScores.getValue(goalNode);
 	do {
 		console.log('node ' + n + ' with cost ' + gScores.getValue(n));
+		result.path.push(n);
 		n = priorNodes.getValue(n);
 	} while (gScores.getValue(n) != 0);
+	
+	result.path = result.path.reverse();
 	console.log(n);
 	
     return result;
