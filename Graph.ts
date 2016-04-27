@@ -63,6 +63,8 @@ function aStarSearch<Node> (
     var closedNodes : Node[]; // List with evaluated nodes
     var openNodes : Node[]; // Fronteir and/or List with nodes to be evaluated
 
+    //var queue : collections.PriorityQueue<Node>=collections.PriorityQueue
+
     var closedEdge : Edge<Node>[]; // Backwards edge for nodes in the closed list
     var openEdge : Edge<Node>[]; // Backwards edge for nodes in the open list
     //console.log(graph.compareNodes(start,start));
@@ -75,11 +77,33 @@ function aStarSearch<Node> (
 
     openNodes.push(start); // Put the starting element in the fronteir
     gScore.push(0);
+    openEdge.push({from: start, to: start, cost: 0});
 
     while (openNodes.length > 0) {
       current = openNodes.pop();
-
+      cgScore = gScore.pop();
+      if (goal(current)){
+        // Do some fancy shit to return the path
+      }
+      closedNodes.push(current); // mark the node as used
+      closedEdge.push(openEdge.pop()); // move the edge accordingly
+      var neighbours : Edge<Node>[] = graph.outgoingEdges(current);
+      for(var i = 0;i < neighbours.length;i++)
+      {
+        var neighbour :Node = neighbour[i].to;
+        if(nodeInList(neighbour,closedNodes,graph))
+        {
+            // if the node has already been calculated, skip this iteration
+            continue;
+        }
+        var temp_gScore = cgScore + neighbours[i].cost;
+        if(!nodeInList(neighbour,openNodes,graph))
+        {
+          // Place it in the openNodes list
+        }
+      }
     }
+
 
 
 
@@ -95,6 +119,25 @@ function aStarSearch<Node> (
 
     return result;
 }
+
+function nodeInList<Node>(
+  node : Node,
+  list : Node[],
+  graph : Graph<Node> )
+  : boolean
+  {
+    return list.some(function(arrval)
+    {
+      if(graph.compareNodes(arrval,node) == 0)
+      {
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    });
+  }
 
 
 //////////////////////////////////////////////////////////////////////
