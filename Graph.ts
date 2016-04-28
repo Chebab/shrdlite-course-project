@@ -135,15 +135,7 @@ function aStarSearch<Node> (
 		result.path.push(n);
 		n = priorNodes.getValue(n);
 	} while (gScores.getValue(n) != 0);
-	
-	var a : number[];
-	
-	
-	for (var i = 0; i < 2; i++) {
 		
-	}
-	
-	
 	result.path = result.path.reverse();
 	
     return result;
