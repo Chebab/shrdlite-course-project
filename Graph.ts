@@ -67,33 +67,31 @@ function aStarSearch<Node> (
     var nodes : collections.Dictionary<Node,Edge<Node>>=
       new collections.Dictionary<Node,Edge<Node>>();
 
-    // Class for mapping nodes to an fscore value
-    class NodeMap{
-      node : Node;
-      fScore : number;
-    }
-    // The fronteir were cost = fScore
-    var fronteir : collections.PriorityQueue<NodeMap>;
+
+
+    var fronteir : collections.PriorityQueue<Node>; //fronteir
     var usedNodes : Node[] = []; // Nodes which we have evaluated
 
+    // Assign a function to the fronteir based on fScore
+    fronteir = new collections.PriorityQueue<Node>(
+      function(n1 : Node, n2 : Node){
+        return nodes.getValue(n2).cost-nodes.getValue(n1).cost+heuristics(n2)-heuristics(n1);
+      });
 
-    fronteir = new collections.PriorityQueue<NodeMap>(
-      function(n1 : NodeMap, n2 : NodeMap){return n2.fScore-n1.fScore});
-    fronteir.enqueue({node: start,fScore: 0});
 
     nodes.setValue(start,{from: start,to: start,cost: 0});
+    fronteir.enqueue(start);
 
 
-    var current : NodeMap;
-    var counter : number = 0;
+    var current : Node;
     while (fronteir.size()>0) {
       current = fronteir.dequeue();
 
-      if (goal(current.node)){
+      if (goal(current)){
         // Do some fancy shit to return the path
 
         var newpath : Node[] = [];
-        var prevNode : Node = current.node;
+        var prevNode : Node = current;
         //var nextNode : Node =nodes.getValue(prevNode).from;
         while(graph.compareNodes(prevNode,start)!=0){
           newpath.push(prevNode);
@@ -102,12 +100,12 @@ function aStarSearch<Node> (
         }
 
         result.path= newpath.reverse();
-        result.cost = current.fScore;
+        result.cost = nodes.getValue(current).cost;//might want to add heuristics
         return result;
       }
-      usedNodes.push(current.node);
+      usedNodes.push(current);
 
-      var neighbours = graph.outgoingEdges(current.node);
+      var neighbours = graph.outgoingEdges(current);
       //for(var i :number = 0;i < neighbours.length;i++)
       for(var edge of neighbours)
       {
@@ -118,24 +116,25 @@ function aStarSearch<Node> (
             // if the node has already been calculated, skip this iteration
             continue;
         }
-        var temp_gScore = nodes.getValue(current.node).cost + edge.cost;//neighbours[i].cost;
+        var temp_gScore = nodes.getValue(current).cost + edge.cost;//neighbours[i].cost;
         var fetchval :Edge<Node> = nodes.getValue(neighbour);
         if(fetchval==null)
         {
           // Place it in the openNodes list
-          fronteir.enqueue({node: neighbour,fScore: 0});
-          nodes.setValue(neighbour,{from: current.node,to:neighbour,cost:0});
+          nodes.setValue(neighbour,{from: current,to:neighbour,cost:temp_gScore});
+          fronteir.enqueue(neighbour);
+
         }
         else if (temp_gScore >= fetchval.cost) {
             continue;
         }
-        nodes.setValue(neighbour,{from: current.node,to:neighbour,cost:temp_gScore});
-        fronteir.forEach(function(queueval){
+        nodes.setValue(neighbour,{from: current,to:neighbour,cost:temp_gScore});
+        /*fronteir.forEach(function(queueval){
           if(graph.compareNodes(queueval.node,neighbour)==0){
             queueval.fScore = temp_gScore;+heuristics(neighbour);
             return;
           }
-        });
+        */
       }
     }
 

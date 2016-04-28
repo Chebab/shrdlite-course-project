@@ -14,56 +14,45 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         cost: 0
     };
     var nodes = new collections.Dictionary();
-    var NodeMap = (function () {
-        function NodeMap() {
-        }
-        return NodeMap;
-    }());
     var fronteir;
     var usedNodes = [];
-    fronteir = new collections.PriorityQueue(function (n1, n2) { return n2.fScore - n1.fScore; });
-    fronteir.enqueue({ node: start, fScore: 0 });
+    fronteir = new collections.PriorityQueue(function (n1, n2) {
+        return nodes.getValue(n2).cost - nodes.getValue(n1).cost + heuristics(n2) - heuristics(n1);
+    });
     nodes.setValue(start, { from: start, to: start, cost: 0 });
+    fronteir.enqueue(start);
     var current;
-    var counter = 0;
     while (fronteir.size() > 0) {
         current = fronteir.dequeue();
-        if (goal(current.node)) {
+        if (goal(current)) {
             var newpath = [];
-            var prevNode = current.node;
+            var prevNode = current;
             while (graph.compareNodes(prevNode, start) != 0) {
                 newpath.push(prevNode);
                 prevNode = nodes.getValue(prevNode).from;
             }
             result.path = newpath.reverse();
-            result.cost = current.fScore;
+            result.cost = nodes.getValue(current).cost;
             return result;
         }
-        usedNodes.push(current.node);
-        var neighbours = graph.outgoingEdges(current.node);
+        usedNodes.push(current);
+        var neighbours = graph.outgoingEdges(current);
         for (var _i = 0, neighbours_1 = neighbours; _i < neighbours_1.length; _i++) {
             var edge = neighbours_1[_i];
             var neighbour = edge.to;
             if (nodeInList(neighbour, usedNodes, graph)) {
                 continue;
             }
-            var temp_gScore = nodes.getValue(current.node).cost + edge.cost;
+            var temp_gScore = nodes.getValue(current).cost + edge.cost;
             var fetchval = nodes.getValue(neighbour);
             if (fetchval == null) {
-                fronteir.enqueue({ node: neighbour, fScore: 0 });
-                nodes.setValue(neighbour, { from: current.node, to: neighbour, cost: 0 });
+                nodes.setValue(neighbour, { from: current, to: neighbour, cost: temp_gScore });
+                fronteir.enqueue(neighbour);
             }
             else if (temp_gScore >= fetchval.cost) {
                 continue;
             }
-            nodes.setValue(neighbour, { from: current.node, to: neighbour, cost: temp_gScore });
-            fronteir.forEach(function (queueval) {
-                if (graph.compareNodes(queueval.node, neighbour) == 0) {
-                    queueval.fScore = temp_gScore;
-                    +heuristics(neighbour);
-                    return;
-                }
-            });
+            nodes.setValue(neighbour, { from: current, to: neighbour, cost: temp_gScore });
         }
     }
     return result;
