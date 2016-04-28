@@ -202,8 +202,7 @@ function runTests() : void {
     var cs = <TestCase[]>JSON.parse(fs.readFileSync('aStarTestCases.json','utf8'));
     var n = 0;
     var total = cs.length;
-	//var c = cs[1];
-    for (var c of cs) {
+	for (var c of cs) {
 	if (test(c))
 	    n++;
 	else
