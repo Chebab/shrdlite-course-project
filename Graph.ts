@@ -110,7 +110,11 @@ function aStarSearch<Node> (
 	var e : Edge<Node> = {from: start, to: start, cost: 0};
 	addTargetOfEdgeToFrontier(e);	
 	
-	while(frontier.peek()) {
+	var timeouted : boolean = false;
+	var i : number = 0;
+	var starttime = new Date().getTime();
+
+	while(frontier.peek() && !timeouted) {
 		var nextEdge : Edge<Node> = frontier.dequeue();
 		if (gScores.getValue(nextEdge.to) == null) {
 			//console.log('next node is ' + nextEdge.to);
@@ -120,13 +124,24 @@ function aStarSearch<Node> (
 				break;
 			}
 		}
-		
+		i++;
+		if (i % 1000) {
+			if (new Date().getTime() - starttime > 1000*timeout) {
+				timeouted = true;
+				console.log('timeout');
+				break;
+			}
+		}
 	}
 	
 	var result : SearchResult<Node> = {
         path: [],
         cost: 0
     };
+	
+	if (timeouted) {
+		return result;
+	}
 	
 	var n : Node = goalNode;
 	result.cost = gScores.getValue(goalNode);
