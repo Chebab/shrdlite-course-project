@@ -17,6 +17,8 @@ class Edge<Node> {
     cost : number;
 }
 
+
+
 /** A directed graph. */
 interface Graph<Node> {
     /** Computes the edges that leave from a node. */
@@ -24,6 +26,15 @@ interface Graph<Node> {
     /** A function that compares nodes. */
     compareNodes : collections.ICompareFunction<Node>;
 }
+
+
+
+function edgeCost<Node>(
+	e : Edge<Node>
+) : number {
+	return 0;
+}
+
 
 /** Type that reports the result of a search. */
 class SearchResult<Node> {
@@ -55,18 +66,73 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
+    
+	var goalNode : Node;
+	var gScores = new collections.Dictionary<Node,number>();	
+	var priorNodes = new collections.Dictionary<Node, Node>();
+	var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
+	
+	function edgeScore (
+		e : Edge<Node>
+	) : number {
+		return gScores.getValue(e.from) + e.cost + heuristics(e.to);
+	}
+	
+	function edgeCompare(
+		e1 : Edge<Node>,
+		e2 : Edge<Node>
+	) : number {
+		return edgeScore(e2) - edgeScore(e1);
+	}
+		
+	function addTargetOfEdgeToFrontier(
+		e : Edge<Node>
+	) : void {
+		var outEdges = graph.outgoingEdges(e.to);
+		var oldCost : number;
+		oldCost = gScores.getValue(e.from);
+		//console.log('Adding node ' + e.to + ' with cost ' + (oldCost +e.cost));
+		priorNodes.setValue(e.to, e.from);
+		gScores.setValue(e.to, oldCost + e.cost);
+		for (var outEdge of outEdges) {
+			if ((gScores.getValue(outEdge.to) == null)) {
+				frontier.add(outEdge);
+			}
+		}
+	}
+	
+	gScores.setValue(start, 0);
+	var e : Edge<Node> = {from: start, to: start, cost: 0};
+	addTargetOfEdgeToFrontier(e);	
+	
+	while(frontier.peek()) {
+		var nextEdge : Edge<Node> = frontier.dequeue();
+		if (gScores.getValue(nextEdge.to) == null) {
+			//console.log('next node is ' + nextEdge.to);
+			addTargetOfEdgeToFrontier(nextEdge);
+			if (goal(nextEdge.to)) {
+				goalNode = nextEdge.to;
+				break;
+			}
+		}
+		
+	}
+	
+	var result : SearchResult<Node> = {
+        path: [],
         cost: 0
     };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
-    }
+	
+	var n : Node = goalNode;
+	result.cost = gScores.getValue(goalNode);
+	do {
+		//console.log('node ' + n + ' with cost ' + gScores.getValue(n));
+		result.path.push(n);
+		n = priorNodes.getValue(n);
+	} while (gScores.getValue(n) != 0);
+	
+	result.path = result.path.reverse();
+	
     return result;
 }
 
@@ -162,3 +228,9 @@ class GridGraph implements Graph<GridNode> {
         return str;
     }
 }
+
+
+
+
+
+
