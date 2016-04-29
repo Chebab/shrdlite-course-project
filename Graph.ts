@@ -78,12 +78,14 @@ function aStarSearch<Node> (
         return nodes.getValue(n2).cost-nodes.getValue(n1).cost+heuristics(n2)-heuristics(n1);
       });
 
-
+    // Add the starting node to the Dictionary
     nodes.setValue(start,{from: start,to: start,cost: 0});
+
+    // Put the starting element in the queue
     fronteir.enqueue(start);
 
 
-    var current : Node;
+    var current : Node; // The current node being evaluated
     while (fronteir.size()>0) {
       current = fronteir.dequeue();
 
@@ -106,7 +108,7 @@ function aStarSearch<Node> (
       usedNodes.push(current);
 
       var neighbours = graph.outgoingEdges(current);
-      //for(var i :number = 0;i < neighbours.length;i++)
+
       for(var edge of neighbours)
       {
 
@@ -129,29 +131,9 @@ function aStarSearch<Node> (
             continue;
         }
         nodes.setValue(neighbour,{from: current,to:neighbour,cost:temp_gScore});
-        /*fronteir.forEach(function(queueval){
-          if(graph.compareNodes(queueval.node,neighbour)==0){
-            queueval.fScore = temp_gScore;+heuristics(neighbour);
-            return;
-          }
-        */
+
       }
     }
-
-
-
-
-
-
-/*
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
-    }
-*/
     return result;
 }
 
