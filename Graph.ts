@@ -73,16 +73,34 @@ function aStarSearch<Node> (
 ) : SearchResult<Node> {
     
 	var goalNode : Node;
-	var gScores = new collections.Dictionary<Node,number>();	
-	var priorNodes = new collections.Dictionary<Node, Node>();
-	var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
+    // For each node, the cost of getting from the start node to that node.
+    var gScores = new collections.Dictionary<Node, number>();
+    
+    // For each node, which node it can most efficiently be reached from.
+    var priorNodes = new collections.Dictionary<Node, Node>();
+    
+    // The set (priorityQueue) of edges going out from discovered nodes that still needs evaluation
+    var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
+
+    // Initialize gScores and frontier
+	gScores.setValue(start, 0);
+	var e : Edge<Node> = {from: start, to: start, cost: 0};
+	addTargetOfEdgeToFrontier(e);	
 	
+	var result : SearchResult<Node> = {
+        path: [],
+        cost: 0
+    };
+	
+    // For each node, the total cost of getting from the start node to the goal
+    // partly known, partly heuristic
 	function edgeScore (
 		e : Edge<Node>
 	) : number {
 		return gScores.getValue(e.from) + e.cost + heuristics(e.to);
 	}
 	
+    // Compare helper function needed for the priorityQueue
 	function edgeCompare(
 		e1 : Edge<Node>,
 		e2 : Edge<Node>
@@ -90,68 +108,93 @@ function aStarSearch<Node> (
 		return edgeScore(e2) - edgeScore(e1);
 	}
 		
+	/**
+	*	Adds the neighbors of the edge's target to the frontier
+	*/
 	function addTargetOfEdgeToFrontier(
 		e : Edge<Node>
 	) : void {
+        // Outgoing edges of the node we're looking at (edge.to)
 		var outEdges = graph.outgoingEdges(e.to);
 		var oldCost : number;
-		oldCost = gScores.getValue(e.from);
+		// Store the cost from start to the last node
+        oldCost = gScores.getValue(e.from);
 		//console.log('Adding node ' + e.to + ' with cost ' + (oldCost +e.cost));
-		priorNodes.setValue(e.to, e.from);
-		gScores.setValue(e.to, oldCost + e.cost);
-		for (var outEdge of outEdges) {
+		// Add the nodes to priorNodes
+        priorNodes.setValue(e.to, e.from);
+		// Set the gScore value of the new node to the cost of the last node + the
+        // cost of the edge
+        
+		// Loop over all outgoing edges from edge.to
+        gScores.setValue(e.to, oldCost + e.cost);
+		// If the node already exists in the frontier
+		// Add the out edge
+		// (If we dont have the gScore value we know it is not in the frontier)
+        for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
 				frontier.add(outEdge);
 			}
 		}
 	}
 	
-	gScores.setValue(start, 0);
-	var e : Edge<Node> = {from: start, to: start, cost: 0};
-	addTargetOfEdgeToFrontier(e);	
 	
 	var timeouted : boolean = false;
+	//iteration count
 	var i : number = 0;
 	var starttime = new Date().getTime();
 
+	//While the frontier is non-empty and there is time left
 	while(frontier.peek() && !timeouted) {
+		// Fetch the edge with the least cost from the PriorityQueue
+        
 		var nextEdge : Edge<Node> = frontier.dequeue();
-		if (gScores.getValue(nextEdge.to) == null) {
+		// Get the edge w/ highest prio.
+		//If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
+        if (gScores.getValue(nextEdge.to) == null) {
 			//console.log('next node is ' + nextEdge.to);
 			addTargetOfEdgeToFrontier(nextEdge);
-			if (goal(nextEdge.to)) {
+			// If the target node is a goal, save it and break
+            if (goal(nextEdge.to)) {
 				goalNode = nextEdge.to;
 				break;
 			}
 		}
 		i++;
+		//Every 1000 iterations, check for timeout
 		if (i % 1000) {
 			if (new Date().getTime() - starttime > 1000*timeout) {
 				timeouted = true;
-				console.log('timeout');
+				//console.log('timeout');
 				break;
 			}
 		}
 	}
 	
-	var result : SearchResult<Node> = {
-        path: [],
-        cost: 0
-    };
-	
+	//Return dummy result on timeout
 	if (timeouted) {
 		return result;
 	}
 	
-	var n : Node = goalNode;
-	result.cost = gScores.getValue(goalNode);
-	do {
-		//console.log('node ' + n + ' with cost ' + gScores.getValue(n));
-		result.path.push(n);
-		n = priorNodes.getValue(n);
-	} while (gScores.getValue(n) != 0);
-		
-	result.path = result.path.reverse();
 	
+    // Save the goalNode to a dummy variable
+    var n: Node = goalNode;
+    
+    // Get the resulting cost from the gScores
+    result.cost = gScores.getValue(goalNode);
+    
+    // While we haven't reached the start node, add the path (backtracking)
+    do {
+        //console.log('node ' + n + ' with cost ' + gScores.getValue(n));
+        
+        // Add the node to the path
+        result.path.push(n);
+        
+        // Get the "parent"/"previous" node
+        n = priorNodes.getValue(n);
+    } while (gScores.getValue(n) != 0);
+
+    // Result will be in end to start order, so we have to reverse it
+    result.path = result.path.reverse();
+
     return result;
 }
