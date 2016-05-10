@@ -1,6 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
-
+/// <reference path="./ExampleWorlds.ts"/>
 /**
 * Interpreter module
 *
@@ -114,8 +114,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             {polarity: true, relation: "ontop", args: [a, "floor"]},
             {polarity: true, relation: "holding", args: [b]}
         ]];
-        
+        console.log(objects.indexOf(a));
         return interpretation;
     }
 
 }
+var result : Parser.ParseResult[] = Parser.parse("pick up the white ball");
+//Interpreter.interpretCommand(result, ExampleWorlds["small"]);
+Interpreter.interpret(result,ExampleWorlds["small"]);
