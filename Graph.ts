@@ -75,7 +75,8 @@ function aStarSearch<Node> (
 	var goalNode : Node;
     // For each node, the cost of getting from the start node to that node
     var gScores = new collections.Dictionary<Node, number>();
-    
+	var cachedHeuristics = new collections.Dictionary<Node, number>();
+	
     // For each node, which neighboring node it can most efficiently be reached from
 	// on a path from the start node
     var priorNodes = new collections.Dictionary<Node, Node>();
@@ -87,7 +88,7 @@ function aStarSearch<Node> (
 	var starttime = new Date().getTime();
 	// Iteration count
 	var i : number = 0;
-
+	
     // Initialize gScores and frontier
 	gScores.setValue(start, 0);
 	var e : Edge<Node> = {from: start, to: start, cost: 0};
@@ -98,12 +99,19 @@ function aStarSearch<Node> (
         cost: 0
     };
 	
+	
+	
     // For each node, the total cost of getting from the start node to the goal.
     // This is partly known, partly heuristic
 	function edgeScore (
 		e : Edge<Node>
 	) : number {
-		return gScores.getValue(e.from) + e.cost + heuristics(e.to);
+		var h = cachedHeuristics.getValue(e.to)
+		if (!h){
+			h = heuristics(e.to);
+			cachedHeuristics.setValue(e.to, h);
+		}
+		return gScores.getValue(e.from) + e.cost + h;
 	}
 	
     // Compare helper function needed for the priorityQueue
