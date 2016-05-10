@@ -17,8 +17,6 @@ class Edge<Node> {
     cost : number;
 }
 
-
-
 /** A directed graph. */
 interface Graph<Node> {
     /** Computes the edges that leave from a node. */
@@ -26,15 +24,6 @@ interface Graph<Node> {
     /** A function that compares nodes. */
     compareNodes : collections.ICompareFunction<Node>;
 }
-
-
-
-function edgeCost<Node>(
-	e : Edge<Node>
-) : number {
-	return 0;
-}
-
 
 /** Type that reports the result of a search. */
 class SearchResult<Node> {
@@ -56,7 +45,7 @@ class SearchResult<Node> {
 * @param start The initial node.
 * @param goal A function that returns true when given a goal node. Used to determine if the algorithm has reached the goal.
 * @param heuristics The heuristic function. Used to estimate the cost of reaching the goal from a given Node.
-* @param timeout Maximum time to spend performing A\* search.
+* @param timeout Maximum time (in seconds) to spend performing A\* search.
 * @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
 */
 function aStarSearch<Node> (
@@ -68,16 +57,46 @@ function aStarSearch<Node> (
 ) : SearchResult<Node> {
     
 	var goalNode : Node;
-	var gScores = new collections.Dictionary<Node,number>();	
-	var priorNodes = new collections.Dictionary<Node, Node>();
-	var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
+    // For each node, the cost of getting from the start node to that node
+    var gScores = new collections.Dictionary<Node, number>();
+	var cachedHeuristics = new collections.Dictionary<Node, number>();
 	
+    // For each node, which neighboring node it can most efficiently be reached from
+	// on a path from the start node
+    var priorNodes = new collections.Dictionary<Node, Node>();
+    
+    // The set (priorityQueue) of edges going out from discovered nodes that still needs evaluation
+    var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
+
+	var timeouted : boolean = false;
+	var starttime = new Date().getTime();
+	// Iteration count
+	var i : number = 0;
+	
+    // Initialize gScores and frontier
+	gScores.setValue(start, 0);
+	var e : Edge<Node> = {from: start, to: start, cost: 0};
+	addTargetOfEdgeToFrontier(e);	
+	
+	var result : SearchResult<Node> = {
+        path: [],
+        cost: 0
+    };
+	
+    // For each node, the total cost of getting from the start node to the goal.
+    // This is partly known, partly heuristic
 	function edgeScore (
 		e : Edge<Node>
 	) : number {
-		return gScores.getValue(e.from) + e.cost + heuristics(e.to);
+		var h = cachedHeuristics.getValue(e.to)
+		if (!h){
+			h = heuristics(e.to);
+			cachedHeuristics.setValue(e.to, h);
+		}
+		return gScores.getValue(e.from) + e.cost + h;
 	}
 	
+    // Compare helper function needed for the priorityQueue
 	function edgeCompare(
 		e1 : Edge<Node>,
 		e2 : Edge<Node>
@@ -85,152 +104,77 @@ function aStarSearch<Node> (
 		return edgeScore(e2) - edgeScore(e1);
 	}
 		
+	/**
+	*	Adds edges originating in target node of e to the frontier. 
+	*/
 	function addTargetOfEdgeToFrontier(
 		e : Edge<Node>
 	) : void {
+        // Outgoing edges of the node we're looking at (e.to)
 		var outEdges = graph.outgoingEdges(e.to);
 		var oldCost : number;
-		oldCost = gScores.getValue(e.from);
-		//console.log('Adding node ' + e.to + ' with cost ' + (oldCost +e.cost));
-		priorNodes.setValue(e.to, e.from);
+		// Find the cost from start to the source node of e
+        oldCost = gScores.getValue(e.from);
+		// For backtracking
+        priorNodes.setValue(e.to, e.from);
+		// Set the gScore value of the new node to the cost of the last node + the
+        // cost of the edge
 		gScores.setValue(e.to, oldCost + e.cost);
-		for (var outEdge of outEdges) {
+		// Loop over all outgoing edges from edge.to
+        // If the target node does not exist in the frontier, add the out edge.
+		// (If we dont have the gScore value we know it is not in the frontier)
+        for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
 				frontier.add(outEdge);
 			}
 		}
 	}
-	
-	gScores.setValue(start, 0);
-	var e : Edge<Node> = {from: start, to: start, cost: 0};
-	addTargetOfEdgeToFrontier(e);	
-	
-	while(frontier.peek()) {
+
+	//While the frontier is non-empty and there is time left
+	while(frontier.peek() && !timeouted) {
+		// Fetch the edge with the least cost from the PriorityQueue
+        
 		var nextEdge : Edge<Node> = frontier.dequeue();
-		if (gScores.getValue(nextEdge.to) == null) {
-			//console.log('next node is ' + nextEdge.to);
+		// Get the edge w/ highest prio.
+		//If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
+        if (gScores.getValue(nextEdge.to) == null) {
 			addTargetOfEdgeToFrontier(nextEdge);
-			if (goal(nextEdge.to)) {
+			// If the target node is a goal, save it and break
+            if (goal(nextEdge.to)) {
 				goalNode = nextEdge.to;
 				break;
 			}
 		}
-		
+		i++;
+		//Every 1000 iterations, check for timeout
+		if (i % 1000) {
+			if (new Date().getTime() - starttime > 1000*timeout) {
+				timeouted = true;
+			}
+		}
 	}
 	
-	var result : SearchResult<Node> = {
-        path: [],
-        cost: 0
-    };
+	//Return dummy result on timeout
+	if (timeouted) {
+		return result;
+	}
 	
-	var n : Node = goalNode;
-	result.cost = gScores.getValue(goalNode);
-	do {
-		//console.log('node ' + n + ' with cost ' + gScores.getValue(n));
-		result.path.push(n);
-		n = priorNodes.getValue(n);
-	} while (gScores.getValue(n) != 0);
-	
-	result.path = result.path.reverse();
-	
+    // Save the goalNode to a dummy variable
+    var n: Node = goalNode;
+    
+    // Get the resulting cost from the gScores
+    result.cost = gScores.getValue(goalNode);
+    
+    // While we haven't reached the start node, add the path (backtracking)
+    do {
+        // Add the node to the path
+        result.path.push(n);
+        // Get the "parent"/"previous" node
+        n = priorNodes.getValue(n);
+    } while (graph.compareNodes(n,start));
+
+    // Result must be in end to start order, so we have to reverse it
+    result.path = result.path.reverse();
+
     return result;
 }
-
-
-//////////////////////////////////////////////////////////////////////
-// here is an example graph
-
-interface Coordinate {
-    x : number;
-    y : number;
-}
-
-
-class GridNode {
-    constructor(
-        public pos : Coordinate
-    ) {}
-
-    add(delta : Coordinate) : GridNode {
-        return new GridNode({
-            x: this.pos.x + delta.x,
-            y: this.pos.y + delta.y
-        });
-    }
-
-    compareTo(other : GridNode) : number {
-        return (this.pos.x - other.pos.x) || (this.pos.y - other.pos.y);
-    }
-
-    toString() : string {
-        return "(" + this.pos.x + "," + this.pos.y + ")";
-    }
-}
-
-/** Example Graph. */
-class GridGraph implements Graph<GridNode> {
-    private walls : collections.Set<GridNode>;
-
-    constructor(
-        public size : Coordinate,
-        obstacles : Coordinate[]
-    ) {
-        this.walls = new collections.Set<GridNode>();
-        for (var pos of obstacles) {
-            this.walls.add(new GridNode(pos));
-        }
-        for (var x = -1; x <= size.x; x++) {
-            this.walls.add(new GridNode({x:x, y:-1}));
-            this.walls.add(new GridNode({x:x, y:size.y}));
-        }
-        for (var y = -1; y <= size.y; y++) {
-            this.walls.add(new GridNode({x:-1, y:y}));
-            this.walls.add(new GridNode({x:size.x, y:y}));
-        }
-    }
-
-    outgoingEdges(node : GridNode) : Edge<GridNode>[] {
-        var outgoing : Edge<GridNode>[] = [];
-        for (var dx = -1; dx <= 1; dx++) {
-            for (var dy = -1; dy <= 1; dy++) {
-                if (! (dx == 0 && dy == 0)) {
-                    var next = node.add({x:dx, y:dy});
-                    if (! this.walls.contains(next)) {
-                        outgoing.push({
-                            from: node,
-                            to: next,
-                            cost: Math.sqrt(dx*dx + dy*dy)
-                        });
-                    }
-                }
-            }
-        }
-        return outgoing;
-    }
-
-    compareNodes(a : GridNode, b : GridNode) : number {
-        return a.compareTo(b);
-    }
-
-    toString() : string {
-        var borderRow = "+" + new Array(this.size.x + 1).join("--+");
-        var betweenRow = "+" + new Array(this.size.x + 1).join("  +");
-        var str = "\n" + borderRow + "\n";
-        for (var y = this.size.y-1; y >= 0; y--) {
-            str += "|";
-            for (var x = 0; x < this.size.x; x++) {
-                str += this.walls.contains(new GridNode({x:x,y:y})) ? "## " : "   ";
-            }
-            str += "|\n";
-            if (y > 0) str += betweenRow + "\n";
-        }
-        str += borderRow + "\n";
-        return str;
-    }
-}
-
-
-
-
-
-
