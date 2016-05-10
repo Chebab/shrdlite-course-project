@@ -155,5 +155,3 @@ function nodeInList<Node>(
       }
     });
   }
-
-
