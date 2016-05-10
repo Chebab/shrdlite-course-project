@@ -1,6 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
-
+///<reference path="ExampleWorlds.ts"/>
 /**
 * Interpreter module
 * 
@@ -119,3 +119,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
 }
 
+var result : Parser.ParseResult[] = Parser.parse("move the ball on top of the box");
+var output : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+console.log(output);
