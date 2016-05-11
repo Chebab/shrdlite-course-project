@@ -19,6 +19,10 @@ doc:
 
 all: shrdlite-html.js shrdlite-offline.js
 
+int:
+	tsc Interpreter.ts ExampleWorlds.ts World.ts Parser.ts lib/collections --out a.js
+	node a.js
+
 aStarTests: TestAStar.js
 	node $< all
 
