@@ -162,6 +162,7 @@ module Interpreter {
         {
           console.log("trying to find targetobj");
           targetobj = findEntites(cmd.location.entity,state,objects,currentState);
+		  console.log("TARGET OBJECTS: " + targetobj);
         }
         // Find object/objects in command that exists in the world
         // if found >=1 -> continue
@@ -197,7 +198,7 @@ module Interpreter {
                 var targetObject : ObjectDefinition = state.objects[targetobj[j]];
                 var cpos : number[] = currentState.getValue(sourceobj[i]);
                 var rpos : number[] = currentState.getValue(targetobj[j]);
-                if(isFeasible(sourceobj[i],targetobj[j],cmd.location.relation,sourceObject,targetObject,cpos,rpos)){
+                if(isPhysical(sourceObject,targetObject,cmd.location.relation)){
                   interpretation.push([
                     {
                       polarity: true,
@@ -248,6 +249,7 @@ module Interpreter {
             if (ent.quantifier == "the" && currobjs.length > 1) {
                 return ["__Error__#0"]
             }
+			console.log("RESULT: " + currobjs);
             return currobjs;
         }
 
@@ -265,6 +267,7 @@ module Interpreter {
         if (ent.quantifier == "the" && currobjs.length > 1) {
             return ["__Error__#0"]
         }
+		
         return result;
     }
 
@@ -354,6 +357,36 @@ module Interpreter {
                   return false;
           }
         }
+		
+	function isPhysical(sourceObj : ObjectDefinition, targetObj : ObjectDefinition, relation : string) : boolean {
+		switch(relation){
+			case "rightof", "leftof", "beside":
+				// Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
+				return true;
+			case "inside":
+				if(targetObj.form=="box" && !(sourceObj.size=="large" && targetObj.size=="small")){
+					return true;
+				} else {
+					return false;
+				}
+			case "ontop":
+				// Maybe add ball ontop of table and brick?
+				if(targetObj.form == "pyramid" || 
+				  (sourceObj.form == "ball" && (targetObj.form == "table" || targetObj.form == "brick"))){
+					return false;
+				} else {
+					return true;
+				}
+			case "above":
+				// How handle above?
+				return true;
+			case "below":
+				// How handle below?
+				return true;
+			default:
+				return false;
+		  }
+	}
 }
 var result: Parser.ParseResult[] = Parser.parse("put a ball in a box");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
