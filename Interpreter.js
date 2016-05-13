@@ -1,10 +1,8 @@
 var Interpreter;
 (function (Interpreter) {
-
     var relationStr = ["leftof", "rightof", "inside", "ontop", "under", "beside", "above"];
     var quantm = ["any", "all", "a"];
     var quants = ["the"];
-
     function interpret(parses, currentState) {
         var errors = [];
         var interpretations = [];
@@ -13,9 +11,7 @@ var Interpreter;
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
-
                 console.log(Interpreter.stringify(result));
-
             }
             catch (err) {
                 errors.push(err);
@@ -43,7 +39,6 @@ var Interpreter;
         var objects = Array.prototype.concat.apply([], state.stacks);
         var a = objects[Math.floor(Math.random() * objects.length)];
         var b = objects[Math.floor(Math.random() * objects.length)];
-
         var interpretation = [[]];
         var currentState = new collections.Dictionary();
         for (var i = 0; i < state.stacks.length; i++) {
@@ -52,56 +47,54 @@ var Interpreter;
             }
         }
         if (state.holding != null) {
-            console.log("adding holding");
             currentState.setValue(state.holding, [-1, -1]);
             objects.push(state.holding);
         }
         var sourceobj = findEntites(cmd.entity, state, objects, currentState);
         if (sourceobj.length < 1) {
+            console.log("no source objects");
             return [[]];
         }
         else if (sourceobj[0].indexOf("__Error__") >= 0) {
             var error = sourceobj[0].split("#");
             var errorCode = error[1];
+            console.log("cannot find a source object, error code:" + errorCode);
             return [[]];
         }
         var targetobj = [];
-        console.log(cmd.location.relation);
         if (cmd.location != null) {
-            findEntites(cmd.location.entity, state, objects, currentState);
+            console.log("trying to find targetobj");
+            targetobj = findEntites(cmd.location.entity, state, objects, currentState);
         }
         if (cmd.command == "move") {
-            console.log("Length of target is " + targetobj.length);
             if (targetobj.length < 1) {
+                console.log("no target objects");
                 return [[]];
             }
             else if (targetobj[0].indexOf("__Error__") >= 0) {
                 var error = sourceobj[0].split("#");
                 var errorCode = error[1];
+                console.log("cannot find a target object, error code:" + errorCode);
                 return [[]];
             }
+            console.log("amount of sobj=" + sourceobj.length + " and amount of tobj=" + sourceobj.length);
             for (var i = 0; i < sourceobj.length; i++) {
                 for (var j = 0; j < targetobj.length; j++) {
                     if (sourceobj[i] == targetobj[j]) {
                         continue;
                     }
-                    switch (cmd.location.relation) {
-                        case "leftof":
-                        case "rightof":
-                        case "inside":
-                        case "ontop":
-                        case "under":
-                        case "beside":
-                        case "above":
-                            interpretation.push([
-                                {
-                                    polarity: true,
-                                    relation: cmd.location.relation,
-                                    args: [sourceobj[i], targetobj[j]]
-                                }
-                            ]);
-                        default:
-                            break;
+                    var sourceObject = state.objects[sourceobj[i]];
+                    var targetObject = state.objects[targetobj[j]];
+                    var cpos = currentState.getValue(sourceobj[i]);
+                    var rpos = currentState.getValue(targetobj[j]);
+                    if (isFeasible(sourceobj[i], targetobj[j], cmd.location.relation, sourceObject, targetObject, cpos, rpos)) {
+                        interpretation.push([
+                            {
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [sourceobj[i], targetobj[j]]
+                            }
+                        ]);
                     }
                 }
             }
@@ -135,9 +128,7 @@ var Interpreter;
             }
             return currobjs;
         }
-        console.log("about to find relations");
         var relobjs = findEntites(obj.location.entity, state, objects, currentState);
-        console.log("Found relations");
         if (relobjs.length < 1) {
             return ["__Error__#1"];
         }
@@ -152,63 +143,76 @@ var Interpreter;
     }
     function filterRelation(filter, currobjs, relobjs, state, currentState) {
         var result = [];
+        console.log("searchword is " + filter);
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
+                var sourceObject = state.objects[currobjs[i]];
+                var targetObject = state.objects[relobjs[j]];
                 var cpos = currentState.getValue(currobjs[i]);
                 var rpos = currentState.getValue(relobjs[j]);
                 if (cpos[0] < 0 || rpos[0] < 0) {
                     continue;
                 }
-                switch (filter) {
-                    case "leftof":
-                        if (cpos[0] < rpos[0]) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "rightof":
-                        if (cpos[0] > rpos[0]) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "inside":
-                        if (cpos[0] == rpos[0] &&
-                            cpos[1] - rpos[1] == 1 &&
-                            state.objects[relobjs[j]].form == "box") {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "ontop":
-                        if (cpos[0] == rpos[0] &&
-                            cpos[1] - rpos[1] == 1) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "under":
-                        if (cpos[1] < rpos[1] &&
-                            cpos[0] == rpos[0]) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "beside":
-                        if (cpos[0] - rpos[0] == 1 ||
-                            cpos[0] - rpos[0] == -1) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "above":
-                        if (cpos[1] > rpos[1] &&
-                            cpos[0] == rpos[0]) {
-                            result.push(currobjs[i]);
-                        }
-                        continue;
-                    default:
-                        return [];
+                if (isFeasible(currobjs[i], relobjs[j], filter, sourceObject, targetObject, cpos, rpos)) {
+                    result.push(currobjs[i]);
+                    continue;
                 }
             }
         }
         return result;
     }
+    function isFeasible(sourceId, targetId, relation, sourceObj, targetObj, spos, tpos) {
+        switch (relation) {
+            case "leftof":
+                if (spos[0] < tpos[0]) {
+                    return true;
+                }
+                return false;
+            case "rightof":
+                if (spos[0] > tpos[0]) {
+                    return true;
+                }
+                return false;
+            case "inside":
+                if (spos[0] == tpos[0] &&
+                    spos[1] - tpos[1] == 1 &&
+                    targetObj.form == "box" &&
+                    !(sourceObj.size == "large" &&
+                        targetObj.size == "small")) {
+                    console.log(sourceObj.size + " " + sourceObj.form);
+                    console.log(targetObj.size + " " + targetObj.form);
+                    return true;
+                }
+                return false;
+            case "ontop":
+                if (spos[0] == tpos[0] &&
+                    spos[1] - tpos[1] == 1) {
+                    return true;
+                }
+                return false;
+            case "under":
+                if (spos[1] < tpos[1] &&
+                    spos[0] == tpos[0]) {
+                    return true;
+                }
+                return false;
+            case "beside":
+                if (spos[0] - tpos[0] == 1 ||
+                    spos[0] - tpos[0] == -1) {
+                    return true;
+                }
+                return false;
+            case "above":
+                if (spos[1] > tpos[1] &&
+                    spos[0] == tpos[0]) {
+                    return true;
+                }
+                return false;
+            default:
+                return false;
+        }
+    }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put the large green brick on the large red box");
+var result = Parser.parse("put a ball in a box");
 console.log(Parser.stringify(result[0]));
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
