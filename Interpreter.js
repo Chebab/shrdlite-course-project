@@ -1,8 +1,10 @@
 var Interpreter;
 (function (Interpreter) {
+
     var relationStr = ["leftof", "rightof", "inside", "ontop", "under", "beside", "above"];
     var quantm = ["any", "all", "a"];
     var quants = ["the"];
+
     function interpret(parses, currentState) {
         var errors = [];
         var interpretations = [];
@@ -11,7 +13,9 @@ var Interpreter;
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
+
                 console.log(Interpreter.stringify(result));
+
             }
             catch (err) {
                 errors.push(err);
@@ -39,6 +43,7 @@ var Interpreter;
         var objects = Array.prototype.concat.apply([], state.stacks);
         var a = objects[Math.floor(Math.random() * objects.length)];
         var b = objects[Math.floor(Math.random() * objects.length)];
+
         var interpretation = [[]];
         var currentState = new collections.Dictionary();
         for (var i = 0; i < state.stacks.length; i++) {

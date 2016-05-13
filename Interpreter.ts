@@ -30,18 +30,29 @@ module Interpreter {
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
     /**
     Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. No need to change this one.
     * @param parses List of parses produced by the Parser.
     * @param currentState The current state of the world.
     * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
     */
+<<<<<<< HEAD
     var relationStr: string[] = ["leftof", "rightof", "inside", "ontop", "under", "beside", "above"];
     var quantm: string[] = ["any", "all", "a"];
     var quants: string[] = ["the"];
     export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
         var errors: Error[] = [];
         var interpretations: InterpretationResult[] = [];
+=======
+
+    export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
+        var errors : Error[] = [];
+        var interpretations : InterpretationResult[] = [];
+>>>>>>> master
         parses.forEach((parseresult) => {
             try {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
@@ -78,12 +89,22 @@ module Interpreter {
          * literal {polarity: false, relation: "ontop", args:
          * ["a","b"]}.
          */
+<<<<<<< HEAD
         polarity: boolean;
         /** The name of the relation in question. */
         relation: string;
         /** The arguments to the relation. Usually these will be either objects
          * or special strings such as "floor" or "floor-N" (where N is a column) */
         args: string[];
+=======
+        polarity : boolean;
+        /** The name of the relation in question. */
+        relation : string;
+        /** The arguments to the relation. Usually these will be either objects
+         * or special strings such as "floor" or "floor-N" (where N is a column) */
+
+        args : string[];
+>>>>>>> master
     }
 
     export function stringify(result: InterpretationResult): string {
@@ -115,6 +136,7 @@ module Interpreter {
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
+<<<<<<< HEAD
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
@@ -207,6 +229,15 @@ module Interpreter {
         }
 
 
+=======
+        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
+        var a : string = objects[Math.floor(Math.random() * objects.length)];
+        var b : string = objects[Math.floor(Math.random() * objects.length)];
+        var interpretation : DNFFormula = [[
+            {polarity: true, relation: "ontop", args: [a, "floor"]},
+            {polarity: true, relation: "holding", args: [b]}
+        ]];
+>>>>>>> master
 
         return interpretation;
     }

@@ -8,7 +8,7 @@ TARGETS = html ajax ansi offline
 TSFILES = $(wildcard *.ts)
 
 help:
-	@echo "make help | clean | all | aStarTests | shrdlite-html.js | shrdlite-offline.js"
+	@echo "make help | clean | all | aStarTests | interpretationTests | shrdlite-html.js | shrdlite-offline.js"
 
 clean:
 	rm -f $(TSFILES:%.ts=%.js) *.map
@@ -24,6 +24,9 @@ int:
 	node a.js
 
 aStarTests: TestAStar.js
+	node $< all
+
+interpretationTests: TestInterpreter.js
 	node $< all
 
 # Make TypeScript as strict as possible:
