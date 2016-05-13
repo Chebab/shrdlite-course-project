@@ -122,8 +122,8 @@ module Interpreter {
 
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
-        var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula = []/* [[
+                var b: string = objects[Math.floor(Math.random() * objects.length)];
+        var interpretation: DNFFormula =[];/* [[
             { polarity: true, relation: "ontop", args: [a, "floor"] },
             { polarity: true, relation: "holding", args: [b] }
         ]];*/
@@ -145,7 +145,7 @@ module Interpreter {
         if(sourceobj.length<1)
         {
           console.log("no source objects");
-          return [[]];
+          return [];
         }
         else if(sourceobj[0].indexOf("__Error__")>=0)
         {
@@ -153,14 +153,14 @@ module Interpreter {
           var errorCode = error[1];
           console.log("cannot find a source object, error code:"+errorCode);
           //do something with the error code
-          return [[]];
+          return [];
         }
 
         var targetobj : string[] = [];
 
         if(cmd.location!=null)
         {
-          console.log("trying to find targetobj");
+
           targetobj = findEntites(cmd.location.entity,state,objects,currentState);
 		  console.log("TARGET OBJECTS: " + targetobj);
         }
@@ -196,24 +196,36 @@ module Interpreter {
                 }
                 var sourceObject : ObjectDefinition = state.objects[sourceobj[i]];
                 var targetObject : ObjectDefinition = state.objects[targetobj[j]];
-                var cpos : number[] = currentState.getValue(sourceobj[i]);
-                var rpos : number[] = currentState.getValue(targetobj[j]);
-                if(isPhysical(sourceObject,targetObject,cmd.location.relation)){
-                  interpretation.push([
+                if(isPhysical(cmd.location.relation,sourceObject,targetObject)){
+                  var pushed : Literal[] = [
                     {
                       polarity: true,
                       relation: cmd.location.relation,
                       args:[sourceobj[i],targetobj[j]]
                     }
-                  ]);
+                  ];
+                  interpretation.push(pushed);
                 }
               }
             }
         }
         else if (cmd.command=="take"){
-
+          for(var i = 0;i<sourceobj.length;i++)
+          {
+            interpretation.push([
+              {
+                polarity: true,
+                relation: "holding",
+                args:[sourceobj[i]]
+              }
+            ]);
+          }
         }
-
+        console.log("the result is:"+interpretation+ " the amount of results is "+ interpretation.length);
+        if(interpretation.length<1)
+        {
+          interpretation.push(null);
+        }
         return interpretation;
     }
     function findEntites(
@@ -224,11 +236,12 @@ module Interpreter {
         : string[] {
 
 
-        var obj: Parser.Object = ent.object
+        var obj: Parser.Object = ent.object;
         // find all of the current object
         var currobjs: string[] = [];
         for (var i = 0; i < objects.length; i++) {
             var temp: ObjectDefinition = state.objects[objects[i]];
+            console.log("TEMP: " + temp.form + " " + temp.color);
             var isSame: boolean = true;
             if (obj.size != null) {
                 isSame = isSame && obj.size == temp.size;
@@ -236,8 +249,13 @@ module Interpreter {
             if (obj.color != null) {
                 isSame = isSame && obj.color == temp.color;
             }
-            if (obj.form != null) {
-                isSame = isSame && obj.form == temp.form;
+            if (obj.form == "anyform") {
+                console.log("ANYFORM COLOR: " + temp.color);
+                isSame = isSame && true;
+            }
+            else
+            {
+              isSame = isSame && obj.form == temp.form;
             }
             if (isSame) {
                 currobjs.push(objects[i]);
@@ -249,7 +267,7 @@ module Interpreter {
             if (ent.quantifier == "the" && currobjs.length > 1) {
                 return ["__Error__#0"]
             }
-			console.log("RESULT: " + currobjs);
+			      console.log("RESULT_Source: " + currobjs);
             return currobjs;
         }
 
@@ -267,7 +285,7 @@ module Interpreter {
         if (ent.quantifier == "the" && currobjs.length > 1) {
             return ["__Error__#0"]
         }
-		
+
         return result;
     }
 
@@ -279,7 +297,7 @@ module Interpreter {
       currentState : collections.Dictionary<string,number[]>): string[]
       {
         var result : string[] = [];
-        console.log("searchword is "+filter);
+        console.log("searchword is "+filter+" and nrcur="+currobjs.length+",nrrel="+relobjs.length);
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
               var sourceObject : ObjectDefinition = state.objects[currobjs[i]];
@@ -289,21 +307,22 @@ module Interpreter {
               if(cpos[0]<0||rpos[0]<0){
                 continue;
               }
-              if(isFeasible(currobjs[i],relobjs[j],filter,sourceObject,targetObject,cpos,rpos)){
+              if(!isPhysical(filter,sourceObject,targetObject)){
+
+                continue;
+              }
+              else if(isFeasible(filter,cpos,rpos)){
                 result.push(currobjs[i]);
                 continue;
               }
             }
         }
+
         return result;
       }
 
       function isFeasible(
-        sourceId : string,
-        targetId : string,
         relation : string,
-        sourceObj : ObjectDefinition,
-        targetObj : ObjectDefinition,
         spos : number[],
         tpos : number[]) : boolean
         {
@@ -320,12 +339,7 @@ module Interpreter {
                   return false;
               case "inside":
                   if(spos[0]==tpos[0] &&
-                      spos[1]-tpos[1]==1 &&
-                      targetObj.form=="box"&&
-                      !(sourceObj.size=="large" &&
-                      targetObj.size=="small")){
-                    console.log(sourceObj.size + " " + sourceObj.form);
-                    console.log(targetObj.size + " " + targetObj.form);
+                      spos[1]-tpos[1]==1){
                     return true;
                   }
                   return false;
@@ -344,6 +358,7 @@ module Interpreter {
               case "beside":
                   if(spos[0]-tpos[0]==1||
                       spos[0]-tpos[0]==-1){
+                        console.log("object is beside");
                     return true;
                   }
                   return false;
@@ -357,30 +372,45 @@ module Interpreter {
                   return false;
           }
         }
-		
-	function isPhysical(sourceObj : ObjectDefinition, targetObj : ObjectDefinition, relation : string) : boolean {
+
+	function isPhysical(relation : string, sourceObj : ObjectDefinition, targetObj : ObjectDefinition) : boolean {
 		switch(relation){
-			case "rightof", "leftof", "beside":
+			case "rightof": case "leftof": case "beside":
 				// Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
+        console.log("checking beside constraints")
 				return true;
 			case "inside":
-				if(targetObj.form=="box" && !(sourceObj.size=="large" && targetObj.size=="small")){
-					return true;
-				} else {
+				if(targetObj.form=="box" && (targetObj.size=="small" && sourceObj.size=="large"||
+          ((sourceObj.form=="pyramid"||sourceObj.form=="plank"||sourceObj.form=="box") &&
+          targetObj.size==sourceObj.size))){
 					return false;
 				}
+				return true;
+
 			case "ontop":
 				// Maybe add ball ontop of table and brick?
-				if(targetObj.form == "pyramid" || 
-				  (sourceObj.form == "ball" && (targetObj.form == "table" || targetObj.form == "brick"))){
+				if(targetObj.form == "pyramid" ||
+          (sourceObj.form == "ball" && (targetObj.form == "table" ||
+          targetObj.form == "brick"||targetObj.form == "plank"))||
+          targetObj.form=="ball" ||
+          targetObj.form=="box"||
+          (sourceObj.form=="box"&&sourceObj.size=="small"&&
+          targetObj.form=="brick"&&targetObj.size=="small")){
 					return false;
 				} else {
 					return true;
 				}
 			case "above":
+        if(sourceObj.size=="large" && targetObj.size=="small"){
+          return false;
+        }
 				// How handle above?
 				return true;
 			case "below":
+        if(sourceObj.form=="ball" || sourceObj.form=="pyramid" ||
+          (sourceObj.size=="small" && targetObj.size=="large")){
+            return false;
+        }
 				// How handle below?
 				return true;
 			default:
@@ -388,10 +418,10 @@ module Interpreter {
 		  }
 	}
 }
-var result: Parser.ParseResult[] = Parser.parse("put a ball in a box");
+var result: Parser.ParseResult[] = Parser.parse("take a white object beside a blue object");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 console.log(Parser.stringify(result[0]));
-var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+//var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 
 
 
