@@ -145,7 +145,7 @@ module Interpreter {
         if(sourceobj.length<1)
         {
           console.log("no source objects");
-          return [[]];
+          return [];
         }
         else if(sourceobj[0].indexOf("__Error__")>=0)
         {
@@ -153,7 +153,7 @@ module Interpreter {
           var errorCode = error[1];
           console.log("cannot find a source object, error code:"+errorCode);
           //do something with the error code
-          return [[]];
+          return [];
         }
 
         var targetobj : string[] = [];
@@ -210,9 +210,22 @@ module Interpreter {
             }
         }
         else if (cmd.command=="take"){
-
+          for(var i = 0;i<sourceobj.length;i++)
+          {
+            interpretation.push([
+              {
+                polarity: true,
+                relation: "holding",
+                args:[sourceobj[i]]
+              }
+            ]);
+          }
         }
-
+        console.log("the result is:"+interpretation+ " the amount of results is "+ interpretation.length);
+        if(interpretation.length<1)
+        {
+          interpretation.push(null);
+        }
         return interpretation;
     }
     function findEntites(
@@ -223,11 +236,12 @@ module Interpreter {
         : string[] {
 
 
-        var obj: Parser.Object = ent.object
+        var obj: Parser.Object = ent.object;
         // find all of the current object
         var currobjs: string[] = [];
         for (var i = 0; i < objects.length; i++) {
             var temp: ObjectDefinition = state.objects[objects[i]];
+            console.log("TEMP: " + temp.form + " " + temp.color);
             var isSame: boolean = true;
             if (obj.size != null) {
                 isSame = isSame && obj.size == temp.size;
@@ -235,8 +249,13 @@ module Interpreter {
             if (obj.color != null) {
                 isSame = isSame && obj.color == temp.color;
             }
-            if (obj.form != null) {
-                isSame = isSame && obj.form == temp.form;
+            if (obj.form == "anyform") {
+                console.log("ANYFORM COLOR: " + temp.color);
+                isSame = isSame && true;
+            }
+            else
+            {
+              isSame = isSame && obj.form == temp.form;
             }
             if (isSame) {
                 currobjs.push(objects[i]);
@@ -248,7 +267,7 @@ module Interpreter {
             if (ent.quantifier == "the" && currobjs.length > 1) {
                 return ["__Error__#0"]
             }
-			console.log("RESULT: " + currobjs);
+			      console.log("RESULT_Source: " + currobjs);
             return currobjs;
         }
 
@@ -278,7 +297,7 @@ module Interpreter {
       currentState : collections.Dictionary<string,number[]>): string[]
       {
         var result : string[] = [];
-        console.log("searchword is "+filter);
+        console.log("searchword is "+filter+" and nrcur="+currobjs.length+",nrrel="+relobjs.length);
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
               var sourceObject : ObjectDefinition = state.objects[currobjs[i]];
@@ -289,6 +308,7 @@ module Interpreter {
                 continue;
               }
               if(!isPhysical(filter,sourceObject,targetObject)){
+
                 continue;
               }
               else if(isFeasible(filter,cpos,rpos)){
@@ -297,6 +317,7 @@ module Interpreter {
               }
             }
         }
+
         return result;
       }
 
@@ -337,6 +358,7 @@ module Interpreter {
               case "beside":
                   if(spos[0]-tpos[0]==1||
                       spos[0]-tpos[0]==-1){
+                        console.log("object is beside");
                     return true;
                   }
                   return false;
@@ -353,13 +375,14 @@ module Interpreter {
 
 	function isPhysical(relation : string, sourceObj : ObjectDefinition, targetObj : ObjectDefinition) : boolean {
 		switch(relation){
-			case "rightof", "leftof", "beside":
+			case "rightof": case "leftof": case "beside":
 				// Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
+        console.log("checking beside constraints")
 				return true;
 			case "inside":
-				if(targetObj.form=="box" && targetObj.size=="small" && sourceObj.size=="large"||
-          targetObj.form=="box" && (sourceObj.form=="pyramid"||sourceObj.form=="plank"||sourceObj.form=="box") &&
-          targetObj.size==sourceObj.size){
+				if(targetObj.form=="box" && (targetObj.size=="small" && sourceObj.size=="large"||
+          ((sourceObj.form=="pyramid"||sourceObj.form=="plank"||sourceObj.form=="box") &&
+          targetObj.size==sourceObj.size))){
 					return false;
 				}
 				return true;
@@ -368,7 +391,11 @@ module Interpreter {
 				// Maybe add ball ontop of table and brick?
 				if(targetObj.form == "pyramid" ||
           (sourceObj.form == "ball" && (targetObj.form == "table" ||
-          targetObj.form == "brick"||targetObj.form == "plank"))){
+          targetObj.form == "brick"||targetObj.form == "plank"))||
+          targetObj.form=="ball" ||
+          targetObj.form=="box"||
+          (sourceObj.form=="box"&&sourceObj.size=="small"&&
+          targetObj.form=="brick"&&targetObj.size=="small")){
 					return false;
 				} else {
 					return true;
@@ -391,10 +418,10 @@ module Interpreter {
 		  }
 	}
 }
-var result: Parser.ParseResult[] = Parser.parse("put a ball in a box");
+var result: Parser.ParseResult[] = Parser.parse("take a white object beside a blue object");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 console.log(Parser.stringify(result[0]));
-var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+//var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 
 
 
