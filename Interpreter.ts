@@ -1,6 +1,7 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
 /// <reference path="./ExampleWorlds.ts"/>
+///<reference path="lib/collections.ts"/>
 /**
 * Interpreter module
 *
@@ -46,6 +47,7 @@ module Interpreter {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
+                console.log(Interpreter.stringify(result));
             } catch (err) {
                 errors.push(err);
             }
@@ -116,21 +118,92 @@ module Interpreter {
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula = [[
+        var interpretation: DNFFormula =[[]]/* [[
             { polarity: true, relation: "ontop", args: [a, "floor"] },
             { polarity: true, relation: "holding", args: [b] }
-        ]];
-        var currentState = new collections.Dictionary<string, number[][]>();
+        ]];*/
+        var currentState : collections.Dictionary<string,number[]>
+                = new collections.Dictionary<string, number[]>();
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
-                currentState.setValue(state.stacks[i][j], [[i, j]]);
+                currentState.setValue(state.stacks[i][j], [i, j]);
             }
+        }
+        if(state.holding != null){
+          console.log("adding holding");
+          currentState.setValue(state.holding,[-1,-1]);
+          objects.push(state.holding);
+        }
+        var sourceobj : string[] =
+          findEntites(cmd.entity,state,objects,currentState);
+
+        if(sourceobj.length<1)
+        {
+          return [[]];
+        }
+        else if(sourceobj[0].indexOf("__Error__")>=0)
+        {
+          var error = sourceobj[0].split("#");
+          var errorCode = error[1];
+          //do something with the error code
+          return [[]];
+        }
+
+        var targetobj : string[] = [];
+        console.log(cmd.location.relation);
+        if(cmd.location!=null)
+        {
+          findEntites(cmd.location.entity,state,objects,currentState);
         }
         // Find object/objects in command that exists in the world
         // if found >=1 -> continue
         // if found 0 -> stop
-        if (cmd.command == "move") {
+
+        if (cmd.command == "move"){
             // Find the current value
+
+            console.log("Length of target is "+targetobj.length);
+            if(targetobj.length<1)
+            {
+              return [[]];
+            }
+            else if(targetobj[0].indexOf("__Error__")>=0)
+            {
+              var error = sourceobj[0].split("#");
+              var errorCode = error[1];
+              //do something with the error code
+              return [[]];
+            }
+            for(var i = 0;i<sourceobj.length;i++)
+            {
+              for(var j = 0;j<targetobj.length;j++)
+              {
+                if(sourceobj[i]==targetobj[j]){
+                  continue;
+                }
+                switch(cmd.location.relation){
+                  case "leftof":
+                  case "rightof":
+                  case "inside":
+                  case "ontop":
+                  case "under":
+                  case "beside":
+                  case "above":
+                    interpretation.push([
+                      {
+                        polarity: true,
+                        relation: cmd.location.relation,
+                        args:[sourceobj[i],targetobj[j]]
+                      }
+                    ]);
+                  default:
+                    break;
+                }
+              }
+            }
+        }
+        else if (cmd.command=="take"){
+
         }
 
 
@@ -141,7 +214,7 @@ module Interpreter {
         ent: Parser.Entity,
         state: WorldState,
         objects: string[],
-        currentState: collections.Dictionary<string, number[][]>)
+        currentState: collections.Dictionary<string, number[]>)
         : string[] {
 
 
@@ -172,66 +245,95 @@ module Interpreter {
             }
             return currobjs;
         }
-        /*if(quantm.some(function(str){if(ent.quantifier==str) return true;
-        else return false;})){
-
-        }
-        else if (quants.some(function(str){if(ent.quantifier==str) return true;
-        else return false;})){
-
-        }*/
+        console.log("about to find relations");
         var relobjs: string[] =
             findEntites(obj.location.entity, state, objects, currentState);
+            console.log("Found relations");
         if (relobjs.length < 1) {
             return ["__Error__#1"];
         }
         else if (relobjs[0].indexOf("__Error__") >= 0) {
             return relobjs;
         }
+        var result : string[] =
+          filterRelation(obj.location.relation,currobjs,relobjs,state,currentState);
+        if (ent.quantifier == "the" && currobjs.length > 1) {
+            return ["__Error__#0"]
+        }
+        return result;
+    }
 
-
+    function filterRelation(
+      filter : string,
+      currobjs : string[],
+      relobjs : string[],
+      state : WorldState,
+      currentState : collections.Dictionary<string,number[]>): string[]
+      {
         var result : string[] = [];
 
-        // Assuming that the object has a location and the list of location
-        // objects is not empty
-
         for (var i = 0; i < currobjs.length; i++) {
-          loop2:
             for (var j = 0; j < relobjs.length; j++) {
-              var cpos : number[][] = currentState.getValue(currobjs[i]);
-              var rpos : number[][] = currentState.getValue(relobjs[j]);
-                switch (obj.location.relation) {
+              var cpos : number[] = currentState.getValue(currobjs[i]);
+              var rpos : number[] = currentState.getValue(relobjs[j]);
+              if(cpos[0]<0||rpos[0]<0){
+                continue;
+              }
+                switch (filter) {
                     case "leftof":
-
-                        if(cpos[0][0]<rpos[0][0]){
+                        if(cpos[0]<rpos[0]){
                           result.push(currobjs[i]);
-                          break loop2;
                         }
+                        continue;
                     case "rightof":
-                        if(cpos[0][0]>rpos[0][0]){
+                        if(cpos[0]>rpos[0]){
                           result.push(currobjs[i]);
-                          break loop2;
                         }
+                        continue;
                     case "inside":
-                        if(cpos[0][0]==rpos[0][0] &&
-                            cpos[0][1]>rpos[0][1]){
+                        if(cpos[0]==rpos[0] &&
+                            cpos[1]-rpos[1]==1 &&
+                            state.objects[relobjs[j]].form=="box"){
                           result.push(currobjs[i]);
-                          break loop2;
                         }
+                        continue;
                     case "ontop":
+                        if(cpos[0]==rpos[0] &&
+                            cpos[1]-rpos[1]==1){
+                          result.push(currobjs[i]);
+                        }
+                        continue;
                     case "under":
+                        if(cpos[1]<rpos[1] &&
+                            cpos[0]==rpos[0]){
+                          result.push(currobjs[i]);
+                        }
+                        continue;
                     case "beside":
+                        if(cpos[0]-rpos[0]==1||
+                            cpos[0]-rpos[0]==-1){
+                          result.push(currobjs[i]);
+                        }
+                        continue;
                     case "above":
-
+                        if(cpos[1]>rpos[1]&&
+                            cpos[0]==rpos[0]){
+                          result.push(currobjs[i]);
+                        }
+                        continue;
                     default:
-
+                        return [];
                 }
             }
         }
-        return [];
-    }
+        return result;
+      }
 }
-var result: Parser.ParseResult[] = Parser.parse("put the white ball inside the table");
+var result: Parser.ParseResult[] = Parser.parse("put the large green brick on the large red box");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-//Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Parser.stringify(result[0]));
+var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+
+
+
+//console.log(Interpreter.stringify(formula[0]));
