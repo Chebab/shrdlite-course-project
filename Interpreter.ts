@@ -30,29 +30,19 @@ module Interpreter {
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
 
-<<<<<<< HEAD
-=======
-
->>>>>>> master
     /**
     Top-level function for the Interpreter. It calls `interpretCommand` for each possible parse of the command. No need to change this one.
     * @param parses List of parses produced by the Parser.
     * @param currentState The current state of the world.
     * @returns Augments ParseResult with a list of interpretations. Each interpretation is represented by a list of Literals.
     */
-<<<<<<< HEAD
     var relationStr: string[] = ["leftof", "rightof", "inside", "ontop", "under", "beside", "above"];
     var quantm: string[] = ["any", "all", "a"];
     var quants: string[] = ["the"];
     export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
         var errors: Error[] = [];
         var interpretations: InterpretationResult[] = [];
-=======
 
-    export function interpret(parses : Parser.ParseResult[], currentState : WorldState) : InterpretationResult[] {
-        var errors : Error[] = [];
-        var interpretations : InterpretationResult[] = [];
->>>>>>> master
         parses.forEach((parseresult) => {
             try {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
@@ -89,14 +79,7 @@ module Interpreter {
          * literal {polarity: false, relation: "ontop", args:
          * ["a","b"]}.
          */
-<<<<<<< HEAD
-        polarity: boolean;
-        /** The name of the relation in question. */
-        relation: string;
-        /** The arguments to the relation. Usually these will be either objects
-         * or special strings such as "floor" or "floor-N" (where N is a column) */
-        args: string[];
-=======
+
         polarity : boolean;
         /** The name of the relation in question. */
         relation : string;
@@ -104,7 +87,7 @@ module Interpreter {
          * or special strings such as "floor" or "floor-N" (where N is a column) */
 
         args : string[];
->>>>>>> master
+
     }
 
     export function stringify(result: InterpretationResult): string {
@@ -136,7 +119,7 @@ module Interpreter {
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-<<<<<<< HEAD
+
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
@@ -152,7 +135,7 @@ module Interpreter {
             }
         }
         if(state.holding != null){
-          console.log("adding holding");
+
           currentState.setValue(state.holding,[-1,-1]);
           objects.push(state.holding);
         }
@@ -161,21 +144,24 @@ module Interpreter {
 
         if(sourceobj.length<1)
         {
+          console.log("no source objects");
           return [[]];
         }
         else if(sourceobj[0].indexOf("__Error__")>=0)
         {
           var error = sourceobj[0].split("#");
           var errorCode = error[1];
+          console.log("cannot find a source object, error code:"+errorCode);
           //do something with the error code
           return [[]];
         }
 
         var targetobj : string[] = [];
-        console.log(cmd.location.relation);
+
         if(cmd.location!=null)
         {
-          findEntites(cmd.location.entity,state,objects,currentState);
+          console.log("trying to find targetobj");
+          targetobj = findEntites(cmd.location.entity,state,objects,currentState);
         }
         // Find object/objects in command that exists in the world
         // if found >=1 -> continue
@@ -184,42 +170,41 @@ module Interpreter {
         if (cmd.command == "move"){
             // Find the current value
 
-            console.log("Length of target is "+targetobj.length);
+
             if(targetobj.length<1)
             {
+              console.log("no target objects");
               return [[]];
             }
             else if(targetobj[0].indexOf("__Error__")>=0)
             {
               var error = sourceobj[0].split("#");
               var errorCode = error[1];
+              console.log("cannot find a target object, error code:"+errorCode);
               //do something with the error code
               return [[]];
             }
+            console.log("amount of sobj="+sourceobj.length+" and amount of tobj="+sourceobj.length)
             for(var i = 0;i<sourceobj.length;i++)
             {
               for(var j = 0;j<targetobj.length;j++)
               {
+
                 if(sourceobj[i]==targetobj[j]){
                   continue;
                 }
-                switch(cmd.location.relation){
-                  case "leftof":
-                  case "rightof":
-                  case "inside":
-                  case "ontop":
-                  case "under":
-                  case "beside":
-                  case "above":
-                    interpretation.push([
-                      {
-                        polarity: true,
-                        relation: cmd.location.relation,
-                        args:[sourceobj[i],targetobj[j]]
-                      }
-                    ]);
-                  default:
-                    break;
+                var sourceObject : ObjectDefinition = state.objects[sourceobj[i]];
+                var targetObject : ObjectDefinition = state.objects[targetobj[j]];
+                var cpos : number[] = currentState.getValue(sourceobj[i]);
+                var rpos : number[] = currentState.getValue(targetobj[j]);
+                if(isFeasible(sourceobj[i],targetobj[j],cmd.location.relation,sourceObject,targetObject,cpos,rpos)){
+                  interpretation.push([
+                    {
+                      polarity: true,
+                      relation: cmd.location.relation,
+                      args:[sourceobj[i],targetobj[j]]
+                    }
+                  ]);
                 }
               }
             }
@@ -227,17 +212,6 @@ module Interpreter {
         else if (cmd.command=="take"){
 
         }
-
-
-=======
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
->>>>>>> master
 
         return interpretation;
     }
@@ -276,10 +250,10 @@ module Interpreter {
             }
             return currobjs;
         }
-        console.log("about to find relations");
+
         var relobjs: string[] =
             findEntites(obj.location.entity, state, objects, currentState);
-            console.log("Found relations");
+
         if (relobjs.length < 1) {
             return ["__Error__#1"];
         }
@@ -302,65 +276,86 @@ module Interpreter {
       currentState : collections.Dictionary<string,number[]>): string[]
       {
         var result : string[] = [];
-
+        console.log("searchword is "+filter);
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
+              var sourceObject : ObjectDefinition = state.objects[currobjs[i]];
+              var targetObject : ObjectDefinition = state.objects[relobjs[j]];
               var cpos : number[] = currentState.getValue(currobjs[i]);
               var rpos : number[] = currentState.getValue(relobjs[j]);
               if(cpos[0]<0||rpos[0]<0){
                 continue;
               }
-                switch (filter) {
-                    case "leftof":
-                        if(cpos[0]<rpos[0]){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "rightof":
-                        if(cpos[0]>rpos[0]){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "inside":
-                        if(cpos[0]==rpos[0] &&
-                            cpos[1]-rpos[1]==1 &&
-                            state.objects[relobjs[j]].form=="box"){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "ontop":
-                        if(cpos[0]==rpos[0] &&
-                            cpos[1]-rpos[1]==1){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "under":
-                        if(cpos[1]<rpos[1] &&
-                            cpos[0]==rpos[0]){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "beside":
-                        if(cpos[0]-rpos[0]==1||
-                            cpos[0]-rpos[0]==-1){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    case "above":
-                        if(cpos[1]>rpos[1]&&
-                            cpos[0]==rpos[0]){
-                          result.push(currobjs[i]);
-                        }
-                        continue;
-                    default:
-                        return [];
-                }
+              if(isFeasible(currobjs[i],relobjs[j],filter,sourceObject,targetObject,cpos,rpos)){
+                result.push(currobjs[i]);
+                continue;
+              }
             }
         }
         return result;
       }
+
+      function isFeasible(
+        sourceId : string,
+        targetId : string,
+        relation : string,
+        sourceObj : ObjectDefinition,
+        targetObj : ObjectDefinition,
+        spos : number[],
+        tpos : number[]) : boolean
+        {
+          switch (relation) {
+              case "leftof":
+                  if(spos[0]<tpos[0]){
+                    return true;
+                  }
+                  return false;
+              case "rightof":
+                  if(spos[0]>tpos[0]){
+                    return true;
+                  }
+                  return false;
+              case "inside":
+                  if(spos[0]==tpos[0] &&
+                      spos[1]-tpos[1]==1 &&
+                      targetObj.form=="box"&&
+                      !(sourceObj.size=="large" &&
+                      targetObj.size=="small")){
+                    console.log(sourceObj.size + " " + sourceObj.form);
+                    console.log(targetObj.size + " " + targetObj.form);
+                    return true;
+                  }
+                  return false;
+              case "ontop":
+                  if(spos[0]==tpos[0] &&
+                      spos[1]-tpos[1]==1){
+                    return true;
+                  }
+                  return false;
+              case "under":
+                  if(spos[1]<tpos[1] &&
+                      spos[0]==tpos[0]){
+                    return true;
+                  }
+                  return false;
+              case "beside":
+                  if(spos[0]-tpos[0]==1||
+                      spos[0]-tpos[0]==-1){
+                    return true;
+                  }
+                  return false;
+              case "above":
+                  if(spos[1]>tpos[1]&&
+                      spos[0]==tpos[0]){
+                    return true;
+                  }
+                  return false;
+              default:
+                  return false;
+          }
+        }
 }
-var result: Parser.ParseResult[] = Parser.parse("put the large green brick on the large red box");
+var result: Parser.ParseResult[] = Parser.parse("put a ball in a box");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 console.log(Parser.stringify(result[0]));
 var formula : Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
