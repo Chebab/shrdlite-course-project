@@ -123,7 +123,7 @@ module Interpreter {
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula =[[]]/* [[
+        var interpretation: DNFFormula =[];/* [[
             { polarity: true, relation: "ontop", args: [a, "floor"] },
             { polarity: true, relation: "holding", args: [b] }
         ]];*/
@@ -160,7 +160,7 @@ module Interpreter {
 
         if(cmd.location!=null)
         {
-          console.log("trying to find targetobj");
+
           targetobj = findEntites(cmd.location.entity,state,objects,currentState);
 		  console.log("TARGET OBJECTS: " + targetobj);
         }
@@ -196,16 +196,15 @@ module Interpreter {
                 }
                 var sourceObject : ObjectDefinition = state.objects[sourceobj[i]];
                 var targetObject : ObjectDefinition = state.objects[targetobj[j]];
-                var cpos : number[] = currentState.getValue(sourceobj[i]);
-                var rpos : number[] = currentState.getValue(targetobj[j]);
-                if(isPhysical(sourceObject,targetObject,cmd.location.relation)){
-                  interpretation.push([
+                if(isPhysical(cmd.location.relation,sourceObject,targetObject)){
+                  var pushed : Literal[] = [
                     {
                       polarity: true,
                       relation: cmd.location.relation,
                       args:[sourceobj[i],targetobj[j]]
                     }
-                  ]);
+                  ];
+                  interpretation.push(pushed);
                 }
               }
             }
@@ -267,7 +266,7 @@ module Interpreter {
         if (ent.quantifier == "the" && currobjs.length > 1) {
             return ["__Error__#0"]
         }
-		
+
         return result;
     }
 
@@ -289,7 +288,10 @@ module Interpreter {
               if(cpos[0]<0||rpos[0]<0){
                 continue;
               }
-              if(isFeasible(currobjs[i],relobjs[j],filter,sourceObject,targetObject,cpos,rpos)){
+              if(!isPhysical(filter,sourceObject,targetObject)){
+                continue;
+              }
+              else if(isFeasible(filter,cpos,rpos)){
                 result.push(currobjs[i]);
                 continue;
               }
@@ -299,11 +301,7 @@ module Interpreter {
       }
 
       function isFeasible(
-        sourceId : string,
-        targetId : string,
         relation : string,
-        sourceObj : ObjectDefinition,
-        targetObj : ObjectDefinition,
         spos : number[],
         tpos : number[]) : boolean
         {
@@ -320,12 +318,7 @@ module Interpreter {
                   return false;
               case "inside":
                   if(spos[0]==tpos[0] &&
-                      spos[1]-tpos[1]==1 &&
-                      targetObj.form=="box"&&
-                      !(sourceObj.size=="large" &&
-                      targetObj.size=="small")){
-                    console.log(sourceObj.size + " " + sourceObj.form);
-                    console.log(targetObj.size + " " + targetObj.form);
+                      spos[1]-tpos[1]==1){
                     return true;
                   }
                   return false;
@@ -357,30 +350,40 @@ module Interpreter {
                   return false;
           }
         }
-		
-	function isPhysical(sourceObj : ObjectDefinition, targetObj : ObjectDefinition, relation : string) : boolean {
+
+	function isPhysical(relation : string, sourceObj : ObjectDefinition, targetObj : ObjectDefinition) : boolean {
 		switch(relation){
 			case "rightof", "leftof", "beside":
 				// Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
 				return true;
 			case "inside":
-				if(targetObj.form=="box" && !(sourceObj.size=="large" && targetObj.size=="small")){
-					return true;
-				} else {
+				if(targetObj.form=="box" && targetObj.size=="small" && sourceObj.size=="large"||
+          targetObj.form=="box" && (sourceObj.form=="pyramid"||sourceObj.form=="plank"||sourceObj.form=="box") &&
+          targetObj.size==sourceObj.size){
 					return false;
 				}
+				return true;
+
 			case "ontop":
 				// Maybe add ball ontop of table and brick?
-				if(targetObj.form == "pyramid" || 
-				  (sourceObj.form == "ball" && (targetObj.form == "table" || targetObj.form == "brick"))){
+				if(targetObj.form == "pyramid" ||
+          (sourceObj.form == "ball" && (targetObj.form == "table" ||
+          targetObj.form == "brick"||targetObj.form == "plank"))){
 					return false;
 				} else {
 					return true;
 				}
 			case "above":
+        if(sourceObj.size=="large" && targetObj.size=="small"){
+          return false;
+        }
 				// How handle above?
 				return true;
 			case "below":
+        if(sourceObj.form=="ball" || sourceObj.form=="pyramid" ||
+          (sourceObj.size=="small" && targetObj.size=="large")){
+            return false;
+        }
 				// How handle below?
 				return true;
 			default:
