@@ -123,7 +123,7 @@ module Interpreter {
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula =[[]]/* [[
+        var interpretation: DNFFormula = []/* [[
             { polarity: true, relation: "ontop", args: [a, "floor"] },
             { polarity: true, relation: "holding", args: [b] }
         ]];*/
