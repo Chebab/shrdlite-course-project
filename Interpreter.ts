@@ -42,13 +42,13 @@ module Interpreter {
     export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
         var errors: Error[] = [];
         var interpretations: InterpretationResult[] = [];
-
         parses.forEach((parseresult) => {
             try {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
+                ////console.log(Parser.stringify(parseresult));
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
-                //console.log(Interpreter.stringify(result));
+                ////console.log(Interpreter.stringify(result));
             } catch (err) {
                 errors.push(err);
             }
@@ -123,10 +123,7 @@ module Interpreter {
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         var a: string = objects[Math.floor(Math.random() * objects.length)];
         var b: string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation: DNFFormula = [];/* [[
-            { polarity: true, relation: "ontop", args: [a, "floor"] },
-            { polarity: true, relation: "holding", args: [b] }
-        ]];*/
+        var interpretation: DNFFormula = [];
         var currentState: collections.Dictionary<string, number[]>
             = new collections.Dictionary<string, number[]>();
         for (var i = 0; i < state.stacks.length; i++) {
@@ -140,24 +137,19 @@ module Interpreter {
             objects.push(state.holding);
         }
         // Add the floor
-        //currentState.setValue("floor",[-1,-1]);
-        //objects.push("floor");
+        currentState.setValue("floor", [-1, -1]);
+        objects.push("floor");
+
 
         var sourceobj: string[] =
             findEntites(cmd.entity, state, objects, currentState);
 
         if (sourceobj.length < 1) {
-            //console.log("no source objects");
-            return [];
+            ////console.log("no source objects");
+            //console.log("ERROR line 153")
+            throw new Error("No source objects found");
         }
-        else if (sourceobj[0].indexOf("__Error__") >= 0) {
-            var error = sourceobj[0].split("#");
-            var errorCode = error[1];
-            //console.log("cannot find a source object, error code:" + errorCode);
-            //do something with the error code
-            return [];
-        }
-
+        //console.log("SRC_OBJs:"+sourceobj.length);
         var targetobj: string[] = [];
 
         if (cmd.location != null) {
@@ -174,25 +166,32 @@ module Interpreter {
 
 
             if (targetobj.length < 1) {
-                //console.log("no target objects");
-                return [[]];
+                ////console.log("no target objects");
+                //console.log("ERROR line 174")
+                throw new Error("No target objects")
+
             }
-            else if (targetobj[0].indexOf("__Error__") >= 0) {
-                var error = sourceobj[0].split("#");
-                var errorCode = error[1];
-                //console.log("cannot find a target object, error code:" + errorCode);
-                //do something with the error code
-                return [[]];
-            }
-            //console.log("amount of sobj=" + sourceobj.length + " and amount of tobj=" + sourceobj.length)
+            ////console.log("amount of sobj=" + sourceobj.length + " and amount of tobj=" + sourceobj.length)
             for (var i = 0; i < sourceobj.length; i++) {
                 for (var j = 0; j < targetobj.length; j++) {
 
                     if (sourceobj[i] == targetobj[j]) {
                         continue;
                     }
-                    var sourceObject: ObjectDefinition = state.objects[sourceobj[i]];
-                    var targetObject: ObjectDefinition = state.objects[targetobj[j]];
+                    var sourceObject: ObjectDefinition;
+                    var targetObject: ObjectDefinition;
+                    if (sourceobj[i] == "floor") {
+                        sourceObject = { form: "floor", size: null, color: null };
+                        targetObject = state.objects[targetobj[j]];
+                    }
+                    else if (targetobj[j] == "floor") {
+                        sourceObject = state.objects[sourceobj[i]];
+                        targetObject = { form: "floor", size: null, color: null };
+                    }
+                    else {
+                        sourceObject = state.objects[sourceobj[i]];
+                        targetObject = state.objects[targetobj[j]];
+                    }
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         var pushed: Literal[] = [
                             {
@@ -208,19 +207,22 @@ module Interpreter {
         }
         else if (cmd.command == "take") {
             for (var i = 0; i < sourceobj.length; i++) {
-                interpretation.push([
-                    {
-                        polarity: true,
-                        relation: "holding",
-                        args: [sourceobj[i]]
-                    }
-                ]);
+                if (!(sourceobj[i] == "floor")) {
+                    interpretation.push([
+                        {
+                            polarity: true,
+                            relation: "holding",
+                            args: [sourceobj[i]]
+                        }
+                    ]);
+                }
             }
         }
-        ////console.log("the result is:" + interpretation + " the amount of results is " + interpretation.length);
+        //////console.log("the result is:" + interpretation + " the amount of results is " + interpretation.length);
         if (interpretation.length < 1) {
             interpretation.push(null);
         }
+        //console.log("FINISHED  SRC_OBJs:"+sourceobj.length+" TAR_OBJs:"+targetobj.length);
         return interpretation;
     }
     function findEntites(
@@ -229,82 +231,91 @@ module Interpreter {
         objects: string[],
         currentState: collections.Dictionary<string, number[]>)
         : string[] {
-        var obj : Parser.Object = ent.object;
-        var currobjs : string[] = findObjects(obj,state,objects,currentState);
-
+        //console.log("findEntites() started");
+        var obj: Parser.Object = ent.object;
+        var currobjs: string[] = findObjects(obj, state, objects, currentState);
+        //console.log("Found SRCOBJs:"+currobjs);
         if (ent.quantifier == "the" && currobjs.length > 1) {
-          //console.log("ERROR")
-            return ["__Error__#0"]
+            //console.log("ERROR line 247")
+            throw new Error("Too many indentifications of type THE");
         }
-        ////console.log("RESULT_Source: " + currobjs);
+        //////console.log("RESULT_Source: " + currobjs);
 
-        if(obj.location==null)
-        {
-          return currobjs;
+        if (obj.location == null) {
+            return currobjs;
         }
+        //console.log("Finding target objects")
         var relobjs: string[] =
             findEntites(obj.location.entity, state, objects, currentState);
-
+        //console.log("found target OBJs:"+relobjs)
         var result: string[] =
             filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
         if (ent.quantifier == "the" && currobjs.length > 1) {
-            return ["__Error__#0"]
+            //console.log("ERROR line 262")
+            throw new Error("Too many indentifications of type THE");
         }
 
         return result;
     }
     function findObjects(
-            obj : Parser.Object,
-            state: WorldState,
-            objects: string[],
-            currentState: collections.Dictionary<string, number[]>
-          ) : string[]
-          {
+        obj: Parser.Object,
+        state: WorldState,
+        objects: string[],
+        currentState: collections.Dictionary<string, number[]>
+    ): string[] {
 
-            var sourceobjs: string[] = [];
-            if(obj==null)
-            {
-              return [];
-            }
-            // find all of the current object
-            else if (obj.object == null && obj.location == null) {
-              ////console.log("OBJ: " + obj.form + " " + obj.color);
-                for (var i = 0; i < objects.length; i++) {
-                    var temp: ObjectDefinition = state.objects[objects[i]];
-                    ////console.log("TEMP: " + temp.form + " " + temp.color);
-                    var isSame: boolean = true;
-                    if (obj.size != null) {
-                        isSame = isSame && obj.size == temp.size;
-                    }
-                    if (obj.color != null) {
-                        isSame = isSame && obj.color == temp.color;
-                    }
-                    if (obj.form == "anyform") {
-                        ////console.log("ANYFORM COLOR: " + temp.color);
-                        isSame = isSame && true;
-                        ////console.log(isSame);
-                    }
-                    else {
-                        isSame = isSame && obj.form == temp.form;
-                    }
-                    if (isSame) {
-                        sourceobjs.push(objects[i]);
-                    }
+        var sourceobjs: string[] = [];
+        if (obj == null) {
+            return [];
+        }
+        // find all of the current object
+        else if (obj.object == null && obj.location == null) {
+            //////console.log("OBJ: " + obj.form + " " + obj.color);
+            for (var i = 0; i < objects.length; i++) {
+
+                var temp: ObjectDefinition;
+
+                if (objects[i] == "floor") {
+
+                    temp = { form: "floor", size: null, color: null };
+                }
+                else {
+                    temp = state.objects[objects[i]];
+                }
+                //////console.log("TEMP: " + temp.form + " " + temp.color);
+
+                var isSame: boolean = true;
+                if (obj.size != null) {
+                    isSame = isSame && obj.size == temp.size;
+                }
+                if (obj.color != null) {
+                    isSame = isSame && obj.color == temp.color;
+                }
+                if (obj.form == "anyform") {
+                    //////console.log("ANYFORM COLOR: " + temp.color);
+                    isSame = isSame && true;
+                    //////console.log(isSame);
+                }
+                else {
+                    isSame = isSame && obj.form == temp.form;
+                }
+                if (isSame) {
+                    sourceobjs.push(objects[i]);
                 }
             }
-            else
-            {
-              var tempsourceobjs : string[] =
-                  findObjects(obj.object,state,objects,currentState);
-                  ////console.log("tempsourceobjs:"+tempsourceobjs.length)
-              var temptargetobjs : string[] =
-                  findEntites(obj.location.entity,state,objects,currentState);
-                  ////console.log("temptargetobjs:"+temptargetobjs.length)
-              sourceobjs = filterRelation(obj.location.relation,tempsourceobjs,
-                            temptargetobjs,state,currentState);
-            }
-            return sourceobjs;
-          }
+        }
+        else {
+            var tempsourceobjs: string[] =
+                findObjects(obj.object, state, objects, currentState);
+            //console.log("tempsourceobjs:"+tempsourceobjs)
+            var temptargetobjs: string[] =
+                findEntites(obj.location.entity, state, objects, currentState);
+            //console.log("temptargetobjs:"+temptargetobjs)
+            sourceobjs = filterRelation(obj.location.relation, tempsourceobjs,
+                temptargetobjs, state, currentState);
+        }
+        return sourceobjs;
+    }
 
     function filterRelation(
         filter: string,
@@ -313,21 +324,35 @@ module Interpreter {
         state: WorldState,
         currentState: collections.Dictionary<string, number[]>): string[] {
         var result: string[] = [];
-        ////console.log("searchword is " + filter + " and nrcur=" + currobjs.length + ",nrrel=" + relobjs.length);
+        //////console.log("searchword is " + filter + " and nrcur=" + currobjs.length + ",nrrel=" + relobjs.length);
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
-                var sourceObject: ObjectDefinition = state.objects[currobjs[i]];
-                var targetObject: ObjectDefinition = state.objects[relobjs[j]];
+                var sourceObject: ObjectDefinition;
+                var targetObject: ObjectDefinition;
+                if (currobjs[i] == "floor") {
+                    sourceObject = { form: "floor", size: null, color: null };
+                    targetObject = state.objects[relobjs[j]];
+                }
+                else if (relobjs[j] == "floor") {
+                    sourceObject = state.objects[currobjs[i]];
+                    targetObject = { form: "floor", size: null, color: null };
+                }
+                else {
+                    sourceObject = state.objects[currobjs[i]];
+                    targetObject = state.objects[relobjs[j]];
+                }
                 var cpos: number[] = currentState.getValue(currobjs[i]);
                 var rpos: number[] = currentState.getValue(relobjs[j]);
-                if (cpos[0] < 0 || rpos[0] < 0) {
+                if (cpos[0] == -2) {
+                    //console.log("continue")
                     continue;
                 }
                 if (!isPhysical(filter, sourceObject, targetObject)) {
 
                     continue;
                 }
-                else if (isFeasible(filter, cpos, rpos,state.stacks.length)) {
+                else if (isFeasible(filter, cpos, rpos, state.stacks.length)) {
+                    //console.log("isFeasible with currobj:"+currobjs[i]);
                     result.push(currobjs[i]);
                     continue;
                 }
@@ -339,48 +364,63 @@ module Interpreter {
 
     function isFeasible(
         relation: string,
-        spos: number[],
-        tpos: number[],
-        worldSize : number): boolean {
+        cpos: number[],
+        rpos: number[],
+        worldSize: number): boolean {
+
+        var xs: number = cpos[0];
+        var ys: number = cpos[1];
+        var xt: number = rpos[0];
+        var yt: number = rpos[1];
+
+        //console.log("Entered isFeasible with spos:"+[xs,ys]+" and tpos:"+[xt,yt]);
+        if (xs == -1) {
+            xs = xt;
+        }
+        else if (xt == -1) {
+            xt = xs;
+        }
+        //console.log("Changed pos: spos:"+[xs,ys]+" and tpos:"+[xt,yt]);
         switch (relation) {
             case "leftof":
-                if (spos[0] < tpos[0]) {
+                if (xs < xt) {
                     return true;
                 }
                 return false;
             case "rightof":
-                if (spos[0] > tpos[0]) {
+                if (xs > xt) {
                     return true;
                 }
                 return false;
             case "inside":
-                if (spos[0] == tpos[0] &&
-                    spos[1] - tpos[1] == 1) {
+                if (xs == xt &&
+                    (ys - yt) == 1) {
                     return true;
                 }
                 return false;
             case "ontop":
-                if (spos[0] == tpos[0] &&
-                    spos[1] - tpos[1] == 1) {
+
+                if (xs == xt &&
+                    (ys - yt) == 1) {
                     return true;
                 }
                 return false;
             case "under":
-                if (spos[1] < tpos[1] &&
-                    spos[0] == tpos[0]) {
+                if (ys < yt &&
+                    xs == xt) {
                     return true;
                 }
                 return false;
             case "beside":
-                if (spos[0] - tpos[0] == 1 ||
-                    spos[0] - tpos[0] == -1) {
-                    //console.log("object is beside");
+                if ((xs - xt) == 1 ||
+                    (xs - xt) == -1) {
+                    ////console.log("object is beside");
                     return true;
                 }
                 return false;
             case "above":
-                if (spos[1] > tpos[1] &&
-                    spos[0] == tpos[0]) {
+                if (ys > yt &&
+                    xs == xt) {
                     return true;
                 }
                 return false;
@@ -390,20 +430,21 @@ module Interpreter {
     }
 
     function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
+        //console.log("Entered isPhysical with relation "+relation +" Source is "+sourceObj.form +", Target is "+targetObj.form);
+        ////console.log("Source is "+sourceObj.form +", Target is "+targetObj.form);
         switch (relation) {
             case "rightof": case "leftof": case "beside":
-                if(sourceObj.form=="floor" || targetObj.form=="floor")
-                {
-                  return false;
+                if (sourceObj.form == "floor" || targetObj.form == "floor") {
+                    return false;
                 }
                 // Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
-                ////console.log("checking beside constraints")
+                //////console.log("checking beside constraints")
                 return true;
             case "inside":
-                if (sourceObj.form=="floor" || targetObj.form=="floor" ||
+                if (sourceObj.form == "floor" || targetObj.form == "floor" ||
                     targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
-                    ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
-                        targetObj.size == sourceObj.size))) {
+                        ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
+                            targetObj.size == sourceObj.size))) {
                     return false;
                 }
                 return true;
@@ -416,19 +457,21 @@ module Interpreter {
                     targetObj.form == "ball" ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
-                        targetObj.form == "brick" && targetObj.size == "small")) {
+                        targetObj.form == "brick" && targetObj.size == "small") ||
+                    sourceObj.form == "floor") {
                     return false;
                 } else {
                     return true;
                 }
             case "above":
-                if (sourceObj.size == "large" && targetObj.size == "small") {
+                if (sourceObj.size == "large" && targetObj.size == "small" ||
+                    sourceObj.form == "floor") {
                     return false;
                 }
                 // How handle above?
                 return true;
             case "below":
-                if (sourceObj.form=="floor" || targetObj.form=="floor" ||
+                if (targetObj.form == "floor" ||
                     sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
@@ -442,11 +485,18 @@ module Interpreter {
 
 
 }
-var result: Parser.ParseResult[] = Parser.parse("take a white object beside a blue object");
+
+var result: Parser.ParseResult[] = Parser.parse("put the large green brick on a table");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-//console.log(Parser.stringify(result[0]));
 var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
-
-
-
-////console.log(Interpreter.stringify(formula[0]));
+console.log("First parse");
+console.log(Parser.stringify(result[0]));
+console.log(Interpreter.stringify(formula[0]));
+/*
+//console.log("First parse");
+//console.log(Parser.stringify(result[0]));
+//console.log(Interpreter.stringify(formula[0]));
+//console.log("Second parse:")
+//console.log(Parser.stringify(result[1]));
+//console.log(Interpreter.stringify(formula[1]));
+*/
