@@ -45,10 +45,8 @@ module Interpreter {
         parses.forEach((parseresult) => {
             try {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
-                ////console.log(Parser.stringify(parseresult));
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
-                ////console.log(Interpreter.stringify(result));
             } catch (err) {
                 errors.push(err);
             }
@@ -118,68 +116,76 @@ module Interpreter {
      * returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
-        // This returns a dummy interpretation involving two random objects in the world
 
+        // IDks of all objects placed in the world
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
-        var a: string = objects[Math.floor(Math.random() * objects.length)];
-        var b: string = objects[Math.floor(Math.random() * objects.length)];
+        // Return value
         var interpretation: DNFFormula = [];
+        // Mapping the position of all of the states in the world.
         var currentState: collections.Dictionary<string, number[]>
             = new collections.Dictionary<string, number[]>();
+
+        // Add all of the states and their position to the Map
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
                 currentState.setValue(state.stacks[i][j], [i, j]);
             }
         }
-        if (state.holding != null) {
 
-            currentState.setValue(state.holding, [-2, -2]);
+        if (state.holding != null) {
+          // If the arm is holding an object, add that object to the state
             objects.push(state.holding);
+
+            // The position [-2,-2] is used for finding the held object
+            currentState.setValue(state.holding, [-2, -2]);
+
         }
-        // Add the floor
-        currentState.setValue("floor", [-1, -1]);
+
+        // Add the floor.
         objects.push("floor");
 
+        //The first element in the position is used to indentify
+        // the floor. The second element is the actual position of the floor§
+        currentState.setValue("floor", [-1, -1]);
 
+        // Find all of the objects given in the first entity
         var sourceobj: string[] =
             findEntites(cmd.entity, state, objects, currentState);
 
         if (sourceobj.length < 1) {
-            ////console.log("no source objects");
-            //console.log("ERROR line 153")
+          // If there are no objects found, throw error.
             throw new Error("No source objects found");
         }
-        //console.log("SRC_OBJs:"+sourceobj.length);
+        // All of the objects at the location entity
         var targetobj: string[] = [];
 
         if (cmd.location != null) {
-
+          // If a location is specified then find the entities at that location
             targetobj = findEntites(cmd.location.entity, state, objects, currentState);
-            //console.log("TARGET OBJECTS: " + targetobj);
         }
-        // Find object/objects in command that exists in the world
-        // if found >=1 -> continue
-        // if found 0 -> stop
 
+        // Start creating the goals
         if (cmd.command == "move") {
-            // Find the current value
-
-
             if (targetobj.length < 1) {
-                ////console.log("no target objects");
-                //console.log("ERROR line 174")
+              // If no target object is found, we cannot continue the move,
+              // throw error.
                 throw new Error("No target objects")
-
             }
-            ////console.log("amount of sobj=" + sourceobj.length + " and amount of tobj=" + sourceobj.length)
+
+            // Find all of the combinations of goals
             for (var i = 0; i < sourceobj.length; i++) {
                 for (var j = 0; j < targetobj.length; j++) {
 
                     if (sourceobj[i] == targetobj[j]) {
+                      // if the objects are the same, nothing can be done
                         continue;
                     }
+
+                    // Actual objects of the current source and target object
                     var sourceObject: ObjectDefinition;
                     var targetObject: ObjectDefinition;
+
+                    // Handle if any of the current objects is the floor
                     if (sourceobj[i] == "floor") {
                         sourceObject = { form: "floor", size: null, color: null };
                         targetObject = state.objects[targetobj[j]];
@@ -192,6 +198,8 @@ module Interpreter {
                         sourceObject = state.objects[sourceobj[i]];
                         targetObject = state.objects[targetobj[j]];
                     }
+
+                    // Check if the the goal is physically possible
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         var pushed: Literal[] = [
                             {
@@ -200,13 +208,17 @@ module Interpreter {
                                 args: [sourceobj[i], targetobj[j]]
                             }
                         ];
+                        // add the goal to the result
                         interpretation.push(pushed);
                     }
                 }
             }
         }
         else if (cmd.command == "take") {
+          // Since the command is take, there is no need for checking the target
+          // object
             for (var i = 0; i < sourceobj.length; i++) {
+              // Handle is the object is the floor
                 if (!(sourceobj[i] == "floor")) {
                     interpretation.push([
                         {
@@ -218,45 +230,68 @@ module Interpreter {
                 }
             }
         }
-        //////console.log("the result is:" + interpretation + " the amount of results is " + interpretation.length);
+        // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
             interpretation.push(null);
         }
-        //console.log("FINISHED  SRC_OBJs:"+sourceobj.length+" TAR_OBJs:"+targetobj.length);
         return interpretation;
     }
+
+    /**
+     * findEntities() recursively finds all of the objects within a given entity.
+     * The indentifiers of the objects are returned in a string[].
+     *
+     * @param ent - The entity which is to be explored
+     * @param state - The WorldState in which we currently are
+     * @param objects - Indentifiers of all the objects currently placed in the
+     * world
+     * @param currentState - The Map of objects to its position
+     */
     function findEntites(
         ent: Parser.Entity,
         state: WorldState,
         objects: string[],
         currentState: collections.Dictionary<string, number[]>)
         : string[] {
-        //console.log("findEntites() started");
-        var obj: Parser.Object = ent.object;
+
+        var obj: Parser.Object = ent.object; // The object in the entity
+
+        // Find all of the objects inside of the Entity
         var currobjs: string[] = findObjects(obj, state, objects, currentState);
-        //console.log("Found SRCOBJs:"+currobjs);
+
+
         if (ent.quantifier == "the" && currobjs.length > 1) {
-            //console.log("ERROR line 247")
+          // In case there are several ofjects when the entity specifies
+          // one specific, throw error
             throw new Error("Too many indentifications of type THE");
         }
-        //////console.log("RESULT_Source: " + currobjs);
 
         if (obj.location == null) {
+          // In the case of no location, return the found objects
             return currobjs;
         }
-        //console.log("Finding target objects")
+
+        // If there is a location, find all of the objects inside of the location
+        // entity
         var relobjs: string[] =
             findEntites(obj.location.entity, state, objects, currentState);
-        //console.log("found target OBJs:"+relobjs)
+
+        // Filter between the objects within the entity and at the location
+        // based on the relation between
         var result: string[] =
             filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
-        if (ent.quantifier == "the" && currobjs.length > 1) {
-            //console.log("ERROR line 262")
-            throw new Error("Too many indentifications of type THE");
-        }
-
         return result;
     }
+    /**
+     * findObjects() recursively finds all of the objects within a given object.
+     * The indentifiers of the objects are returned in a string[].
+     *
+     * @param obj - The object which is to be explored
+     * @param state - The WorldState in which we currently are
+     * @param objects - Indentifiers of all the objects currently placed in the
+     * world
+     * @param currentState - The Map of objects to its position
+     */
     function findObjects(
         obj: Parser.Object,
         state: WorldState,
@@ -264,26 +299,30 @@ module Interpreter {
         currentState: collections.Dictionary<string, number[]>
     ): string[] {
 
-        var sourceobjs: string[] = [];
         if (obj == null) {
+          // Base case for finding the object
             return [];
         }
-        // find all of the current object
-        else if (obj.object == null && obj.location == null) {
-            //////console.log("OBJ: " + obj.form + " " + obj.color);
+        var sourceobjs: string[] = [];
+
+        // Handle if the object has properties or is linking to another object
+        // with a relation
+        if (obj.object == null && obj.location == null) {
+          // If the object has properties
+            // Loop through all objects in the world to find one matching the
+            // object obj
             for (var i = 0; i < objects.length; i++) {
-
                 var temp: ObjectDefinition;
-
                 if (objects[i] == "floor") {
-
+                  // Handle if an object is the world is the floor
+                    // Create a "floor" object
                     temp = { form: "floor", size: null, color: null };
                 }
                 else {
                     temp = state.objects[objects[i]];
                 }
-                //////console.log("TEMP: " + temp.form + " " + temp.color);
 
+                // keeping track of the objects being the same
                 var isSame: boolean = true;
                 if (obj.size != null) {
                     isSame = isSame && obj.size == temp.size;
@@ -292,9 +331,7 @@ module Interpreter {
                     isSame = isSame && obj.color == temp.color;
                 }
                 if (obj.form == "anyform") {
-                    //////console.log("ANYFORM COLOR: " + temp.color);
                     isSame = isSame && true;
-                    //////console.log(isSame);
                 }
                 else {
                     isSame = isSame && obj.form == temp.form;
@@ -305,30 +342,51 @@ module Interpreter {
             }
         }
         else {
+          // In case the object is linking to another another object
+
+            // find the objects in obj.object
             var tempsourceobjs: string[] =
                 findObjects(obj.object, state, objects, currentState);
-            //console.log("tempsourceobjs:"+tempsourceobjs)
+
+            // find the objects in the location entity
             var temptargetobjs: string[] =
                 findEntites(obj.location.entity, state, objects, currentState);
-            //console.log("temptargetobjs:"+temptargetobjs)
+
+            // Filter objects in obj.objects on the relation to the objects in
+            // the location entity
             sourceobjs = filterRelation(obj.location.relation, tempsourceobjs,
                 temptargetobjs, state, currentState);
         }
         return sourceobjs;
     }
 
+    /**
+     * filterRelation() compares a list of source objects to another list of objects
+     * based on a relation between them. It does filtering on source objects
+     * based on physical laws and positioning. The objects which passes are
+     * returned as a list of indentifiers in the format of string[].
+     *
+     * @param filter - the relation which is applied in the filtering
+     * @param currobjs - list of intentifiers of the source objects
+     * @param relobjs - the list of objects which source is compared against
+     * @param state - The WorldState in which we currently are
+     * @param currentState - The Map of objects to its position
+     */
     function filterRelation(
         filter: string,
         currobjs: string[],
         relobjs: string[],
         state: WorldState,
         currentState: collections.Dictionary<string, number[]>): string[] {
+        // The result
         var result: string[] = [];
-        //////console.log("searchword is " + filter + " and nrcur=" + currobjs.length + ",nrrel=" + relobjs.length);
+
+        // Do filtering of all possible combinations of objects between the lists
         for (var i = 0; i < currobjs.length; i++) {
             for (var j = 0; j < relobjs.length; j++) {
                 var sourceObject: ObjectDefinition;
                 var targetObject: ObjectDefinition;
+                // Handle if any of the objects is the floor
                 if (currobjs[i] == "floor") {
                     sourceObject = { form: "floor", size: null, color: null };
                     targetObject = state.objects[relobjs[j]];
@@ -341,18 +399,23 @@ module Interpreter {
                     sourceObject = state.objects[currobjs[i]];
                     targetObject = state.objects[relobjs[j]];
                 }
+                // Get the positions of the objects
                 var cpos: number[] = currentState.getValue(currobjs[i]);
                 var rpos: number[] = currentState.getValue(relobjs[j]);
+
                 if (cpos[0] == -2) {
-                    //console.log("continue")
+                  // If the source object is being held, it has no relation
+                  // to any other object, so skip the check
                     continue;
                 }
                 if (!isPhysical(filter, sourceObject, targetObject)) {
-
+                  // If the objects do not pass the physical laws, skip.
                     continue;
                 }
-                else if (isFeasible(filter, cpos, rpos, state.stacks.length)) {
-                    //console.log("isFeasible with currobj:"+currobjs[i]);
+                // Objects passed the physical laws, check if they are in a
+                // feasible position
+                else if (isFeasible(filter, cpos, rpos)) {
+                  // Once found add the source object to the result list.
                     result.push(currobjs[i]);
                     continue;
                 }
@@ -361,26 +424,36 @@ module Interpreter {
 
         return result;
     }
-
+    /**
+     * isFeasible() checks the feasiblity of the position of two objects
+     * based on the relation between them.
+     *
+     * @param relation - The relation between the two objects
+     * @param spos - position of the first object.
+     * @param tpos - position of the second object.
+     */
     function isFeasible(
         relation: string,
-        cpos: number[],
-        rpos: number[],
-        worldSize: number): boolean {
+        spos: number[],
+        tpos: number[]): boolean {
 
-        var xs: number = cpos[0];
-        var ys: number = cpos[1];
-        var xt: number = rpos[0];
-        var yt: number = rpos[1];
+        // Extract the x and y coordinates of the two objects.
+        var xs: number = spos[0];
+        var ys: number = spos[1];
+        var xt: number = tpos[0];
+        var yt: number = tpos[1];
 
-        //console.log("Entered isFeasible with spos:"+[xs,ys]+" and tpos:"+[xt,yt]);
+        // Handle if any of the objects are the floor. If anyone is, set
+        // the x position of the floor to be equal to the x value of the
+        // other object
         if (xs == -1) {
             xs = xt;
         }
         else if (xt == -1) {
             xt = xs;
         }
-        //console.log("Changed pos: spos:"+[xs,ys]+" and tpos:"+[xt,yt]);
+
+        // Handle different relations
         switch (relation) {
             case "leftof":
                 if (xs < xt) {
@@ -414,7 +487,6 @@ module Interpreter {
             case "beside":
                 if ((xs - xt) == 1 ||
                     (xs - xt) == -1) {
-                    ////console.log("object is beside");
                     return true;
                 }
                 return false;
@@ -492,11 +564,3 @@ var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, 
 console.log("First parse");
 console.log(Parser.stringify(result[0]));
 console.log(Interpreter.stringify(formula[0]));
-/*
-//console.log("First parse");
-//console.log(Parser.stringify(result[0]));
-//console.log(Interpreter.stringify(formula[0]));
-//console.log("Second parse:")
-//console.log(Parser.stringify(result[1]));
-//console.log(Interpreter.stringify(formula[1]));
-*/
