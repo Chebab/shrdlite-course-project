@@ -133,7 +133,7 @@ module Interpreter {
         }
 
         if (state.holding != null) {
-          // If the arm is holding an object, add that object to the state
+            // If the arm is holding an object, add that object to the state
             objects.push(state.holding);
 
             // The position [-2,-2] is used for finding the held object
@@ -153,22 +153,22 @@ module Interpreter {
             findEntites(cmd.entity, state, objects, currentState);
 
         if (sourceobj.length < 1) {
-          // If there are no objects found, throw error.
+            // If there are no objects found, throw error.
             throw new Error("No source objects found");
         }
         // All of the objects at the location entity
         var targetobj: string[] = [];
 
         if (cmd.location != null) {
-          // If a location is specified then find the entities at that location
+            // If a location is specified then find the entities at that location
             targetobj = findEntites(cmd.location.entity, state, objects, currentState);
         }
 
         // Start creating the goals
         if (cmd.command == "move") {
             if (targetobj.length < 1) {
-              // If no target object is found, we cannot continue the move,
-              // throw error.
+                // If no target object is found, we cannot continue the move,
+                // throw error.
                 throw new Error("No target objects")
             }
 
@@ -177,56 +177,31 @@ module Interpreter {
                 for (var j = 0; j < targetobj.length; j++) {
 
                     if (sourceobj[i] == targetobj[j]) {
-                      // if the objects are the same, nothing can be done
+                        // if the objects are the same, nothing can be done
                         continue;
                     }
 
-                    // Actual objects of the current source and target object
-                    var sourceObject: ObjectDefinition;
-                    var targetObject: ObjectDefinition;
 
-                    // Handle if any of the current objects is the floor
-                    if (sourceobj[i] == "floor") {
-                        sourceObject = { form: "floor", size: null, color: null };
-                        targetObject = state.objects[targetobj[j]];
-                    }
-                    else if (targetobj[j] == "floor") {
-                        sourceObject = state.objects[sourceobj[i]];
-                        targetObject = { form: "floor", size: null, color: null };
-                    }
-                    else {
-                        sourceObject = state.objects[sourceobj[i]];
-                        targetObject = state.objects[targetobj[j]];
-                    }
+                    var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
+                        sourceobj[i], targetobj[j], state);
 
-                    // Check if the the goal is physically possible
+                    var sourceObject: ObjectDefinition = theObjects[0];
+                    var targetObject: ObjectDefinition = theObjects[1];
+
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        var pushed: Literal[] = [
-                            {
-                                polarity: true,
-                                relation: cmd.location.relation,
-                                args: [sourceobj[i], targetobj[j]]
-                            }
-                        ];
-                        // add the goal to the result
-                        interpretation.push(pushed);
+                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
+
                     }
                 }
             }
         }
         else if (cmd.command == "take") {
-          // Since the command is take, there is no need for checking the target
-          // object
+            // Since the command is take, there is no need for checking the target
+            // object
             for (var i = 0; i < sourceobj.length; i++) {
-              // Handle is the object is the floor
+                // Handle is the object is the floor
                 if (!(sourceobj[i] == "floor")) {
-                    interpretation.push([
-                        {
-                            polarity: true,
-                            relation: "holding",
-                            args: [sourceobj[i]]
-                        }
-                    ]);
+                    interpretation.push(makeLiteral(true, "holding", [sourceobj[i]]));
                 }
             }
         }
@@ -247,6 +222,7 @@ module Interpreter {
      * world
      * @param currentState - The Map of objects to its position
      */
+
     function findEntites(
         ent: Parser.Entity,
         state: WorldState,
@@ -261,13 +237,13 @@ module Interpreter {
 
 
         if (ent.quantifier == "the" && currobjs.length > 1) {
-          // In case there are several ofjects when the entity specifies
-          // one specific, throw error
+            // In case there are several ofjects when the entity specifies
+            // one specific, throw error
             throw new Error("Too many indentifications of type THE");
         }
 
         if (obj.location == null) {
-          // In the case of no location, return the found objects
+            // In the case of no location, return the found objects
             return currobjs;
         }
 
@@ -300,7 +276,7 @@ module Interpreter {
     ): string[] {
 
         if (obj == null) {
-          // Base case for finding the object
+            // Base case for finding the object
             return [];
         }
         var sourceobjs: string[] = [];
@@ -308,13 +284,13 @@ module Interpreter {
         // Handle if the object has properties or is linking to another object
         // with a relation
         if (obj.object == null && obj.location == null) {
-          // If the object has properties
+            // If the object has properties
             // Loop through all objects in the world to find one matching the
             // object obj
             for (var i = 0; i < objects.length; i++) {
                 var temp: ObjectDefinition;
                 if (objects[i] == "floor") {
-                  // Handle if an object is the world is the floor
+                    // Handle if an object is the world is the floor
                     // Create a "floor" object
                     temp = { form: "floor", size: null, color: null };
                 }
@@ -342,7 +318,7 @@ module Interpreter {
             }
         }
         else {
-          // In case the object is linking to another another object
+            // In case the object is linking to another another object
 
             // find the objects in obj.object
             var tempsourceobjs: string[] =
@@ -374,49 +350,46 @@ module Interpreter {
      */
     function filterRelation(
         filter: string,
-        currobjs: string[],
-        relobjs: string[],
+        sourceobj: string[],
+        targetobj: string[],
         state: WorldState,
         currentState: collections.Dictionary<string, number[]>): string[] {
         // The result
         var result: string[] = [];
+        // Go through all of the possible combinations
+        for (var i = 0; i < sourceobj.length; i++) {
+            for (var j = 0; j < targetobj.length; j++) {
 
-        // Do filtering of all possible combinations of objects between the lists
-        for (var i = 0; i < currobjs.length; i++) {
-            for (var j = 0; j < relobjs.length; j++) {
-                var sourceObject: ObjectDefinition;
-                var targetObject: ObjectDefinition;
-                // Handle if any of the objects is the floor
-                if (currobjs[i] == "floor") {
-                    sourceObject = { form: "floor", size: null, color: null };
-                    targetObject = state.objects[relobjs[j]];
-                }
-                else if (relobjs[j] == "floor") {
-                    sourceObject = state.objects[currobjs[i]];
-                    targetObject = { form: "floor", size: null, color: null };
-                }
-                else {
-                    sourceObject = state.objects[currobjs[i]];
-                    targetObject = state.objects[relobjs[j]];
-                }
-                // Get the positions of the objects
-                var cpos: number[] = currentState.getValue(currobjs[i]);
-                var rpos: number[] = currentState.getValue(relobjs[j]);
+                // Fetch the objects from the WorldState
+                var theObjects: ObjectDefinition[] =
+                    objectFactory(
+                        sourceObject,
+                        targetObject,
+                        sourceobj[i],
+                        targetobj[j],
+                        state);
+
+                // The objects to be checked
+                var sourceObject: ObjectDefinition = theObjects[0];
+                var targetObject: ObjectDefinition = theObjects[1];
+                // The position of the objects
+                var cpos: number[] = currentState.getValue(sourceobj[i]);
+                var rpos: number[] = currentState.getValue(targetobj[j]);
 
                 if (cpos[0] == -2) {
-                  // If the source object is being held, it has no relation
-                  // to any other object, so skip the check
+                    // If the source object is being held, it has no relation
+                    // to any other object, so skip the check
                     continue;
                 }
                 if (!isPhysical(filter, sourceObject, targetObject)) {
-                  // If the objects do not pass the physical laws, skip.
+                    // If the objects do not pass the physical laws, skip.
                     continue;
                 }
                 // Objects passed the physical laws, check if they are in a
                 // feasible position
                 else if (isFeasible(filter, cpos, rpos)) {
-                  // Once found add the source object to the result list.
-                    result.push(currobjs[i]);
+                    // Once found add the source object to the result list.
+                    result.push(sourceobj[i]);
                     continue;
                 }
             }
@@ -501,18 +474,34 @@ module Interpreter {
         }
     }
 
+	/**
+     * Function to check whether or not a relation between two objects are physically possible.
+	 * The world is ruled by physical laws that constrain the placement and movement of the objects.
+	 *
+     * @param relation the relation to be checked
+     * @param sourceObj an ObjectDefinition of the source object (the object that should be moved)
+	 * @param targetObj an ObjectDefinition of the target object (the object that the source should be placed upon)
+     * @returns If the relation between the object is possible, return true,
+				otherwise return false
+     */
     function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
-        //console.log("Entered isPhysical with relation "+relation +" Source is "+sourceObj.form +", Target is "+targetObj.form);
-        ////console.log("Source is "+sourceObj.form +", Target is "+targetObj.form);
+
+        // Switch statement to find out what rules apply
         switch (relation) {
+            // If the relation is rightof, leftof or beside
             case "rightof": case "leftof": case "beside":
+                // The floor can't be placed besides anything
+                // and nothing can be placed beside the floor
                 if (sourceObj.form == "floor" || targetObj.form == "floor") {
                     return false;
                 }
-                // Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
-                //////console.log("checking beside constraints")
                 return true;
+            // If the relation is inside
             case "inside":
+                // Nothing can be placed inside the floor, and the floor cannot be
+                // placed inside anything
+                // Nothing bigger than the box can be placed inside of it and
+                // a pyramid, plank or box cannot be placed inside a box of the same size
                 if (sourceObj.form == "floor" || targetObj.form == "floor" ||
                     targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
                         ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
@@ -520,13 +509,15 @@ module Interpreter {
                     return false;
                 }
                 return true;
-
+            // If the relation is ontop
             case "ontop":
-                // Maybe add ball ontop of table and brick?
-                if (targetObj.form == "pyramid" ||
+                // Nothing can be placed ontop of a pyramid? or a ball
+                // and balls cannot be placed ontop of tables, bricks and planks
+                // A small box cannot be placed ontop of a small brick
+                // The floor cannot be placed ontop of anything
+                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
                         targetObj.form == "brick" || targetObj.form == "plank")) ||
-                    targetObj.form == "ball" ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
                         targetObj.form == "brick" && targetObj.size == "small") ||
@@ -535,27 +526,74 @@ module Interpreter {
                 } else {
                     return true;
                 }
+            // If the relation is above
             case "above":
+                // A large object can never be placed above a small object
+                // The floor cannot be placed above anything
                 if (sourceObj.size == "large" && targetObj.size == "small" ||
                     sourceObj.form == "floor") {
                     return false;
                 }
-                // How handle above?
                 return true;
+            // If the relation is below
             case "below":
+                // Nothing can be placed below the floor, a ball or a pyramid
+                // Nothing that is small can be below anything that is big
                 if (targetObj.form == "floor" ||
                     sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
                 }
-                // How handle below?
                 return true;
             default:
                 return false;
         }
     }
 
+    /**
+    * Helper function that creates two ObjectDefinitions
+    * Contains special cases if the objects are floors
+    *
+    * These objects are needed when checking all combinations of goals
+    *
+    * @param sourceObject first object to create
+    * @param targetObject second object to create
+    * @param source every object in the world
+    * @param target every object in the world
+    * @param state the world state. Needed to find the right object definitions
+    * @returns If the object is a floor, the method returns a custom floor object, otherwise
+    *			it returns the object that corresponds in the WorldState
+    */
+    function objectFactory(sourceObject: ObjectDefinition, targetObject: ObjectDefinition,
+        source: string, target: string, state: WorldState): ObjectDefinition[] {
+        if (source == "floor") {
+            sourceObject = { form: "floor", size: null, color: null };
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+        else if (target == "floor") {
+            sourceObject = state.objects[source];
+            targetObject = { form: "floor", size: null, color: null };
+            return [sourceObject, targetObject];
+        }
+        else {
+            sourceObject = state.objects[source];
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+    }
 
+	/**
+     * Helper function to create literals
+	 *
+     * @param polarity the polarity
+     * @param relation the relation
+	 * @param args the arguments
+     * @returns The literal
+     */
+    function makeLiteral(polarity: boolean, relation: string, args: string[]): Literal[] {
+        return [{ polarity, relation, args }];
+    }
 }
 
 var result: Parser.ParseResult[] = Parser.parse("put the large green brick on a table");
