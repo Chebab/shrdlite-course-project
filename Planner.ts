@@ -119,5 +119,34 @@ module Planner {
 
         return plan;
     }
+	
+	function compareStacks(stackA : string[][], stackB : string[][]){
+		var retVal : boolean = false;
+		if(stackA.length != stackB.length){
+			return false;
+		}
+		for (var i = 0; i < stackA.length; i++) {
+			if(stackA[i].length != stackB[i].length){
+				return false;
+			}
+			for (var j = 0; j < stackA[i].length; j++) {
+				if(stackA[i][j] == stackB[i][j]){
+					retVal = true;
+				} else {
+					return false;
+				}
+			}
+		}	
+	return retVal;
+	}
+
+	function equalNode(stateA : WorldState, stateB : WorldState) : boolean{
+		if(compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
+		   stateA.arm == stateB.arm){
+			return true;
+		} else {
+			return false;
+		}
+	}
 
 }

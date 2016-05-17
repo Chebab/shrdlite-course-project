@@ -181,13 +181,13 @@ module Interpreter {
                         continue;
                     }
 
-
+                    // Fetch the objects from the WorldState
                     var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
                         sourceobj[i], targetobj[j], state);
-
+                    // The objects to be checked
                     var sourceObject: ObjectDefinition = theObjects[0];
                     var targetObject: ObjectDefinition = theObjects[1];
-
+                    // The position of the objects
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 
