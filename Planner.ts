@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
 
 /** 
 * Planner module
@@ -56,6 +57,9 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
+
+	
+	
     /**
      * The core planner function. The code here is just a template;
      * you should rewrite this function entirely. In this template,
@@ -120,4 +124,13 @@ module Planner {
         return plan;
     }
 
+}
+
+
+class ourGraph implements Graph<WorldState> {
+	 outgoing(ws : WorldState) :  Edge<WorldState> {
+		
+		return null;
+	}
+	
 }
