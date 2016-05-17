@@ -23,7 +23,7 @@ class GridNode {
         });
     }
 
-    compareTo(other : GridNode) : number {
+    (other : GridNode) : number {
         return (this.pos.x - other.pos.x) || (this.pos.y - other.pos.y);
     }
 

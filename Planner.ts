@@ -126,11 +126,81 @@ module Planner {
 
 }
 
-
-class ourGraph implements Graph<WorldState> {
-	 outgoing(ws : WorldState) :  Edge<WorldState> {
+class WorldStateNode implements WorldState {
+	stacks: Stack[];
+    /** Which object the robot is currently holding. */
+    holding: string;
+    /** The column position of the robot arm. */
+    arm: number;
+    /** A mapping from strings to `ObjectDefinition`s. The strings are meant to be identifiers for the objects (see ExampleWorlds.ts for an example). */
+    objects: { [s:string]: ObjectDefinition; };
+    /** List of predefined example sentences/utterances that the user can choose from in the UI. */
+    examples: string[];
+	constructor (stacks : Stack[], holding : string, arm : number, objects : { [s:string]: ObjectDefinition; }) {
+		this.stacks = stacks; this.holding = holding; this.arm = arm; this.objects = objects; this.examples = null;
 		
-		return null;
 	}
 	
+	clone () : WorldStateNode {
+		var newStacks : Stack[] = [];
+		for (var i = 0; i < this.stacks.length; i++) {
+			newStacks.push(this.stacks[i].slice());
+		}
+		return new WorldStateNode(newStacks, this.holding, this.arm, this.objects);
+	}
+}
+
+
+
+class WorldStateGraph implements Graph<WorldStateNode> {
+
+	
+	 outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
+		var results : Edge<WorldStateNode>[] = [];
+		//Pick up
+		if (!gn.holding && gn.stacks[gn.arm] != []) {
+			var gnnew = gn.clone();
+			var currStack : Stack = gnnew.stacks[gnnew.arm];
+			gnnew.holding = currStack.pop();			
+			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			results.push(newEdge);
+		}
+		//Drop
+		if (gn.holding) {
+			var gnnew = gn.clone();
+			var currStack : Stack = gnnew.stacks[gnnew.arm];
+			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			if (currStack != []) {
+				var heldObject : ObjectDefinition = gn.objects[gn.holding];
+				
+				var topObject : ObjectDefinition = gn.objects[currStack[currStack.length-1]];
+				if (Interpreter.isPhysical("ontop", heldObject, topObject)) {
+					currStack.push(gn.holding);
+					gnnew.holding = null;
+					results.push(newEdge);
+				}
+			} else {
+				currStack.push(gn.holding);
+				gnnew.holding = null;
+				results.push(newEdge);				
+			}
+		}
+		if (gn.arm != 0) {
+			var gnnew = gn.clone();
+			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			gnnew.arm--;
+			results.push(newEdge);
+		}
+		if (gn.arm != stacks.length -1) {
+			var gnnew = gn.clone();
+			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			gnnew.arm++;
+			results.push(newEdge);
+		}
+		return results;
+	}
+	
+	compareNodes(ws1 : GraphNode, ws2 : GraphNode) : number {
+		return 0;
+	}
 }

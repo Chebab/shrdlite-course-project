@@ -484,7 +484,7 @@ module Interpreter {
      * @returns If the relation between the object is possible, return true,
 				otherwise return false
      */
-    function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
+    export function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
 
         // Switch statement to find out what rules apply
         switch (relation) {
