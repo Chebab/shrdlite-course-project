@@ -120,16 +120,20 @@ function aStarSearch<Node> (
 		// Set the gScore value of the new node to the cost of the last node + the
         // cost of the edge
 		gScores.setValue(e.to, oldCost + e.cost);
+		
+		console.log(gScores);
 		// Loop over all outgoing edges from edge.to
         // If the target node does not exist in the frontier, add the out edge.
 		// (If we dont have the gScore value we know it is not in the frontier)
         for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
 				frontier.add(outEdge);
+				console.log("added stuff to frontier");
 			}
 		}
 	}
 
+	
 	//While the frontier is non-empty and there is time left
 	while(frontier.peek() && !timeouted) {
 		// Fetch the edge with the least cost from the PriorityQueue
@@ -165,6 +169,7 @@ function aStarSearch<Node> (
     // Get the resulting cost from the gScores
     result.cost = gScores.getValue(goalNode);
     
+	
     // While we haven't reached the start node, add the path (backtracking)
     do {
         // Add the node to the path

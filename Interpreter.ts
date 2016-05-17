@@ -405,7 +405,7 @@ module Interpreter {
      * @param spos - position of the first object.
      * @param tpos - position of the second object.
      */
-    function isFeasible(
+    export function isFeasible(
         relation: string,
         spos: number[],
         tpos: number[]): boolean {

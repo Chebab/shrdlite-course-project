@@ -79,12 +79,69 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-        // This function returns a dummy plan involving a random stack
-        do {
+ 
+		/*    function isFeasible(
+        relation: string,
+        spos: number[],
+        tpos: number[]): boolean {
+*/
+ 
+		function goalIsReached(state : WorldStateNode) : boolean {
+			var positions: collections.Dictionary<string, number[]>
+				= new collections.Dictionary<string, number[]>();
+
+			// Add all of the states and their position to the Map
+			for (var i = 0; i < state.stacks.length; i++) {
+				for (var j = 0; j < state.stacks[i].length; j++) {
+					positions.setValue(state.stacks[i][j], [i, j]);
+				}
+			}
+
+			if (state.holding != null) {
+				// If the arm is holding an object, add that object to the state
+				// The position [-2,-2] is used for finding the held object
+				positions.setValue(state.holding, [-2, -2]);
+
+			}
+
+			//The first element in the position is used to indentify
+			// the floor. The second element is the actual position of the floor§
+			positions.setValue("floor", [-1, -1]);
+
+			for (var conjunct of interpretation) {
+				var goalReached : boolean = true;
+				for (var literal of conjunct) {
+					var relation : string = literal.relation;
+					var pos1 : number[] = positions.getValue(literal.args[0]);
+					var pos2 : number[] = null;
+					if (literal.args.length > 1) {
+						pos2 = positions.getValue(literal.args[1]);
+					}
+						
+					if (Interpreter.isFeasible(literal.relation, pos1, pos2)) {
+						goalReached = false;
+						break;
+					}
+				}					
+				if (goalReached) return true;
+			}
+			return false;
+		}
+		
+		
+		var plan : string[] = [];
+		aStarSearch<WorldStateNode>(
+			new WorldStateGraph(), 
+			new WorldStateNode(state.stacks, state.holding, state.arm, state.objects), 
+			goalIsReached, //goal
+			function (a : WorldStateNode) : number {return 0;}, //heuristic
+			10);	  //time
+		
+		// This function returns a dummy plan involving a random stack
+        /*do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);
-        var plan : string[] = [];
-
+        
         // First move the arm to the leftmost nonempty stack
         if (pickstack < state.arm) {
             plan.push("Moving left");
@@ -120,7 +177,7 @@ module Planner {
         // Finally put it down again
         plan.push("Dropping the " + state.objects[obj].form,
                   "d");
-
+		*/
         return plan;
     }
 
@@ -153,9 +210,10 @@ class WorldStateNode implements WorldState {
 
 
 class WorldStateGraph implements Graph<WorldStateNode> {
-
-	
-	 outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
+	constructor () {
+		
+	}
+	outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
 		var results : Edge<WorldStateNode>[] = [];
 		//Pick up
 		if (!gn.holding && gn.stacks[gn.arm] != []) {
@@ -200,7 +258,37 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 		return results;
 	}
 	
-	compareNodes(ws1 : WorldStateNode, ws2 : WorldStateNode) : number {
-		return 0;
+	
+	compareStacks(stackA : string[][], stackB : string[][]) : boolean {
+		var retVal : boolean = false;
+		if(stackA.length != stackB.length){
+			return false;
+		}
+		for (var i = 0; i < stackA.length; i++) {
+			if(stackA[i].length != stackB[i].length){
+				return false;
+			}
+			for (var j = 0; j < stackA[i].length; j++) {
+				if(stackA[i][j] == stackB[i][j]){
+					retVal = true;
+				} else {
+					return false;
+				}
+			}
+		}	
+		return retVal;
+	}
+
+	compareNodes(stateA : WorldState, stateB : WorldState) : number {
+		
+		if (!stateA) {
+			return 0;
+		}
+		if(this.compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
+		   stateA.arm == stateB.arm){
+			return 0;
+		} else {
+			return 1;
+		}
 	}
 }
