@@ -191,7 +191,7 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 			gnnew.arm--;
 			results.push(newEdge);
 		}
-		if (gn.arm != stacks.length -1) {
+		if (gn.arm != gnnew.stacks.length -1) {
 			var gnnew = gn.clone();
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
 			gnnew.arm++;
@@ -200,7 +200,7 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 		return results;
 	}
 	
-	compareNodes(ws1 : GraphNode, ws2 : GraphNode) : number {
+	compareNodes(ws1 : WorldStateNode, ws2 : WorldStateNode) : number {
 		return 0;
 	}
 }
