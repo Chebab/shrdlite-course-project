@@ -80,11 +80,6 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
 
-		/*    function isFeasible(
-        relation: string,
-        spos: number[],
-        tpos: number[]): boolean {
-*/
 		function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
 			var positions: collections.Dictionary<string, number[]>
 				= new collections.Dictionary<string, number[]>();
@@ -127,8 +122,8 @@ module Planner {
 				    }
 					else if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
 						goalReached = false;
+						break;
 					}
-          if (!goalReached) break;
 				}
 				if (goalReached) return true;
 			}
@@ -136,10 +131,10 @@ module Planner {
 		}
 
 
-	var plan : string[] = [];
-	var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
-	var foundResult : SearchResult<WorldStateNode> =
-    aStarSearch<WorldStateNode>(
+		var plan : string[] = [];
+		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
+		var foundResult : SearchResult<WorldStateNode> =
+		aStarSearch<WorldStateNode>(
 			new WorldStateGraph(),
 			startNode,
 			goalIsReached, //goal
@@ -204,9 +199,10 @@ module Planner {
 					}
 					shortest = Math.min(current, shortest);
 				}
+				//console.log(shortest);
 				return shortest;
 			}, //heuristic
-			10);	  //time
+			100);	  //time
       console.log("Found result:");
       console.log(foundResult);
 
@@ -235,50 +231,9 @@ module Planner {
 
 		  }
 	  } else {
-		  return []
+		  return [];
 	  }
 
-		// This function returns a dummy plan involving a random stack
-        /*do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
-            }
-        } else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
-                plan.push("r");
-            }
-        }
-
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
-        plan.push("Picking up the " + state.objects[obj].form,
-                  "p");
-
-        if (pickstack < state.stacks.length-1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length-1; i++) {
-                plan.push("r");
-            }
-
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length-1; i > pickstack; i--) {
-                plan.push("l");
-            }
-        }
-
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form,
-                  "d");
-		*/
         return plan;
     }
 
