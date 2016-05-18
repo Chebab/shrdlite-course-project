@@ -151,17 +151,18 @@ module Planner {
 					//The Manhattan distance is given by the sum of the Manhattan distance
 					//to travel to satisfy each of the literals. 
 					for (var literal of conjunct) {
+						var xpos1 : number = positions.getValue(literal.args[0])[0];;
+						var xpos2 : number;
+						if (literal.relation != "holding")
+							xpos2 = positions.getValue(literal.args[1])[0];
 						//If we wish to hold the target object, only check x-distance to goal. 
 						if (literal.relation =="holding") {
-							var xpos = positions.getValue(literal.args[0])[0];
-							current += (Math.abs(xpos - state.arm) + 1);
+							current += (Math.abs(xpos1 - state.arm) + 1);
 						} 
 						//if the goal is to put the source in the same x-coordinate as the goal
 						else if (literal.relation == "ontop" || literal.relation == "under" ||
 									literal.relation == "inside" ||literal.relation == "above")  {
 							
-							var xpos1 = positions.getValue(literal.args[0])[0];
-							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos2 == -1) { //target is floor
 								current += 1;
 							} else if (xpos1 == -2) { //current place is hand
@@ -175,8 +176,6 @@ module Planner {
 						} 
 						//If Source should be left of target
 						else if (literal.relation == "leftof") {
-							var xpos1 = positions.getValue(literal.args[0])[0];
-							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								if (xpos1 >= state.arm) {
 									//Move the hand (+1 to get to other side of target) , then drop it (+1)
@@ -194,9 +193,6 @@ module Planner {
 						} 
 						//If Source should be right of target
 						else if (literal.relation == "rightof") {
-							
-							var xpos1 = positions.getValue(literal.args[0])[0];
-							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								if (xpos1 <= state.arm) {
 									//Move the hand (+1 to get to other side of target) then drop it (+1)
@@ -212,8 +208,6 @@ module Planner {
 								current += Math.max(xpos2 - xpos1 + 3, 0) ;
 							}
 						} else if (literal.relation == "beside") {
-							var xpos1 = positions.getValue(literal.args[0])[0];
-							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								//Move the item one less space than the distance to the target and then drop it (+1)
 								//Todo: if above the target, this can be improved

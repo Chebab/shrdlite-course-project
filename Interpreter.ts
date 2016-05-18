@@ -425,7 +425,13 @@ module Interpreter {
         else if (xt == -1) {
             xt = xs;
         }
-
+	
+		//Handle left/right of if something is in hand
+		if (xs == -2 || xt == -2)	{
+			return false;
+		}
+		
+		
         // Handle different relations
         switch (relation) {
             case "leftof":
