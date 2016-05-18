@@ -48,11 +48,16 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             }
         }
     }
+    if (goal(start)) {
+        return result;
+    }
     while (frontier.peek() && !timeouted) {
+        console.log(frontier.size());
         var nextEdge = frontier.dequeue();
         if (gScores.getValue(nextEdge.to) == null) {
             addTargetOfEdgeToFrontier(nextEdge);
             if (goal(nextEdge.to)) {
+                console.log("found a goal");
                 goalNode = nextEdge.to;
                 break;
             }
@@ -64,8 +69,12 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             }
         }
     }
+    if (!frontier.peek()) {
+        throw new Error("There is no solution");
+    }
     if (timeouted) {
-        return result;
+        console.log("Timeouted");
+        throw new Error("Timed out");
     }
     if (!goalNode)
         throw new Error("No path found");

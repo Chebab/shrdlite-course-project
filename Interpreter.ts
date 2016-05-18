@@ -171,28 +171,70 @@ module Interpreter {
                 // throw error.
                 throw new Error("No target objects")
             }
-
+            // Source and target quantifiers
+            var sourceQuant: string = cmd.entity.quantifier;
+            var targetQuant: string = cmd.location.entity.quantifier;
             // Find all of the combinations of goals
             for (var i = 0; i < sourceobj.length; i++) {
+                var conjunctions: Literal[] = [];
+
                 for (var j = 0; j < targetobj.length; j++) {
 
                     if (sourceobj[i] == targetobj[j]) {
                         // if the objects are the same, nothing can be done
                         continue;
                     }
-
                     // Fetch the objects from the WorldState
                     var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
                         sourceobj[i], targetobj[j], state);
                     // The objects to be checked
                     var sourceObject: ObjectDefinition = theObjects[0];
                     var targetObject: ObjectDefinition = theObjects[1];
-                    // The position of the objects
-                    if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 
+
+
+
+
+                    if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
+                        var addLiteral : Literal =
+                          { polarity: true,
+                            relation:cmd.location.relation,
+                            args:[sourceobj[i],targetobj[j]]};
+
+                        if (sourceQuant != "all" && targetQuant != "all") {
+                          // if none of the quantifiers are all, any combination of
+                          // the elements are a valid goal
+                          interpretation.push([addLiteral]);
+                        }
+                        else if (sourceQuant != "all" && targetQuant == "all") {
+                          // if the target quantifier is all, do disjunction for
+                          // each source element with conjunctions on all target
+                          // elements
+                          conjunctions.push(addLiteral);
+                        }
+                        else if (sourceQuant == "all" && targetQuant != "all") {
+
+                          if(interpretation.length-1<j){
+                            interpretation.push([addLiteral]);
+                          }
+                          else {
+                            interpretation[j].push(addLiteral);
+                          }
+                        }
+                        else if (sourceQuant == "all" && targetQuant == "all") {
+                          if(interpretation.length==0){
+                            interpretation.push([addLiteral]);
+                          }
+                          else {
+                            interpretation[0].push(addLiteral);
+                          }
+                        }
                     }
+
+
+
                 }
+                if (conjunctions.length>0) interpretation.push(conjunctions);
             }
         }
         else if (cmd.command == "take") {
@@ -596,12 +638,15 @@ module Interpreter {
     }
 }
 
-/*
-var result: Parser.ParseResult[] = Parser.parse("put the black ball in the large yellow box");
+
+var result: Parser.ParseResult[] = Parser.parse("move a ball to the left of all boxes");
+console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+console.log(Interpreter.stringify(formula[0]));
+/*
 console.log("First parse");
 console.log(Parser.stringify(result[0]));
-console.log(Interpreter.stringify(formula[0]));
+
 */

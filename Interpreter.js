@@ -61,7 +61,10 @@ var Interpreter;
             if (targetobj.length < 1) {
                 throw new Error("No target objects");
             }
+            var sourceQuant = cmd.entity.quantifier;
+            var targetQuant = cmd.location.entity.quantifier;
             for (var i = 0; i < sourceobj.length; i++) {
+                var conjunctions = [];
                 for (var j = 0; j < targetobj.length; j++) {
                     if (sourceobj[i] == targetobj[j]) {
                         continue;
@@ -70,9 +73,35 @@ var Interpreter;
                     var sourceObject = theObjects[0];
                     var targetObject = theObjects[1];
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
+                        var addLiteral = { polarity: true,
+                            relation: cmd.location.relation,
+                            args: [sourceobj[i], targetobj[j]] };
+                        if (sourceQuant != "all" && targetQuant != "all") {
+                            interpretation.push([addLiteral]);
+                        }
+                        else if (sourceQuant != "all" && targetQuant == "all") {
+                            conjunctions.push(addLiteral);
+                        }
+                        else if (sourceQuant == "all" && targetQuant != "all") {
+                            if (interpretation.length - 1 < j) {
+                                interpretation.push([addLiteral]);
+                            }
+                            else {
+                                interpretation[j].push(addLiteral);
+                            }
+                        }
+                        else if (sourceQuant == "all" && targetQuant == "all") {
+                            if (interpretation.length == 0) {
+                                interpretation.push([addLiteral]);
+                            }
+                            else {
+                                interpretation[0].push(addLiteral);
+                            }
+                        }
                     }
                 }
+                if (conjunctions.length > 0)
+                    interpretation.push(conjunctions);
             }
         }
         else if (cmd.command == "take") {
@@ -288,3 +317,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
+var result = Parser.parse("move a ball to the left of all boxes");
+console.log(Parser.stringify(result[0]));
+var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+console.log(Interpreter.stringify(formula[0]));
