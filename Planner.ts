@@ -90,6 +90,7 @@ module Planner {
 			var positions: collections.Dictionary<string, number[]>
 				= new collections.Dictionary<string, number[]>();
 
+			
 			// Add all of the states and their position to the Map
 			for (var i = 0; i < state.stacks.length; i++) {
 				for (var j = 0; j < state.stacks[i].length; j++) {
@@ -118,7 +119,7 @@ module Planner {
 						pos2 = positions.getValue(literal.args[1]);
 					}
 						
-					if (Interpreter.isFeasible(literal.relation, pos1, pos2)) {
+					if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
 						goalReached = false;
 						break;
 					}
@@ -198,6 +199,17 @@ class WorldStateNode implements WorldState {
 		
 	}
 	
+	toString() : string {
+		var value : string = "";
+		for (var s of this.stacks) {
+			value = value + "[" + s + "]";
+		}
+		value = value + "   arm: " + this.arm;
+		value = value + "   holding: " + this.holding;
+		return value;
+	}
+	
+	
 	clone () : WorldStateNode {
 		var newStacks : Stack[] = [];
 		for (var i = 0; i < this.stacks.length; i++) {
@@ -214,9 +226,10 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 		
 	}
 	outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
+		
 		var results : Edge<WorldStateNode>[] = [];
 		//Pick up
-		if (!gn.holding && gn.stacks[gn.arm] != []) {
+		if (!gn.holding && gn.stacks[gn.arm].length > 0) {
 			var gnnew = gn.clone();
 			var currStack : Stack = gnnew.stacks[gnnew.arm];
 			gnnew.holding = currStack.pop();			
@@ -228,9 +241,8 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 			var gnnew = gn.clone();
 			var currStack : Stack = gnnew.stacks[gnnew.arm];
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
-			if (currStack != []) {
+			if (currStack.length > 0) {
 				var heldObject : ObjectDefinition = gn.objects[gn.holding];
-				
 				var topObject : ObjectDefinition = gn.objects[currStack[currStack.length-1]];
 				if (Interpreter.isPhysical("ontop", heldObject, topObject)) {
 					currStack.push(gn.holding);
@@ -249,7 +261,7 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 			gnnew.arm--;
 			results.push(newEdge);
 		}
-		if (gn.arm != gnnew.stacks.length -1) {
+		if (gn.arm != gn.stacks.length -1) {
 			var gnnew = gn.clone();
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
 			gnnew.arm++;
@@ -281,9 +293,6 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 
 	compareNodes(stateA : WorldState, stateB : WorldState) : number {
 		
-		if (!stateA) {
-			return 0;
-		}
 		if(this.compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
 		   stateA.arm == stateB.arm){
 			return 0;
