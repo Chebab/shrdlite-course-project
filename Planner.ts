@@ -85,8 +85,7 @@ module Planner {
         spos: number[],
         tpos: number[]): boolean {
 */
-
-		function goalIsReached(state : WorldStateNode) : boolean {
+		function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
 			var positions: collections.Dictionary<string, number[]>
 				= new collections.Dictionary<string, number[]>();
 
@@ -108,7 +107,12 @@ module Planner {
 			//The first element in the position is used to indentify
 			// the floor. The second element is the actual position of the floor§
 			positions.setValue("floor", [-1, -1]);
+			return positions;
+		}
 
+
+		function goalIsReached(state : WorldStateNode) : boolean {
+			var positions = getPositions(state);
 			for (var conjunct of interpretation) {
 				var goalReached : boolean = true;
 				for (var literal of conjunct) {
@@ -132,11 +136,12 @@ module Planner {
 		}
 
 
-		var plan : string[] = [];
-		var foundResult : SearchResult<WorldStateNode> =
+	var plan : string[] = [];
+	var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
+	var foundResult : SearchResult<WorldStateNode> =
     aStarSearch<WorldStateNode>(
 			new WorldStateGraph(),
-			new WorldStateNode(state.stacks, state.holding, state.arm, state.objects),
+			startNode,
 			goalIsReached, //goal
 			function (a : WorldStateNode) : number {return 0;}, //heuristic
 			10);	  //time
@@ -146,17 +151,30 @@ module Planner {
       // Handle the found result
 
       var nodeResult : WorldStateNode[] = foundResult.path;
-      var prevNode : WorldStateNode;
-      var currNode : WorldStateNode;
-      for(var i = 0;i<nodeResult.length;i++){
-          currNode = nodeResult[i];
-          if(i++<nodeResult.length){
 
-          }
+	  
+	  if (nodeResult.length > 0) {
+	      var nextNode : WorldStateNode;
+		  var currNode : WorldStateNode;
+		  nodeResult = [startNode].concat(nodeResult);
+		  for(var i = 0;i<nodeResult.length - 1;i++){
+			currNode = nodeResult[i];
+			nextNode = nodeResult[i+1];
+			if (currNode.arm == nextNode.arm - 1) {
+				plan.push('r');
+			} else if (currNode.arm == nextNode.arm + 1) {
+				plan.push('l');
+			} else if (nextNode.holding == null) {
+				plan.push('d');
+			} else {
+				plan.push('p');
+			}			
+				
 
-      }
-
-
+		  }
+	  } else {
+		  return []
+	  }
 
 		// This function returns a dummy plan involving a random stack
         /*do {
