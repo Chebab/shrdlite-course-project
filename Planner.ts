@@ -129,16 +129,7 @@ module Planner {
 			}
 			return false;
 		}
-
-
-		var plan : string[] = [];
-		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
-		var foundResult : SearchResult<WorldStateNode> =
-		aStarSearch<WorldStateNode>(
-			new WorldStateGraph(),
-			startNode,
-			goalIsReached, //goal
-			function (state : WorldStateNode) : number {
+			function manhattanish (state : WorldStateNode) : number {
 				var shortest : number = 100000000;
 				var current : number = 0;
 				var positions = getPositions(state);
@@ -201,7 +192,16 @@ module Planner {
 				}
 				//console.log(shortest);
 				return shortest;
-			}, //heuristic
+			}
+		
+		var plan : string[] = [];
+		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
+		var foundResult : SearchResult<WorldStateNode> =
+		aStarSearch<WorldStateNode>(
+			new WorldStateGraph(),
+			startNode,
+			goalIsReached, //goal
+			manhattanish, //heuristic
 			100);	  //time
       console.log("Found result:");
       console.log(foundResult);
