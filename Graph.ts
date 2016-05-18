@@ -155,7 +155,7 @@ function aStarSearch<Node> (
 		}
 		i++;
 		//Every 1000 iterations, check for timeout
-		if (i % 1000) {
+		if (i % 1000 == 0) {
 			if (new Date().getTime() - starttime > 1000*timeout) {
 
 				timeouted = true;
