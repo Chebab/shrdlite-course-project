@@ -110,7 +110,7 @@ function aStarSearch<Node> (
 	function addTargetOfEdgeToFrontier(
 		e : Edge<Node>
 	) : void {
-        // Outgoing edges of the node we're looking at (e.to)
+		// Outgoing edges of the node we're looking at (e.to)
 		var outEdges = graph.outgoingEdges(e.to);
 		var oldCost : number;
 		// Find the cost from start to the source node of e
@@ -121,23 +121,24 @@ function aStarSearch<Node> (
         // cost of the edge
 		gScores.setValue(e.to, oldCost + e.cost);
 		
-		console.log(gScores);
 		// Loop over all outgoing edges from edge.to
         // If the target node does not exist in the frontier, add the out edge.
 		// (If we dont have the gScore value we know it is not in the frontier)
         for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
 				frontier.add(outEdge);
-				console.log("added stuff to frontier");
 			}
 		}
 	}
 
+	if (goal(start)) {
+		return result;
+	}
 	
 	//While the frontier is non-empty and there is time left
 	while(frontier.peek() && !timeouted) {
 		// Fetch the edge with the least cost from the PriorityQueue
-        
+        console.log(frontier.size());
 		var nextEdge : Edge<Node> = frontier.dequeue();
 		// Get the edge w/ highest prio.
 		//If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
@@ -145,22 +146,33 @@ function aStarSearch<Node> (
 			addTargetOfEdgeToFrontier(nextEdge);
 			// If the target node is a goal, save it and break
             if (goal(nextEdge.to)) {
+				console.log("found a goal");
 				goalNode = nextEdge.to;
+				
 				break;
-			}
+			} 
 		}
 		i++;
 		//Every 1000 iterations, check for timeout
 		if (i % 1000) {
 			if (new Date().getTime() - starttime > 1000*timeout) {
+				
 				timeouted = true;
 			}
 		}
 	}
+	if (!frontier.peek()) {
+		throw new Error("There is no solution");
+	}
+		
+	if (goalNode) {
+		console.log("found goal: " + goalNode);
+	}
 	
 	//Return dummy result on timeout
 	if (timeouted) {
-		return result;
+		console.log("Timeouted");
+		throw new Error("Timed out");
 	}
 	
     // Save the goalNode to a dummy variable
@@ -172,7 +184,8 @@ function aStarSearch<Node> (
 	
     // While we haven't reached the start node, add the path (backtracking)
     do {
-        // Add the node to the path
+		console.log(n);
+		// Add the node to the path
         result.path.push(n);
         // Get the "parent"/"previous" node
         n = priorNodes.getValue(n);
@@ -181,5 +194,6 @@ function aStarSearch<Node> (
     // Result must be in end to start order, so we have to reverse it
     result.path = result.path.reverse();
 
+        
     return result;
 }

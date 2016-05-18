@@ -117,11 +117,11 @@ module Planner {
 					var pos2 : number[] = null;
 					if (literal.args.length > 1) {
 						pos2 = positions.getValue(literal.args[1]);
-					}
-						
+					}					
 					if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
+
 						goalReached = false;
-						break;
+						
 					}
 				}					
 				if (goalReached) return true;
@@ -226,7 +226,6 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 		
 	}
 	outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
-		
 		var results : Edge<WorldStateNode>[] = [];
 		//Pick up
 		if (!gn.holding && gn.stacks[gn.arm].length > 0) {
