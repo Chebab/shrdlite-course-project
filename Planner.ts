@@ -122,9 +122,9 @@ module Planner {
 					if (literal.args.length > 1) {
 						pos2 = positions.getValue(literal.args[1]);
 					}
-          if (literal.relation=="holding"){
-            goalReached = state.holding==literal.args[0];
-          }
+				    if (literal.relation=="holding"){
+					    goalReached = state.holding==literal.args[0];
+				    }
 					else if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
 						goalReached = false;
 					}
@@ -143,7 +143,68 @@ module Planner {
 			new WorldStateGraph(),
 			startNode,
 			goalIsReached, //goal
-			function (a : WorldStateNode) : number {return 0;}, //heuristic
+			function (state : WorldStateNode) : number {
+				var shortest : number = 100000000;
+				var current : number = 0;
+				var positions = getPositions(state);
+				for (var conjunct of interpretation) {
+					for (var literal of conjunct) {
+						if (literal.relation =="holding") {
+							var xpos = positions.getValue(literal.args[0])[0];
+							current += (Math.abs(xpos - state.arm) + 1);
+						} else if (literal.relation == "ontop" || literal.relation == "under" ||
+									literal.relation == "inside" ||literal.relation == "above")  {
+							
+							var xpos1 = positions.getValue(literal.args[0])[0];
+							var xpos2 = positions.getValue(literal.args[1])[0];
+							if (xpos2 == -1) { //target is floor
+								current += 1;
+							} else if (xpos1 == -2) { //current place is hand
+								current += Math.abs(xpos1 - state.arm) + 1;
+							} else {
+								current += Math.abs(xpos1 - xpos2) + 2;
+							}
+						} else if (literal.relation == "leftof") {
+							var xpos1 = positions.getValue(literal.args[0])[0];
+							var xpos2 = positions.getValue(literal.args[1])[0];
+							if (xpos1 == -2) { //current place is hand
+								if (xpos1 >= state.arm) {
+									current += xpos1 - state.arm + 1;
+								} else {
+									current += 1;
+								}
+							} else {
+								
+								current += Math.max(xpos1 - xpos2 + 2, 1) ;
+							}
+						} else if (literal.relation == "rightof") {
+							
+							var xpos1 = positions.getValue(literal.args[0])[0];
+							var xpos2 = positions.getValue(literal.args[1])[0];
+							if (xpos1 == -2) { //current place is hand
+								if (xpos1 <= state.arm) {
+									current += state.arm - xpos1 + 1;
+								} else {
+									current += 1;
+								}
+							} else {
+								current += Math.max(xpos2 - xpos1 + 2, 1) ;
+							}
+						} else if (literal.relation == "beside") {
+							var xpos1 = positions.getValue(literal.args[0])[0];
+							var xpos2 = positions.getValue(literal.args[1])[0];
+							if (xpos1 == -2) { //current place is hand
+								current += Math.abs(state.arm - xpos1);
+							} else {
+								current += Math.abs(xpos2 - xpos1 + 1) ;
+							}
+						}
+							
+					}
+					shortest = Math.min(current, shortest);
+				}
+				return 0;
+			}, //heuristic
 			10);	  //time
       console.log("Found result:");
       console.log(foundResult);
