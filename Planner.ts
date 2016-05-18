@@ -104,41 +104,60 @@ module Planner {
 			positions.setValue("floor", [-1, -1]);
 			return positions;
 		}
-
-
+		/**
+		* Checks if a goal has been reached in the given state
+		*/
 		function goalIsReached(state : WorldStateNode) : boolean {
+			//A dictionary of positions, given string id:s of objects
 			var positions = getPositions(state);
+			//For the goal to be reached...
 			for (var conjunct of interpretation) {
 				var goalReached : boolean = true;
+				//...each literal needs to be true ....
 				for (var literal of conjunct) {
 					var relation : string = literal.relation;
 					var pos1 : number[] = positions.getValue(literal.args[0]);
 					var pos2 : number[] = null;
+					//Only get second argument if relation is something other than "holding"
 					if (literal.args.length > 1) {
 						pos2 = positions.getValue(literal.args[1]);
 					}
+					//For "holding", only check if wanted object is held
 				    if (literal.relation=="holding"){
 					    goalReached = state.holding==literal.args[0];
 				    }
+					//For other relations, use isFeasible of the interpreter to check
+					//whether the relation holds between the two objects in the literal
 					else if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
 						goalReached = false;
 						break;
 					}
 				}
+				//... in at least one of the conjunctive expressions
 				if (goalReached) return true;
 			}
 			return false;
 		}
+			/**
+			*  Simple heuristic. Uses (almost) only the difference in x-positions of targets and sources. 
+			*/
 			function manhattanish (state : WorldStateNode) : number {
 				var shortest : number = 100000000;
 				var current : number = 0;
+				//A dictionary from string id:s of objects to positions in the world
 				var positions = getPositions(state);
+				//Find the minimum Manhattan distance of any conjunctive expression
 				for (var conjunct of interpretation) {
+					//The Manhattan distance is given by the sum of the Manhattan distance
+					//to travel to satisfy each of the literals. 
 					for (var literal of conjunct) {
+						//If we wish to hold the target object, only check x-distance to goal. 
 						if (literal.relation =="holding") {
 							var xpos = positions.getValue(literal.args[0])[0];
 							current += (Math.abs(xpos - state.arm) + 1);
-						} else if (literal.relation == "ontop" || literal.relation == "under" ||
+						} 
+						//if the goal is to put the source in the same x-coordinate as the goal
+						else if (literal.relation == "ontop" || literal.relation == "under" ||
 									literal.relation == "inside" ||literal.relation == "above")  {
 							
 							var xpos1 = positions.getValue(literal.args[0])[0];
@@ -146,41 +165,58 @@ module Planner {
 							if (xpos2 == -1) { //target is floor
 								current += 1;
 							} else if (xpos1 == -2) { //current place is hand
+								//Move the hand, and the drop it (+1)
 								current += Math.abs(xpos1 - state.arm) + 1;
 							} else if (Math.abs(xpos1 - xpos2) != 0){
+								//Pick up an object (+1) move the hand and drop it (+1)
 								current += Math.abs(xpos1 - xpos2) + 2;
 							} //else object is already in correct column 
 								
-						} else if (literal.relation == "leftof") {
+						} 
+						//If Source should be left of target
+						else if (literal.relation == "leftof") {
 							var xpos1 = positions.getValue(literal.args[0])[0];
 							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								if (xpos1 >= state.arm) {
-									current += xpos1 - state.arm + 1;
+									//Move the hand (+1 to get to other side of target) , then drop it (+1)
+									current += xpos1 - state.arm + 2;
 								} else {
+									//Drop the item
 									current += 1;
 								}
 							} else {
-								
-								current += Math.max(xpos1 - xpos2 + 2, 0) ;
+								//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+								//and drop it (+1) or 
+								//if already to the left, this part of the goal is already reached (0)
+								current += Math.max(xpos1 - xpos2 + 3, 0) ;
 							}
-						} else if (literal.relation == "rightof") {
+						} 
+						//If Source should be right of target
+						else if (literal.relation == "rightof") {
 							
 							var xpos1 = positions.getValue(literal.args[0])[0];
 							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								if (xpos1 <= state.arm) {
-									current += state.arm - xpos1 + 1;
+									//Move the hand (+1 to get to other side of target) then drop it (+1)
+									current += state.arm - xpos1 + 2;
 								} else {
+									//Drop the item
 									current += 1;
 								}
 							} else {
-								current += Math.max(xpos2 - xpos1 + 2, 0) ;
+								//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+								//and drop it (+1) or 
+								//if already to the right, this part of the goal is already reached (0)
+								current += Math.max(xpos2 - xpos1 + 3, 0) ;
 							}
 						} else if (literal.relation == "beside") {
 							var xpos1 = positions.getValue(literal.args[0])[0];
 							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
+								//Move the item one less space than the distance to the target and then drop it (+1)
+								//Todo: if above the target, this can be improved
 								current += Math.abs(state.arm - xpos1);
 							} else if (Math.abs(xpos2 - xpos1) != 1) {
 								current += Math.abs(xpos2 - xpos1 + 1) ;
@@ -188,54 +224,62 @@ module Planner {
 						}
 							
 					}
+					//Find smallest heuristic for any of the disjunctive expressions
 					shortest = Math.min(current, shortest);
 				}
 				//console.log(shortest);
 				return shortest;
 			}
-		
+		//Return value
 		var plan : string[] = [];
+		//Create a start node object
 		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
+		//Result from aStarSearch (needs to be massaged to get a list of command strings
 		var foundResult : SearchResult<WorldStateNode> =
-		aStarSearch<WorldStateNode>(
-			new WorldStateGraph(),
-			startNode,
-			goalIsReached, //goal
-			manhattanish, //heuristic
-			100);	  //time
-      console.log("Found result:");
-      console.log(foundResult);
+			aStarSearch<WorldStateNode>(
+				new WorldStateGraph(),
+				startNode,
+				goalIsReached, //goal
+				manhattanish, //heuristic
+				100);	  //time
+		console.log("Found result:");
+		console.log(foundResult);
 
-      // Handle the found result
+		// Handle the found result
 
-      var nodeResult : WorldStateNode[] = foundResult.path;
+		var nodeResult : WorldStateNode[] = foundResult.path;
+		
+		// If we did not start at a world state that already fulfills the goal
+		if (nodeResult.length > 0) {
+			var nextNode : WorldStateNode;
+			var currNode : WorldStateNode;
+			//The result returned from the search function does not include the start node, so prepend it. 
+			nodeResult = [startNode].concat(nodeResult);
+			//Find a command for each successive world state
+			for(var i = 0;i<nodeResult.length - 1;i++){
+				currNode = nodeResult[i];
+				nextNode = nodeResult[i+1];
+				//Go right 
+				if (currNode.arm == nextNode.arm - 1) {
+					plan.push('r');
+				//Go left
+				} else if (currNode.arm == nextNode.arm + 1) {
+					plan.push('l');
+				//Drop a held item
+				} else if (nextNode.holding == null) {
+					plan.push('d');
+				//Pick up an item
+				} else {
+					plan.push('p');
+				}			
+			}
+		} else {
+			//The goal is fulfilled at the starting world state
+			return [];
+		}
 
-	  
-	  if (nodeResult.length > 0) {
-	      var nextNode : WorldStateNode;
-		  var currNode : WorldStateNode;
-		  nodeResult = [startNode].concat(nodeResult);
-		  for(var i = 0;i<nodeResult.length - 1;i++){
-			currNode = nodeResult[i];
-			nextNode = nodeResult[i+1];
-			if (currNode.arm == nextNode.arm - 1) {
-				plan.push('r');
-			} else if (currNode.arm == nextNode.arm + 1) {
-				plan.push('l');
-			} else if (nextNode.holding == null) {
-				plan.push('d');
-			} else {
-				plan.push('p');
-			}			
-				
-
-		  }
-	  } else {
-		  return [];
-	  }
-
-        return plan;
-    }
+		return plan;
+		}
 
 }
 
@@ -245,7 +289,7 @@ class WorldStateNode implements WorldState {
     holding: string;
     /** The column position of the robot arm. */
     arm: number;
-    /** A mapping from strings to `ObjectDefinition`s. The strings are meant to be identifiers for the objects (see ExampleWorlds.ts for an example). */
+    /** A mapping from strings to `ObjectDefinition`s. The strings are meant to be identifiers for the objects (see 	ExampleWorlds.ts for an example). */
     objects: { [s:string]: ObjectDefinition; };
     /** List of predefined example sentences/utterances that the user can choose from in the UI. */
     examples: string[];
@@ -254,6 +298,9 @@ class WorldStateNode implements WorldState {
 
 	}
 
+	/**
+	* A string with all the members represented on a single line 
+	*/
 	toString() : string {
 		var value : string = "";
 		for (var s of this.stacks) {
@@ -263,8 +310,9 @@ class WorldStateNode implements WorldState {
 		value = value + "   holding: " + this.holding;
 		return value;
 	}
-
-
+	/**
+	* A deep copy of a world state
+	*/
 	clone () : WorldStateNode {
 		var newStacks : Stack[] = [];
 		for (var i = 0; i < this.stacks.length; i++) {
@@ -277,82 +325,104 @@ class WorldStateNode implements WorldState {
 
 
 class WorldStateGraph implements Graph<WorldStateNode> {
-	constructor () {
-
-	}
+	
+	/**
+	* Find all allowed moves from a world state; return edges to the resulting world states for those moves
+	*/
 	outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
 
 		var results : Edge<WorldStateNode>[] = [];
-		//Pick up
+		//Can we pick up an item? We cannot be holding anything and the stack below the arm needs to be non-empty
 		if (!gn.holding && gn.stacks[gn.arm].length > 0) {
+			//New world state
 			var gnnew = gn.clone();
+			//Move an item from a stack to the arm
 			var currStack : Stack = gnnew.stacks[gnnew.arm];
 			gnnew.holding = currStack.pop();
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			//Add new world state to results
 			results.push(newEdge);
 		}
-		//Drop
+		//Can we drop an item? We need to be holding an item
 		if (gn.holding) {
+			//Create a new world state
 			var gnnew = gn.clone();
 			var currStack : Stack = gnnew.stacks[gnnew.arm];
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			//If an item is below the arm, check that the held item can be dropped on it
 			if (currStack.length > 0) {
 				var heldObject : ObjectDefinition = gn.objects[gn.holding];
 				var topObject : ObjectDefinition = gn.objects[currStack[currStack.length-1]];
 				if (Interpreter.isPhysical("ontop", heldObject, topObject)||
-            Interpreter.isPhysical("inside", heldObject, topObject)) {
+					Interpreter.isPhysical("inside", heldObject, topObject)) {
 					currStack.push(gn.holding);
 					gnnew.holding = null;
+					//Add new world state to results
 					results.push(newEdge);
 				}
-			} else {
+			} 
+			//No item below the arm, just drop the held item
+			else {
 				currStack.push(gn.holding);
 				gnnew.holding = null;
+				//Add new world state to results
 				results.push(newEdge);
 			}
 		}
+		//Can we move left? If so, we cannot be at the leftmost coordinate.  
 		if (gn.arm != 0) {
 			var gnnew = gn.clone();
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			//Move arm left
 			gnnew.arm--;
+			//Add new world state to results
 			results.push(newEdge);
 		}
+		//Can we move right? If so, we cannot be at the rightmost coordinate. 
 		if (gn.arm != gn.stacks.length -1) {
 			var gnnew = gn.clone();
 			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
+			//Move arm right
 			gnnew.arm++;
+			//Add new world state to results
 			results.push(newEdge);
 		}
 		return results;
 	}
 
-
+	/* 
+	* Helper function for compareNodes, checking whether two arrays of stacks contain the same objects
+	*/
 	compareStacks(stackA : string[][], stackB : string[][]) : boolean {
-		var retVal : boolean = false;
+		
+		//If stacks are not equal size, they are not equal
 		if(stackA.length != stackB.length){
 			return false;
 		}
 		for (var i = 0; i < stackA.length; i++) {
+			//As soon as non-matching item is found, stacks are not equal, so return false
 			if(stackA[i].length != stackB[i].length){
 				return false;
 			}
 			for (var j = 0; j < stackA[i].length; j++) {
-				if(stackA[i][j] == stackB[i][j]){
-					retVal = true;
-				} else {
+				if(stackA[i][j] != stackB[i][j]){
 					return false;
 				}
 			}
 		}
-		return retVal;
+		//No differences found, return true
+		return true;
 	}
 
 	compareNodes(stateA : WorldState, stateB : WorldState) : number {
 
+		//Compare the stacks, the item held in the arm and the position of the arm
 		if(this.compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
 		   stateA.arm == stateB.arm){
+			//items are equal
 			return 0;
 		} else {
+			//items are not equal
 			return 1;
 		}
 	}
