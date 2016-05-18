@@ -75,7 +75,7 @@ ExampleWorlds["medium"] = {
 
 
 ExampleWorlds["small"] = {
-    "stacks": [["a"],["g","l","e"],["m"],["k"],["f"]],
+    "stacks": [["a"],["b","g","l","e"],["m"],["k"],["f"]],
     "holding": null,
     "arm": 4,
     "objects": {
@@ -94,8 +94,8 @@ ExampleWorlds["small"] = {
         "m": { "form":"box",     "size":"small",  "color":"blue"  }
     },
     "examples": [
-        "put the white ball on the floor",
-        "put the black ball in the large yellow box",
+        "put the large blue table on the floor",
+        "put the black ball beside the large yellow box",
         "take a blue object",
         "take the white ball",
         "put all boxes on the floor",

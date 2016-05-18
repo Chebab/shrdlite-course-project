@@ -161,9 +161,10 @@ module Planner {
 								current += 1;
 							} else if (xpos1 == -2) { //current place is hand
 								current += Math.abs(xpos1 - state.arm) + 1;
-							} else {
+							} else if (Math.abs(xpos1 - xpos2) != 0){
 								current += Math.abs(xpos1 - xpos2) + 2;
-							}
+							} //else object is already in correct column 
+								
 						} else if (literal.relation == "leftof") {
 							var xpos1 = positions.getValue(literal.args[0])[0];
 							var xpos2 = positions.getValue(literal.args[1])[0];
@@ -175,7 +176,7 @@ module Planner {
 								}
 							} else {
 								
-								current += Math.max(xpos1 - xpos2 + 2, 1) ;
+								current += Math.max(xpos1 - xpos2 + 2, 0) ;
 							}
 						} else if (literal.relation == "rightof") {
 							
@@ -188,22 +189,22 @@ module Planner {
 									current += 1;
 								}
 							} else {
-								current += Math.max(xpos2 - xpos1 + 2, 1) ;
+								current += Math.max(xpos2 - xpos1 + 2, 0) ;
 							}
 						} else if (literal.relation == "beside") {
 							var xpos1 = positions.getValue(literal.args[0])[0];
 							var xpos2 = positions.getValue(literal.args[1])[0];
 							if (xpos1 == -2) { //current place is hand
 								current += Math.abs(state.arm - xpos1);
-							} else {
+							} else if (Math.abs(xpos2 - xpos1) != 1) {
 								current += Math.abs(xpos2 - xpos1 + 1) ;
-							}
+							} //else already beside
 						}
 							
 					}
 					shortest = Math.min(current, shortest);
 				}
-				return 0;
+				return shortest;
 			}, //heuristic
 			10);	  //time
       console.log("Found result:");
@@ -401,9 +402,9 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 		}
 	}
 }
-var hard = "put the black ball in the large yellow box";
-var easy = "take a ball"
-var result: Parser.ParseResult[] = Parser.parse(hard);
+//var hard = "put the black ball in the large yellow box";
+//var easy = "take a ball"
+//var result: Parser.ParseResult[] = Parser.parse(hard);
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
-var plan = Planner.plan(formula,ExampleWorlds["small"]);
+//var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+//var plan = Planner.plan(formula,ExampleWorlds["small"]);

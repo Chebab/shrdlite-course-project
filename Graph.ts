@@ -139,7 +139,7 @@ function aStarSearch<Node> (
 	//While the frontier is non-empty and there is time left
 	while(frontier.peek() && !timeouted) {
 		// Fetch the edge with the least cost from the PriorityQueue
-        console.log(frontier.size());
+        //console.log(frontier.size());
 		var nextEdge : Edge<Node> = frontier.dequeue();
 		// Get the edge w/ highest prio.
 		//If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
@@ -162,7 +162,7 @@ function aStarSearch<Node> (
 			}
 		}
 	}
-
+	console.log("Done in " + i + " iterations");
 	if (!frontier.peek()) {
 		throw new Error("There is no solution");
 	}
