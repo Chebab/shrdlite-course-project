@@ -23,6 +23,10 @@ int:
 	tsc Interpreter.ts ExampleWorlds.ts World.ts Parser.ts lib/collections --out a.js
 	node a.js
 
+plan:
+	tsc Interpreter.ts Graph.ts Planner.ts ExampleWorlds.ts World.ts Parser.ts lib/collections --out a.js
+	node a.js
+
 aStarTests: TestAStar.js
 	node $< all
 

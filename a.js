@@ -2844,33 +2844,14 @@ var Interpreter;
                         // if the objects are the same, nothing can be done
                         continue;
                     }
-                    // Actual objects of the current source and target object
-                    var sourceObject;
-                    var targetObject;
-                    // Handle if any of the current objects is the floor
-                    if (sourceobj[i] == "floor") {
-                        sourceObject = { form: "floor", size: null, color: null };
-                        targetObject = state.objects[targetobj[j]];
-                    }
-                    else if (targetobj[j] == "floor") {
-                        sourceObject = state.objects[sourceobj[i]];
-                        targetObject = { form: "floor", size: null, color: null };
-                    }
-                    else {
-                        sourceObject = state.objects[sourceobj[i]];
-                        targetObject = state.objects[targetobj[j]];
-                    }
-                    // Check if the the goal is physically possible
+                    // Fetch the objects from the WorldState
+                    var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                    // The objects to be checked
+                    var sourceObject = theObjects[0];
+                    var targetObject = theObjects[1];
+                    // The position of the objects
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        var pushed = [
-                            {
-                                polarity: true,
-                                relation: cmd.location.relation,
-                                args: [sourceobj[i], targetobj[j]]
-                            }
-                        ];
-                        // add the goal to the result
-                        interpretation.push(pushed);
+                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
                     }
                 }
             }
@@ -2881,13 +2862,7 @@ var Interpreter;
             for (var i = 0; i < sourceobj.length; i++) {
                 // Handle is the object is the floor
                 if (!(sourceobj[i] == "floor")) {
-                    interpretation.push([
-                        {
-                            polarity: true,
-                            relation: "holding",
-                            args: [sourceobj[i]]
-                        }
-                    ]);
+                    interpretation.push(makeLiteral(true, "holding", [sourceobj[i]]));
                 }
             }
         }
@@ -3003,30 +2978,20 @@ var Interpreter;
      * @param state - The WorldState in which we currently are
      * @param currentState - The Map of objects to its position
      */
-    function filterRelation(filter, currobjs, relobjs, state, currentState) {
+    function filterRelation(filter, sourceobj, targetobj, state, currentState) {
         // The result
         var result = [];
-        // Do filtering of all possible combinations of objects between the lists
-        for (var i = 0; i < currobjs.length; i++) {
-            for (var j = 0; j < relobjs.length; j++) {
-                var sourceObject;
-                var targetObject;
-                // Handle if any of the objects is the floor
-                if (currobjs[i] == "floor") {
-                    sourceObject = { form: "floor", size: null, color: null };
-                    targetObject = state.objects[relobjs[j]];
-                }
-                else if (relobjs[j] == "floor") {
-                    sourceObject = state.objects[currobjs[i]];
-                    targetObject = { form: "floor", size: null, color: null };
-                }
-                else {
-                    sourceObject = state.objects[currobjs[i]];
-                    targetObject = state.objects[relobjs[j]];
-                }
-                // Get the positions of the objects
-                var cpos = currentState.getValue(currobjs[i]);
-                var rpos = currentState.getValue(relobjs[j]);
+        // Go through all of the possible combinations
+        for (var i = 0; i < sourceobj.length; i++) {
+            for (var j = 0; j < targetobj.length; j++) {
+                // Fetch the objects from the WorldState
+                var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                // The objects to be checked
+                var sourceObject = theObjects[0];
+                var targetObject = theObjects[1];
+                // The position of the objects
+                var cpos = currentState.getValue(sourceobj[i]);
+                var rpos = currentState.getValue(targetobj[j]);
                 if (cpos[0] == -2) {
                     // If the source object is being held, it has no relation
                     // to any other object, so skip the check
@@ -3038,7 +3003,7 @@ var Interpreter;
                 }
                 else if (isFeasible(filter, cpos, rpos)) {
                     // Once found add the source object to the result list.
-                    result.push(currobjs[i]);
+                    result.push(sourceobj[i]);
                     continue;
                 }
             }
@@ -3114,20 +3079,36 @@ var Interpreter;
                 return false;
         }
     }
+    Interpreter.isFeasible = isFeasible;
+    /**
+     * Function to check whether or not a relation between two objects are physically possible.
+     * The world is ruled by physical laws that constrain the placement and movement of the objects.
+     *
+     * @param relation the relation to be checked
+     * @param sourceObj an ObjectDefinition of the source object (the object that should be moved)
+     * @param targetObj an ObjectDefinition of the target object (the object that the source should be placed upon)
+     * @returns If the relation between the object is possible, return true,
+                otherwise return false
+     */
     function isPhysical(relation, sourceObj, targetObj) {
-        //console.log("Entered isPhysical with relation "+relation +" Source is "+sourceObj.form +", Target is "+targetObj.form);
-        ////console.log("Source is "+sourceObj.form +", Target is "+targetObj.form);
+        // Switch statement to find out what rules apply
         switch (relation) {
+            // If the relation is rightof, leftof or beside
             case "rightof":
             case "leftof":
             case "beside":
+                // The floor can't be placed besides anything
+                // and nothing can be placed beside the floor
                 if (sourceObj.form == "floor" || targetObj.form == "floor") {
                     return false;
                 }
-                // Maybe check if there actually is a "rightof" the targetObject. Or maybe not here?
-                //////console.log("checking beside constraints")
                 return true;
+            // If the relation is inside
             case "inside":
+                // Nothing can be placed inside the floor, and the floor cannot be
+                // placed inside anything
+                // Nothing bigger than the box can be placed inside of it and
+                // a pyramid, plank or box cannot be placed inside a box of the same size
                 if (sourceObj.form == "floor" || targetObj.form == "floor" ||
                     targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
                         ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
@@ -3135,12 +3116,15 @@ var Interpreter;
                     return false;
                 }
                 return true;
+            // If the relation is ontop
             case "ontop":
-                // Maybe add ball ontop of table and brick?
-                if (targetObj.form == "pyramid" ||
+                // Nothing can be placed ontop of a pyramid? or a ball
+                // and balls cannot be placed ontop of tables, bricks and planks
+                // A small box cannot be placed ontop of a small brick
+                // The floor cannot be placed ontop of anything
+                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
                         targetObj.form == "brick" || targetObj.form == "plank")) ||
-                    targetObj.form == "ball" ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
                         targetObj.form == "brick" && targetObj.size == "small") ||
@@ -3150,29 +3134,501 @@ var Interpreter;
                 else {
                     return true;
                 }
+            // If the relation is above
             case "above":
+                // A large object can never be placed above a small object
+                // The floor cannot be placed above anything
                 if (sourceObj.size == "large" && targetObj.size == "small" ||
                     sourceObj.form == "floor") {
                     return false;
                 }
-                // How handle above?
                 return true;
+            // If the relation is below
             case "below":
+                // Nothing can be placed below the floor, a ball or a pyramid
+                // Nothing that is small can be below anything that is big
                 if (targetObj.form == "floor" ||
                     sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
                 }
-                // How handle below?
                 return true;
             default:
                 return false;
         }
     }
+    Interpreter.isPhysical = isPhysical;
+    /**
+    * Helper function that creates two ObjectDefinitions
+    * Contains special cases if the objects are floors
+    *
+    * These objects are needed when checking all combinations of goals
+    *
+    * @param sourceObject first object to create
+    * @param targetObject second object to create
+    * @param source every object in the world
+    * @param target every object in the world
+    * @param state the world state. Needed to find the right object definitions
+    * @returns If the object is a floor, the method returns a custom floor object, otherwise
+    *			it returns the object that corresponds in the WorldState
+    */
+    function objectFactory(sourceObject, targetObject, source, target, state) {
+        if (source == "floor") {
+            sourceObject = { form: "floor", size: null, color: null };
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+        else if (target == "floor") {
+            sourceObject = state.objects[source];
+            targetObject = { form: "floor", size: null, color: null };
+            return [sourceObject, targetObject];
+        }
+        else {
+            sourceObject = state.objects[source];
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+    }
+    /**
+     * Helper function to create literals
+     *
+     * @param polarity the polarity
+     * @param relation the relation
+     * @param args the arguments
+     * @returns The literal
+     */
+    function makeLiteral(polarity, relation, args) {
+        return [{ polarity: polarity, relation: relation, args: args }];
+    }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put the large green brick on a table");
+/*
+var result: Parser.ParseResult[] = Parser.parse("put the black ball in the large yellow box");
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log("First parse");
 console.log(Parser.stringify(result[0]));
 console.log(Interpreter.stringify(formula[0]));
+*/
+///<reference path="lib/collections.ts"/>
+///<reference path="lib/node.d.ts"/>
+/** Graph module
+*
+*  Types for generic A\* implementation.
+*
+*  *NB.* The only part of this module
+*  that you should change is the `aStarSearch` function. Everything
+*  else should be used as-is.
+*/
+/** An edge in a graph. */
+var Edge = (function () {
+    function Edge() {
+    }
+    return Edge;
+}());
+/** Type that reports the result of a search. */
+var SearchResult = (function () {
+    function SearchResult() {
+    }
+    return SearchResult;
+}());
+/**
+* A\* search implementation, parameterised by a `Node` type. The code
+* here is just a template; you should rewrite this function
+* entirely. In this template, the code produces a dummy search result
+* which just picks the first possible neighbour.
+*
+* Note that you should not change the API (type) of this function,
+* only its body.
+* @param graph The graph on which to perform A\* search.
+* @param start The initial node.
+* @param goal A function that returns true when given a goal node. Used to determine if the algorithm has reached the goal.
+* @param heuristics The heuristic function. Used to estimate the cost of reaching the goal from a given Node.
+* @param timeout Maximum time (in seconds) to spend performing A\* search.
+* @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
+*/
+function aStarSearch(graph, start, goal, heuristics, timeout) {
+    var goalNode;
+    // For each node, the cost of getting from the start node to that node
+    var gScores = new collections.Dictionary();
+    var cachedHeuristics = new collections.Dictionary();
+    // For each node, which neighboring node it can most efficiently be reached from
+    // on a path from the start node
+    var priorNodes = new collections.Dictionary();
+    // The set (priorityQueue) of edges going out from discovered nodes that still needs evaluation
+    var frontier = new collections.PriorityQueue(edgeCompare);
+    var timeouted = false;
+    var starttime = new Date().getTime();
+    // Iteration count
+    var i = 0;
+    // Initialize gScores and frontier
+    gScores.setValue(start, 0);
+    var e = { from: start, to: start, cost: 0 };
+    addTargetOfEdgeToFrontier(e);
+    var result = {
+        path: [],
+        cost: 0
+    };
+    // For each node, the total cost of getting from the start node to the goal.
+    // This is partly known, partly heuristic
+    function edgeScore(e) {
+        var h = cachedHeuristics.getValue(e.to);
+        if (!h) {
+            h = heuristics(e.to);
+            cachedHeuristics.setValue(e.to, h);
+        }
+        return gScores.getValue(e.from) + e.cost + h;
+    }
+    // Compare helper function needed for the priorityQueue
+    function edgeCompare(e1, e2) {
+        return edgeScore(e2) - edgeScore(e1);
+    }
+    /**
+    *	Adds edges originating in target node of e to the frontier.
+    */
+    function addTargetOfEdgeToFrontier(e) {
+        // Outgoing edges of the node we're looking at (e.to)
+        var outEdges = graph.outgoingEdges(e.to);
+        var oldCost;
+        // Find the cost from start to the source node of e
+        oldCost = gScores.getValue(e.from);
+        // For backtracking
+        priorNodes.setValue(e.to, e.from);
+        // Set the gScore value of the new node to the cost of the last node + the
+        // cost of the edge
+        gScores.setValue(e.to, oldCost + e.cost);
+        //console.log(gScores);
+        // Loop over all outgoing edges from edge.to
+        // If the target node does not exist in the frontier, add the out edge.
+        // (If we dont have the gScore value we know it is not in the frontier)
+        for (var _i = 0, outEdges_1 = outEdges; _i < outEdges_1.length; _i++) {
+            var outEdge = outEdges_1[_i];
+            if ((gScores.getValue(outEdge.to) == null)) {
+                frontier.add(outEdge);
+            }
+        }
+    }
+    //While the frontier is non-empty and there is time left
+    while (frontier.peek() && !timeouted) {
+        // Fetch the edge with the least cost from the PriorityQueue
+        //console.log("Fronteir size is "+frontier.size());
+        var nextEdge = frontier.dequeue();
+        // Get the edge w/ highest prio.
+        //If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
+        if (gScores.getValue(nextEdge.to) == null) {
+            addTargetOfEdgeToFrontier(nextEdge);
+            // If the target node is a goal, save it and break
+            if (goal(nextEdge.to)) {
+                goalNode = nextEdge.to;
+                break;
+            }
+        }
+        i++;
+        //Every 1000 iterations, check for timeout
+        if (i % 1000) {
+            if (new Date().getTime() - starttime > 1000 * timeout) {
+                timeouted = true;
+            }
+        }
+    }
+    //Return dummy result on timeout
+    if (timeouted) {
+        return result;
+    }
+    if (!goalNode)
+        throw new Error("No path found");
+    // Save the goalNode to a dummy variable
+    var n = goalNode;
+    // Get the resulting cost from the gScores
+    result.cost = gScores.getValue(goalNode);
+    // While we haven't reached the start node, add the path (backtracking)
+    do {
+        // Add the node to the path
+        result.path.push(n);
+        // Get the "parent"/"previous" node
+        n = priorNodes.getValue(n);
+    } while (graph.compareNodes(n, start));
+    // Result must be in end to start order, so we have to reverse it
+    result.path = result.path.reverse();
+    return result;
+}
+///<reference path="World.ts"/>
+///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
+/**
+* Planner module
+*
+* The goal of the Planner module is to take the interpetation(s)
+* produced by the Interpreter module and to plan a sequence of actions
+* for the robot to put the world into a state compatible with the
+* user's command, i.e. to achieve what the user wanted.
+*
+* The planner should use your A* search implementation to find a plan.
+*/
+var Planner;
+(function (Planner) {
+    //////////////////////////////////////////////////////////////////////
+    // exported functions, classes and interfaces/types
+    /**
+     * Top-level driver for the Planner. Calls `planInterpretation` for each given interpretation generated by the Interpreter.
+     * @param interpretations List of possible interpretations.
+     * @param currentState The current state of the world.
+     * @returns Augments Interpreter.InterpretationResult with a plan represented by a list of strings.
+     */
+    function plan(interpretations, currentState) {
+        var errors = [];
+        var plans = [];
+        interpretations.forEach(function (interpretation) {
+            try {
+                var result = interpretation;
+                result.plan = planInterpretation(result.interpretation, currentState);
+                if (result.plan.length == 0) {
+                    result.plan.push("That is already true!");
+                }
+                plans.push(result);
+            }
+            catch (err) {
+                errors.push(err);
+            }
+        });
+        if (plans.length) {
+            return plans;
+        }
+        else {
+            // only throw the first error found
+            throw errors[0];
+        }
+    }
+    Planner.plan = plan;
+    function stringify(result) {
+        return result.plan.join(", ");
+    }
+    Planner.stringify = stringify;
+    //////////////////////////////////////////////////////////////////////
+    // private functions
+    /**
+     * The core planner function. The code here is just a template;
+     * you should rewrite this function entirely. In this template,
+     * the code produces a dummy plan which is not connected to the
+     * argument `interpretation`, but your version of the function
+     * should be such that the resulting plan depends on
+     * `interpretation`.
+     *
+     *
+     * @param interpretation The logical interpretation of the user's desired goal. The plan needs to be such that by executing it, the world is put into a state that satisfies this goal.
+     * @param state The current world state.
+     * @returns Basically, a plan is a
+     * stack of strings, which are either system utterances that
+     * explain what the robot is doing (e.g. "Moving left") or actual
+     * actions for the robot to perform, encoded as "l", "r", "p", or
+     * "d". The code shows how to build a plan. Each step of the plan can
+     * be added using the `push` method.
+     */
+    function planInterpretation(interpretation, state) {
+        /*    function isFeasible(
+        relation: string,
+        spos: number[],
+        tpos: number[]): boolean {
+*/
+        function goalIsReached(state) {
+            var positions = new collections.Dictionary();
+            // Add all of the states and their position to the Map
+            for (var i = 0; i < state.stacks.length; i++) {
+                for (var j = 0; j < state.stacks[i].length; j++) {
+                    positions.setValue(state.stacks[i][j], [i, j]);
+                }
+            }
+            if (state.holding != null) {
+                // If the arm is holding an object, add that object to the state
+                // The position [-2,-2] is used for finding the held object
+                positions.setValue(state.holding, [-2, -2]);
+            }
+            //The first element in the position is used to indentify
+            // the floor. The second element is the actual position of the floor§
+            positions.setValue("floor", [-1, -1]);
+            for (var _i = 0, interpretation_1 = interpretation; _i < interpretation_1.length; _i++) {
+                var conjunct = interpretation_1[_i];
+                var goalReached = true;
+                for (var _a = 0, conjunct_1 = conjunct; _a < conjunct_1.length; _a++) {
+                    var literal = conjunct_1[_a];
+                    var relation = literal.relation;
+                    var pos1 = positions.getValue(literal.args[0]);
+                    var pos2 = null;
+                    if (literal.args.length > 1) {
+                        pos2 = positions.getValue(literal.args[1]);
+                    }
+                    if (literal.relation == "holding") {
+                        goalReached = state.holding == literal.args[0];
+                    }
+                    else if (!Interpreter.isFeasible(literal.relation, pos1, pos2)) {
+                        goalReached = false;
+                    }
+                    if (!goalReached)
+                        break;
+                }
+                if (goalReached)
+                    return true;
+            }
+            return false;
+        }
+        var plan = [];
+        var foundResult = aStarSearch(new WorldStateGraph(), new WorldStateNode(state.stacks, state.holding, state.arm, state.objects), goalIsReached, //goal
+        function (a) { return 0; }, //heuristic
+        10); //time
+        console.log("Found result:");
+        console.log(foundResult);
+        // This function returns a dummy plan involving a random stack
+        /*do {
+            var pickstack = Math.floor(Math.random() * state.stacks.length);
+        } while (state.stacks[pickstack].length == 0);
+
+        // First move the arm to the leftmost nonempty stack
+        if (pickstack < state.arm) {
+            plan.push("Moving left");
+            for (var i = state.arm; i > pickstack; i--) {
+                plan.push("l");
+            }
+        } else if (pickstack > state.arm) {
+            plan.push("Moving right");
+            for (var i = state.arm; i < pickstack; i++) {
+                plan.push("r");
+            }
+        }
+
+        // Then pick up the object
+        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
+        plan.push("Picking up the " + state.objects[obj].form,
+                  "p");
+
+        if (pickstack < state.stacks.length-1) {
+            // Then move to the rightmost stack
+            plan.push("Moving as far right as possible");
+            for (var i = pickstack; i < state.stacks.length-1; i++) {
+                plan.push("r");
+            }
+
+            // Then move back
+            plan.push("Moving back");
+            for (var i = state.stacks.length-1; i > pickstack; i--) {
+                plan.push("l");
+            }
+        }
+
+        // Finally put it down again
+        plan.push("Dropping the " + state.objects[obj].form,
+                  "d");
+        */
+        return plan;
+    }
+})(Planner || (Planner = {}));
+var WorldStateNode = (function () {
+    function WorldStateNode(stacks, holding, arm, objects) {
+        this.stacks = stacks;
+        this.holding = holding;
+        this.arm = arm;
+        this.objects = objects;
+        this.examples = null;
+    }
+    WorldStateNode.prototype.toString = function () {
+        var value = "";
+        for (var _i = 0, _a = this.stacks; _i < _a.length; _i++) {
+            var s = _a[_i];
+            value = value + "[" + s + "]";
+        }
+        value = value + "   arm: " + this.arm;
+        value = value + "   holding: " + this.holding;
+        return value;
+    };
+    WorldStateNode.prototype.clone = function () {
+        var newStacks = [];
+        for (var i = 0; i < this.stacks.length; i++) {
+            newStacks.push(this.stacks[i].slice());
+        }
+        return new WorldStateNode(newStacks, this.holding, this.arm, this.objects);
+    };
+    return WorldStateNode;
+}());
+var WorldStateGraph = (function () {
+    function WorldStateGraph() {
+    }
+    WorldStateGraph.prototype.outgoingEdges = function (gn) {
+        var results = [];
+        //Pick up
+        if (!gn.holding && gn.stacks[gn.arm].length > 0) {
+            var gnnew = gn.clone();
+            var currStack = gnnew.stacks[gnnew.arm];
+            gnnew.holding = currStack.pop();
+            var newEdge = { from: gn, to: gnnew, cost: 1 };
+            results.push(newEdge);
+        }
+        //Drop
+        if (gn.holding) {
+            var gnnew = gn.clone();
+            var currStack = gnnew.stacks[gnnew.arm];
+            var newEdge = { from: gn, to: gnnew, cost: 1 };
+            if (currStack.length > 0) {
+                var heldObject = gn.objects[gn.holding];
+                var topObject = gn.objects[currStack[currStack.length - 1]];
+                if (Interpreter.isPhysical("ontop", heldObject, topObject) ||
+                    Interpreter.isPhysical("inside", heldObject, topObject)) {
+                    currStack.push(gn.holding);
+                    gnnew.holding = null;
+                    results.push(newEdge);
+                }
+            }
+            else {
+                currStack.push(gn.holding);
+                gnnew.holding = null;
+                results.push(newEdge);
+            }
+        }
+        if (gn.arm != 0) {
+            var gnnew = gn.clone();
+            var newEdge = { from: gn, to: gnnew, cost: 1 };
+            gnnew.arm--;
+            results.push(newEdge);
+        }
+        if (gn.arm != gn.stacks.length - 1) {
+            var gnnew = gn.clone();
+            var newEdge = { from: gn, to: gnnew, cost: 1 };
+            gnnew.arm++;
+            results.push(newEdge);
+        }
+        return results;
+    };
+    WorldStateGraph.prototype.compareStacks = function (stackA, stackB) {
+        var retVal = false;
+        if (stackA.length != stackB.length) {
+            return false;
+        }
+        for (var i = 0; i < stackA.length; i++) {
+            if (stackA[i].length != stackB[i].length) {
+                return false;
+            }
+            for (var j = 0; j < stackA[i].length; j++) {
+                if (stackA[i][j] == stackB[i][j]) {
+                    retVal = true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+        return retVal;
+    };
+    WorldStateGraph.prototype.compareNodes = function (stateA, stateB) {
+        if (this.compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
+            stateA.arm == stateB.arm) {
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    };
+    return WorldStateGraph;
+}());
+var hard = "put the black ball in the large yellow box";
+var easy = "take a ball";
+var result = Parser.parse(hard);
+//Interpreter.interpretCommand(result, ExampleWorlds["small"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var plan = Planner.plan(formula, ExampleWorlds["small"]);

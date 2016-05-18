@@ -55,16 +55,16 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    
+
 	var goalNode : Node;
     // For each node, the cost of getting from the start node to that node
     var gScores = new collections.Dictionary<Node, number>();
 	var cachedHeuristics = new collections.Dictionary<Node, number>();
-	
+
     // For each node, which neighboring node it can most efficiently be reached from
 	// on a path from the start node
     var priorNodes = new collections.Dictionary<Node, Node>();
-    
+
     // The set (priorityQueue) of edges going out from discovered nodes that still needs evaluation
     var frontier = new collections.PriorityQueue<Edge<Node>>(edgeCompare);
 
@@ -72,17 +72,17 @@ function aStarSearch<Node> (
 	var starttime = new Date().getTime();
 	// Iteration count
 	var i : number = 0;
-	
+
     // Initialize gScores and frontier
 	gScores.setValue(start, 0);
 	var e : Edge<Node> = {from: start, to: start, cost: 0};
-	addTargetOfEdgeToFrontier(e);	
-	
+	addTargetOfEdgeToFrontier(e);
+
 	var result : SearchResult<Node> = {
         path: [],
         cost: 0
     };
-	
+
     // For each node, the total cost of getting from the start node to the goal.
     // This is partly known, partly heuristic
 	function edgeScore (
@@ -95,7 +95,7 @@ function aStarSearch<Node> (
 		}
 		return gScores.getValue(e.from) + e.cost + h;
 	}
-	
+
     // Compare helper function needed for the priorityQueue
 	function edgeCompare(
 		e1 : Edge<Node>,
@@ -103,9 +103,9 @@ function aStarSearch<Node> (
 	) : number {
 		return edgeScore(e2) - edgeScore(e1);
 	}
-		
+
 	/**
-	*	Adds edges originating in target node of e to the frontier. 
+	*	Adds edges originating in target node of e to the frontier.
 	*/
 	function addTargetOfEdgeToFrontier(
 		e : Edge<Node>
@@ -120,24 +120,25 @@ function aStarSearch<Node> (
 		// Set the gScore value of the new node to the cost of the last node + the
         // cost of the edge
 		gScores.setValue(e.to, oldCost + e.cost);
-		
-		console.log(gScores);
+
+		//console.log(gScores);
 		// Loop over all outgoing edges from edge.to
         // If the target node does not exist in the frontier, add the out edge.
 		// (If we dont have the gScore value we know it is not in the frontier)
         for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
 				frontier.add(outEdge);
-				console.log("added stuff to frontier");
+				//console.log("added stuff to frontier");
 			}
 		}
 	}
 
-	
+
 	//While the frontier is non-empty and there is time left
 	while(frontier.peek() && !timeouted) {
 		// Fetch the edge with the least cost from the PriorityQueue
-        
+
+    //console.log("Fronteir size is "+frontier.size());
 		var nextEdge : Edge<Node> = frontier.dequeue();
 		// Get the edge w/ highest prio.
 		//If we do not know the gscore of the edge's target node, add its outgoing edges to the frontier
@@ -157,21 +158,23 @@ function aStarSearch<Node> (
 			}
 		}
 	}
-	
+
 	//Return dummy result on timeout
 	if (timeouted) {
 		return result;
 	}
-	
+  if (!goalNode) throw new Error("No path found");
+
     // Save the goalNode to a dummy variable
     var n: Node = goalNode;
-    
+
     // Get the resulting cost from the gScores
     result.cost = gScores.getValue(goalNode);
-    
-	
+
+
     // While we haven't reached the start node, add the path (backtracking)
     do {
+
         // Add the node to the path
         result.path.push(n);
         // Get the "parent"/"previous" node

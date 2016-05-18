@@ -1,4 +1,3 @@
-///<reference path="World.ts"/>
 var ExampleWorlds = {};
 ExampleWorlds["complex"] = {
     "stacks": [["e"], ["a", "l"], ["i", "h", "j"], ["c", "k", "g", "b"], ["d", "m", "f"]],

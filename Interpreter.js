@@ -11,7 +11,6 @@ var Interpreter;
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
-                console.log(Interpreter.stringify(result));
             }
             catch (err) {
                 errors.push(err);
@@ -37,9 +36,7 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var objects = Array.prototype.concat.apply([], state.stacks);
-        var a = objects[Math.floor(Math.random() * objects.length)];
-        var b = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation = [[]];
+        var interpretation = [];
         var currentState = new collections.Dictionary();
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
@@ -47,164 +44,173 @@ var Interpreter;
             }
         }
         if (state.holding != null) {
-            currentState.setValue(state.holding, [-1, -1]);
             objects.push(state.holding);
+            currentState.setValue(state.holding, [-2, -2]);
         }
+        objects.push("floor");
+        currentState.setValue("floor", [-1, -1]);
         var sourceobj = findEntites(cmd.entity, state, objects, currentState);
         if (sourceobj.length < 1) {
-            console.log("no source objects");
-            return [[]];
-        }
-        else if (sourceobj[0].indexOf("__Error__") >= 0) {
-            var error = sourceobj[0].split("#");
-            var errorCode = error[1];
-            console.log("cannot find a source object, error code:" + errorCode);
-            return [[]];
+            throw new Error("No source objects found");
         }
         var targetobj = [];
         if (cmd.location != null) {
-            console.log("trying to find targetobj");
             targetobj = findEntites(cmd.location.entity, state, objects, currentState);
         }
         if (cmd.command == "move") {
             if (targetobj.length < 1) {
-                console.log("no target objects");
-                return [[]];
+                throw new Error("No target objects");
             }
-            else if (targetobj[0].indexOf("__Error__") >= 0) {
-                var error = sourceobj[0].split("#");
-                var errorCode = error[1];
-                console.log("cannot find a target object, error code:" + errorCode);
-                return [[]];
-            }
-            console.log("amount of sobj=" + sourceobj.length + " and amount of tobj=" + sourceobj.length);
             for (var i = 0; i < sourceobj.length; i++) {
                 for (var j = 0; j < targetobj.length; j++) {
                     if (sourceobj[i] == targetobj[j]) {
                         continue;
                     }
-                    var sourceObject = state.objects[sourceobj[i]];
-                    var targetObject = state.objects[targetobj[j]];
-                    var cpos = currentState.getValue(sourceobj[i]);
-                    var rpos = currentState.getValue(targetobj[j]);
-                    if (isFeasible(sourceobj[i], targetobj[j], cmd.location.relation, sourceObject, targetObject, cpos, rpos)) {
-                        interpretation.push([
-                            {
-                                polarity: true,
-                                relation: cmd.location.relation,
-                                args: [sourceobj[i], targetobj[j]]
-                            }
-                        ]);
+                    var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                    var sourceObject = theObjects[0];
+                    var targetObject = theObjects[1];
+                    if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
+                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
                     }
                 }
             }
         }
         else if (cmd.command == "take") {
+            for (var i = 0; i < sourceobj.length; i++) {
+                if (!(sourceobj[i] == "floor")) {
+                    interpretation.push(makeLiteral(true, "holding", [sourceobj[i]]));
+                }
+            }
+        }
+        if (interpretation.length < 1) {
+            interpretation.push(null);
         }
         return interpretation;
     }
     function findEntites(ent, state, objects, currentState) {
         var obj = ent.object;
-        var currobjs = [];
-        for (var i = 0; i < objects.length; i++) {
-            var temp = state.objects[objects[i]];
-            var isSame = true;
-            if (obj.size != null) {
-                isSame = isSame && obj.size == temp.size;
-            }
-            if (obj.color != null) {
-                isSame = isSame && obj.color == temp.color;
-            }
-            if (obj.form != null) {
-                isSame = isSame && obj.form == temp.form;
-            }
-            if (isSame) {
-                currobjs.push(objects[i]);
-            }
+        var currobjs = findObjects(obj, state, objects, currentState);
+        if (ent.quantifier == "the" && currobjs.length > 1) {
+            throw new Error("Too many indentifications of type THE");
         }
         if (obj.location == null) {
-            if (ent.quantifier == "the" && currobjs.length > 1) {
-                return ["__Error__#0"];
-            }
             return currobjs;
         }
         var relobjs = findEntites(obj.location.entity, state, objects, currentState);
-        if (relobjs.length < 1) {
-            return ["__Error__#1"];
-        }
-        else if (relobjs[0].indexOf("__Error__") >= 0) {
-            return relobjs;
-        }
         var result = filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
-        if (ent.quantifier == "the" && currobjs.length > 1) {
-            return ["__Error__#0"];
-        }
         return result;
     }
-    function filterRelation(filter, currobjs, relobjs, state, currentState) {
+    function findObjects(obj, state, objects, currentState) {
+        if (obj == null) {
+            return [];
+        }
+        var sourceobjs = [];
+        if (obj.object == null && obj.location == null) {
+            for (var i = 0; i < objects.length; i++) {
+                var temp;
+                if (objects[i] == "floor") {
+                    temp = { form: "floor", size: null, color: null };
+                }
+                else {
+                    temp = state.objects[objects[i]];
+                }
+                var isSame = true;
+                if (obj.size != null) {
+                    isSame = isSame && obj.size == temp.size;
+                }
+                if (obj.color != null) {
+                    isSame = isSame && obj.color == temp.color;
+                }
+                if (obj.form == "anyform") {
+                    isSame = isSame && true;
+                }
+                else {
+                    isSame = isSame && obj.form == temp.form;
+                }
+                if (isSame) {
+                    sourceobjs.push(objects[i]);
+                }
+            }
+        }
+        else {
+            var tempsourceobjs = findObjects(obj.object, state, objects, currentState);
+            var temptargetobjs = findEntites(obj.location.entity, state, objects, currentState);
+            sourceobjs = filterRelation(obj.location.relation, tempsourceobjs, temptargetobjs, state, currentState);
+        }
+        return sourceobjs;
+    }
+    function filterRelation(filter, sourceobj, targetobj, state, currentState) {
         var result = [];
-        console.log("searchword is " + filter);
-        for (var i = 0; i < currobjs.length; i++) {
-            for (var j = 0; j < relobjs.length; j++) {
-                var sourceObject = state.objects[currobjs[i]];
-                var targetObject = state.objects[relobjs[j]];
-                var cpos = currentState.getValue(currobjs[i]);
-                var rpos = currentState.getValue(relobjs[j]);
-                if (cpos[0] < 0 || rpos[0] < 0) {
+        for (var i = 0; i < sourceobj.length; i++) {
+            for (var j = 0; j < targetobj.length; j++) {
+                var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                var sourceObject = theObjects[0];
+                var targetObject = theObjects[1];
+                var cpos = currentState.getValue(sourceobj[i]);
+                var rpos = currentState.getValue(targetobj[j]);
+                if (cpos[0] == -2) {
                     continue;
                 }
-                if (isFeasible(currobjs[i], relobjs[j], filter, sourceObject, targetObject, cpos, rpos)) {
-                    result.push(currobjs[i]);
+                if (!isPhysical(filter, sourceObject, targetObject)) {
+                    continue;
+                }
+                else if (isFeasible(filter, cpos, rpos)) {
+                    result.push(sourceobj[i]);
                     continue;
                 }
             }
         }
         return result;
     }
-    function isFeasible(sourceId, targetId, relation, sourceObj, targetObj, spos, tpos) {
+    function isFeasible(relation, spos, tpos) {
+        var xs = spos[0];
+        var ys = spos[1];
+        var xt = tpos[0];
+        var yt = tpos[1];
+        if (xs == -1) {
+            xs = xt;
+        }
+        else if (xt == -1) {
+            xt = xs;
+        }
         switch (relation) {
             case "leftof":
-                if (spos[0] < tpos[0]) {
+                if (xs < xt) {
                     return true;
                 }
                 return false;
             case "rightof":
-                if (spos[0] > tpos[0]) {
+                if (xs > xt) {
                     return true;
                 }
                 return false;
             case "inside":
-                if (spos[0] == tpos[0] &&
-                    spos[1] - tpos[1] == 1 &&
-                    targetObj.form == "box" &&
-                    !(sourceObj.size == "large" &&
-                        targetObj.size == "small")) {
-                    console.log(sourceObj.size + " " + sourceObj.form);
-                    console.log(targetObj.size + " " + targetObj.form);
+                if (xs == xt &&
+                    (ys - yt) == 1) {
                     return true;
                 }
                 return false;
             case "ontop":
-                if (spos[0] == tpos[0] &&
-                    spos[1] - tpos[1] == 1) {
+                if (xs == xt &&
+                    (ys - yt) == 1) {
                     return true;
                 }
                 return false;
             case "under":
-                if (spos[1] < tpos[1] &&
-                    spos[0] == tpos[0]) {
+                if (ys < yt &&
+                    xs == xt) {
                     return true;
                 }
                 return false;
             case "beside":
-                if (spos[0] - tpos[0] == 1 ||
-                    spos[0] - tpos[0] == -1) {
+                if ((xs - xt) == 1 ||
+                    (xs - xt) == -1) {
                     return true;
                 }
                 return false;
             case "above":
-                if (spos[1] > tpos[1] &&
-                    spos[0] == tpos[0]) {
+                if (ys > yt &&
+                    xs == xt) {
                     return true;
                 }
                 return false;
@@ -212,7 +218,73 @@ var Interpreter;
                 return false;
         }
     }
+    Interpreter.isFeasible = isFeasible;
+    function isPhysical(relation, sourceObj, targetObj) {
+        switch (relation) {
+            case "rightof":
+            case "leftof":
+            case "beside":
+                if (sourceObj.form == "floor" || targetObj.form == "floor") {
+                    return false;
+                }
+                return true;
+            case "inside":
+                if (sourceObj.form == "floor" || targetObj.form == "floor" ||
+                    targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
+                        ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
+                            targetObj.size == sourceObj.size))) {
+                    return false;
+                }
+                return true;
+            case "ontop":
+                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
+                    (sourceObj.form == "ball" && (targetObj.form == "table" ||
+                        targetObj.form == "brick" || targetObj.form == "plank")) ||
+                    targetObj.form == "box" ||
+                    (sourceObj.form == "box" && sourceObj.size == "small" &&
+                        targetObj.form == "brick" && targetObj.size == "small") ||
+                    sourceObj.form == "floor") {
+                    return false;
+                }
+                else {
+                    return true;
+                }
+            case "above":
+                if (sourceObj.size == "large" && targetObj.size == "small" ||
+                    sourceObj.form == "floor") {
+                    return false;
+                }
+                return true;
+            case "below":
+                if (targetObj.form == "floor" ||
+                    sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
+                    (sourceObj.size == "small" && targetObj.size == "large")) {
+                    return false;
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+    Interpreter.isPhysical = isPhysical;
+    function objectFactory(sourceObject, targetObject, source, target, state) {
+        if (source == "floor") {
+            sourceObject = { form: "floor", size: null, color: null };
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+        else if (target == "floor") {
+            sourceObject = state.objects[source];
+            targetObject = { form: "floor", size: null, color: null };
+            return [sourceObject, targetObject];
+        }
+        else {
+            sourceObject = state.objects[source];
+            targetObject = state.objects[target];
+            return [sourceObject, targetObject];
+        }
+    }
+    function makeLiteral(polarity, relation, args) {
+        return [{ polarity: polarity, relation: relation, args: args }];
+    }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put a ball in a box");
-console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
