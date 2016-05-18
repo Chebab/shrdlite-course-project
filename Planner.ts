@@ -35,6 +35,7 @@ module Planner {
                 }
                 plans.push(result);
             } catch(err) {
+				console.log("----------------------ERRRORRRRR----------------------");
                 errors.push(err);
             }
         });

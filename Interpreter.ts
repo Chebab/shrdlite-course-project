@@ -152,6 +152,7 @@ module Interpreter {
         var sourceobj: string[] =
             findEntites(cmd.entity, state, objects, currentState);
 
+		console.log(sourceobj)
         if (sourceobj.length < 1) {
             // If there are no objects found, throw error.
             throw new Error("No source objects found");
@@ -542,7 +543,8 @@ module Interpreter {
                 }
                 return true;
             // If the relation is below
-            case "below":
+            case "under":
+				
                 // Nothing can be placed below the floor, a ball or a pyramid
                 // Nothing that is small can be below anything that is big
                 if (targetObj.form == "floor" ||
