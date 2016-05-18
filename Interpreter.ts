@@ -149,14 +149,21 @@ module Interpreter {
         currentState.setValue("floor", [-1, -1]);
 
         // Find all of the objects given in the first entity
-        var sourceobj: string[] =
-            findEntites(cmd.entity, state, objects, currentState);
-
-		console.log(sourceobj)
-        if (sourceobj.length < 1) {
-            // If there are no objects found, throw error.
-            throw new Error("No source objects found");
-        }
+        
+		var sourceobj: string[] ;
+		if (cmd.entity) {
+			sourceobj = findEntites(cmd.entity, state, objects, currentState);
+			if (sourceobj.length < 1) {
+				// If there are no objects found, throw error.
+				throw new Error("No source objects found");
+			}
+		} else {
+			if (state.holding) {
+				sourceobj = [state.holding];
+			} else {
+				throw new Error("Not holding anything");
+			}
+		}
         // All of the objects at the location entity
         var targetobj: string[] = [];
 
@@ -165,8 +172,8 @@ module Interpreter {
             targetobj = findEntites(cmd.location.entity, state, objects, currentState);
         }
 
-        // Start creating the goals
-        if (cmd.command == "move") {
+    
+        if (cmd.command == "move" || cmd.command == "put") {
             if (targetobj.length < 1) {
                 // If no target object is found, we cannot continue the move,
                 // throw error.
