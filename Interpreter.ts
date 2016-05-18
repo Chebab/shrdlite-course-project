@@ -595,8 +595,10 @@ module Interpreter {
         return [{ polarity, relation, args }];
     }
 }
+
 /*
 var result: Parser.ParseResult[] = Parser.parse("put the black ball in the large yellow box");
+
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log("First parse");
