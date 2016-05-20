@@ -517,24 +517,24 @@ module Interpreter {
                 return true;
             // If the relation is inside
             case "inside":
-                // Nothing can be placed inside the floor, and the floor cannot be
+                // Nothing can be placed inside anything other than a box, and the floor cannot be
                 // placed inside anything
                 // Nothing bigger than the box can be placed inside of it and
-                // a pyramid, plank or box cannot be placed inside a box of the same size
-                if (sourceObj.form == "floor" || targetObj.form == "floor" ||
-                    targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
-                        ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
-                            targetObj.size == sourceObj.size))) {
+                // a plank, pyramid or box cannot be placed inside a box of the same size
+                if (sourceObj.form == "floor" || targetObj.form != "box" ||
+                    (targetObj.size == "small" && sourceObj.size == "large") ||
+                        ((sourceObj.form == "plank" || sourceObj.form == "pyramid"  || sourceObj.form == "box") &&
+                            targetObj.size == sourceObj.size)) {
                     return false;
                 }
                 return true;
             // If the relation is ontop
             case "ontop":
-                // Nothing can be placed ontop of a pyramid? or a ball
+                // Nothing can be placed ontop of a ball
                 // and balls cannot be placed ontop of tables, bricks and planks
                 // A small box cannot be placed ontop of a small brick
                 // The floor cannot be placed ontop of anything
-                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
+                if (targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
                         targetObj.form == "brick" || targetObj.form == "plank")) ||
                     targetObj.form == "box" ||
