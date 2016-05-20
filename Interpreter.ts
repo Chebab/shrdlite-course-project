@@ -145,7 +145,7 @@ module Interpreter {
         objects.push("floor");
 
         //The first element in the position is used to indentify
-        // the floor. The second element is the actual position of the floor§
+        // the floor. The second element is the actual position of the floor
         currentState.setValue("floor", [-1, -1]);
 
         // Find all of the objects given in the first entity
@@ -335,11 +335,16 @@ module Interpreter {
             // find the objects in the location entity
             var temptargetobjs: string[] =
                 findEntites(obj.location.entity, state, objects, currentState);
-
+			
+			console.log("tempsource: " + tempsourceobjs);
+			console.log("temptarget: " + temptargetobjs);
+			
+			
             // Filter objects in obj.objects on the relation to the objects in
             // the location entity
             sourceobjs = filterRelation(obj.location.relation, tempsourceobjs,
                 temptargetobjs, state, currentState);
+			console.log("sourceobjs: " + sourceobjs);
         }
         return sourceobjs;
     }
@@ -365,7 +370,7 @@ module Interpreter {
         // The result
         var result: string[] = [];
         // Go through all of the possible combinations
-        for (var i = 0; i < sourceobj.length; i++) {
+        outer: for (var i = 0; i < sourceobj.length; i++) {
             for (var j = 0; j < targetobj.length; j++) {
 
                 // Fetch the objects from the WorldState
@@ -398,7 +403,7 @@ module Interpreter {
                 else if (isFeasible(filter, cpos, rpos)) {
                     // Once found add the source object to the result list.
                     result.push(sourceobj[i]);
-                    continue;
+                    continue outer;
                 }
             }
         }
@@ -552,10 +557,9 @@ module Interpreter {
             // If the relation is below
             case "under":
 				
-                // Nothing can be placed below the floor, a ball or a pyramid
+                // Nothing can be placed below the floor or a ball 
                 // Nothing that is small can be below anything that is big
-                if (targetObj.form == "floor" ||
-                    sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
+                if (targetObj.form == "floor" || sourceObj.form == "ball" || 
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
                 }
