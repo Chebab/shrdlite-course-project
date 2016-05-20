@@ -530,11 +530,13 @@ module Interpreter {
                 return true;
             // If the relation is ontop
             case "ontop":
+				// Small objects cannot support big objects
                 // Nothing can be placed ontop of a ball
                 // and balls cannot be placed ontop of tables, bricks and planks
                 // A small box cannot be placed ontop of a small brick
                 // The floor cannot be placed ontop of anything
-                if (targetObj.form == "ball" ||
+                if ((sourceObj.size == "large" && targetObj.size == "small") ||
+					targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
                         targetObj.form == "brick" || targetObj.form == "plank")) ||
                     targetObj.form == "box" ||
