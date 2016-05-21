@@ -186,6 +186,8 @@ function aStarSearch<Node> (
         result.path.push(n);
         // Get the "parent"/"previous" node
         n = priorNodes.getValue(n);
+		//Assert that the heuristic was correct all through the path (for debugging)
+		console.log("heuristic: " + heuristics(n));
     } while (graph.compareNodes(n,start));
 
     // Result must be in end to start order, so we have to reverse it
