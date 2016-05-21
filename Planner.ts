@@ -173,7 +173,6 @@ module Planner {
 					else {
 						abovecount1 = state.stacks[xpos1].length - ypos1 - 1;
 					}
-					
 					var xpos2 : number;
 					var ypos2 : number;
 					var abovecount2 : number;
@@ -339,7 +338,7 @@ module Planner {
 						} //else already beside
 					}
 					longest = Math.max(current, longest);
-						
+					current = 0;	
 				}
 				//Find smallest heuristic for any of the disjunctive expressions
 				shortest = Math.min(longest, shortest);
@@ -432,6 +431,7 @@ module Planner {
 						} //else already beside
 					}
 					longest = Math.max(current, longest);	
+					current = 0;
 				}
 				//Find smallest heuristic for any of the disjunctive expressions
 				shortest = Math.min(longest, shortest);
