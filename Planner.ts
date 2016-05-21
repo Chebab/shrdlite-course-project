@@ -289,7 +289,7 @@ module Planner {
 						if (xpos1 == -2) { //current place is hand
 							if (xpos2 >= state.arm) {
 								//Move the hand (+1 to get to other side of target) , then drop it (+1)
-								current += xpos2 - state.arm + 2;
+								current += state.arm - xpos2 + 2;
 							} else {
 								//Drop the item
 								current += 1;
@@ -309,7 +309,7 @@ module Planner {
 						if (xpos1 == -2) { //current place is hand
 							if (xpos2 <= state.arm) {
 								//Move the hand (+1 to get to other side of target) then drop it (+1)
-								current += state.arm - xpos2 + 2;
+								current += xpos2 - state.arm + 2;
 							} else {
 								//Drop the item
 								current += 1;
@@ -391,7 +391,7 @@ module Planner {
 						if (xpos1 == -2) { //current place is hand
 							if (xpos2 >= state.arm) {
 								//Move the hand (+1 to get to other side of target) , then drop it (+1)
-								current += xpos2 - state.arm + 2;
+								current += state.arm - xpos2 + 2;
 							} else {
 								//Drop the item
 								current += 1;
@@ -408,7 +408,7 @@ module Planner {
 						if (xpos1 == -2) { //current place is hand
 							if (xpos2 <= state.arm) {
 								//Move the hand (+1 to get to other side of target) then drop it (+1)
-								current += state.arm - xpos2 + 2;
+								current += xpos2 - state.arm + 2;
 							} else {
 								//Drop the item
 								current += 1;
@@ -446,7 +446,7 @@ module Planner {
 				new WorldStateGraph(),
 				startNode,
 				goalIsReached, //goal
-				manhattanish, //heuristic
+				manhattanishv2, //heuristic
 				100);	  //time
 		console.log("Found result:");
 		console.log(foundResult);
