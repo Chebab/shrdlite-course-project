@@ -139,92 +139,303 @@ module Planner {
 			}
 			return false;
 		}
-			/**
-			*  Simple heuristic. Uses (almost) only the difference in x-positions of targets and sources. 
-			*/
-			function manhattanish (state : WorldStateNode) : number {
-				var shortest : number = 100000000;
-				var current : number = 0;
-				//A dictionary from string id:s of objects to positions in the world
-				var positions = getPositions(state);
-				//Find the minimum Manhattan distance of any conjunctive expression
-				for (var conjunct of interpretation) {
-					//The Manhattan distance is given by the sum of the Manhattan distance
-					//to travel to satisfy each of the literals. 
-					for (var literal of conjunct) {
-						var xpos1 : number = positions.getValue(literal.args[0])[0];;
-						var xpos2 : number;
-						if (literal.relation != "holding")
-							xpos2 = positions.getValue(literal.args[1])[0];
-						//If we wish to hold the target object, only check x-distance to goal. 
-						if (literal.relation =="holding") {
-							current += (Math.abs(xpos1 - state.arm) + 1);
+		
+		
+		function manhattanishv2(state : WorldStateNode) : number {
+			//If goal fulfilled, return 0?
+			var shortest : number = 100000000;
+			var longest : number = 0;
+			var current : number = 0;
+			//A dictionary from string id:s of objects to positions in the world
+			var positions = getPositions(state);
+			//Find the minimum heuristic of any conjunctive expression
+			for (var conjunct of interpretation) {
+				//heuristic is given by the min of max of of the heuristics 
+				//to satisfy each of the literals. 
+				longest = 0;
+				for (var literal of conjunct) {
+					//if !isphysical (gluecode(literal)) -- ADD THIS!
+					var xpos1 : number = positions.getValue(literal.args[0])[0];
+					var ypos1 : number = positions.getValue(literal.args[0])[1];
+					var abovecount1 : number;
+					//If source is floor
+					if (xpos1 == -1) {
+						throw new Error("This should never happen - floor as first argument in literal");
+					}
+					//source object is in hand
+					else if (xpos1 == -2){
+						abovecount1 = 0;
+					} 
+					//source is not in hand or floor
+					else {
+						abovecount1 = state.stacks[xpos1].length - ypos1 - 1;
+					}
+					
+					var xpos2 : number;
+					var ypos2 : number;
+					var abovecount2 : number;
+					var smallestStackSize : number  = 1000000;
+					var smallestStackIndex : number;
+					for (var i :number = 0; i < state.stacks.length; i++) {
+						if (smallestStackSize > state.stacks[i].length) {
+							smallestStackSize = state.stacks[i].length;
+							smallestStackIndex = i;
+						}
+					}
+					if (literal.relation != "holding") {
+						xpos2 = positions.getValue(literal.args[1])[0];
+						ypos2 = positions.getValue(literal.args[1])[1];
+						//Target is floor
+						if (xpos2 == -1) {
+							//Find size of smallest stack on floor
+							abovecount2 = smallestStackSize;
 						} 
-						//if the goal is to put the source in the same x-coordinate as the goal
-						else if (literal.relation == "ontop" || literal.relation == "under" ||
-									literal.relation == "inside" ||literal.relation == "above")  {
-							
-							if (xpos2 == -1) { //target is floor
+						//Target is in hand
+						else if (xpos2 == -2) {
+							abovecount2 = 0;
+						} 
+						//Target is neither in hand nor on floor
+						else {
+							abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
+						} 
+					}
+					
+					
+					//If we wish to hold the target object, check x-distance to goal. 
+					if (literal.relation =="holding") {
+						current += (Math.abs(xpos1 - state.arm) + 1);				
+						//add 4*number of objects that need to be removed above the wanted object 
+						//(pick up, move, drop, move back)
+						current += 4*abovecount1;	
+					} 
+				
+					
+					//if the goal is to put the source in the same x-coordinate as the goal
+					else if (literal.relation == "ontop" || literal.relation == "under" ||
+								literal.relation == "inside" ||literal.relation == "above")  {
+						
+						if (xpos2 == -1) { //target is floor
+							//(We cannot be in here unless the relation is "ontop" or ("above" and source is held))
+							//if source is held
+							if (xpos1 == -1) {
+								//If there is no free column, clear the smallest column
+								if (literal.relation != "above")
+									current += 4*smallestStackSize;
+								//drop the held item
 								current += 1;
-							} else if (xpos1 == -2) { //current place is hand
-								//Move the hand, and the drop it (+1)
-								current += Math.abs(xpos1 - state.arm) + 1;
-							} else if (Math.abs(xpos1 - xpos2) != 0){
-								//Pick up an object (+1) move the hand and drop it (+1)
-								current += Math.abs(xpos1 - xpos2) + 2;
-							} //else object is already in correct column 
-								
-						} 
-						//If Source should be left of target
-						else if (literal.relation == "leftof") {
-							if (xpos1 == -2) { //current place is hand
-								if (xpos1 >= state.arm) {
-									//Move the hand (+1 to get to other side of target) , then drop it (+1)
-									current += xpos1 - state.arm + 2;
-								} else {
-									//Drop the item
-									current += 1;
+							}
+							//if source is not yet held
+							else {
+								//move to source
+								current += Math.abs(xpos1 - state.arm);
+								//if need to clear to get to object and then clear a stack to get to floor
+								if (smallestStackIndex != xpos1) {
+									//remove stuff above source
+									//(pick up, move, drop, move back)
+									current += 4*abovecount1;
+									//remove stuff from smallest stack
+									current += 4*smallestStackSize; 
+								} 
+								//source is already in smallest stack - just clear it and then put source back
+								else {
+									//remove stuff from smallest stack, put source back on floor ( = at least 
+									//move, pick up, move, move, drop OR move, move, pick up, move, drop OR
+									//last item of smallest stack was placed 2 slots away from smallest stack)
+									current += 4*smallestStackSize + 5;
 								}
-							} else {
-								//Pick up an object (+1) move the hand (+1 to get to other side of target) 
-								//and drop it (+1) or 
-								//if already to the left, this part of the goal is already reached (0)
-								current += Math.max(xpos1 - xpos2 + 3, 0) ;
+								//Drop it
+								current += 1;
+							}
+						} else if (xpos1 == -2) { //current place is hand
+							//Move the hand to target, and then drop it (+1)
+							current += Math.abs(xpos2 - state.arm) + 1;
+							//If there's stuff above the target and we need to remove it
+							if (literal.relation != "above") {
+								current += abovecount2*4;
+								//Need to dig deeper if we wish to get below target
+								if (literal.relation == "below") {
+									current += 4;
+								}
 							}
 						} 
-						//If Source should be right of target
-						else if (literal.relation == "rightof") {
-							if (xpos1 == -2) { //current place is hand
-								if (xpos1 <= state.arm) {
-									//Move the hand (+1 to get to other side of target) then drop it (+1)
-									current += state.arm - xpos1 + 2;
-								} else {
-									//Drop the item
-									current += 1;
-								}
-							} else {
-								//Pick up an object (+1) move the hand (+1 to get to other side of target) 
-								//and drop it (+1) or 
-								//if already to the right, this part of the goal is already reached (0)
-								current += Math.max(xpos2 - xpos1 + 3, 0) ;
+						//if source is not in hand and not in same column as target
+						else if (Math.abs(xpos1 - xpos2) != 0){
+							//Pick up an object (+1) move the hand and drop it (+1)
+							current += Math.abs(xpos1 - xpos2) + 2;
+							//Clear stuff above source
+							if (literal.relation == "above") {
+								current += 4*abovecount1;
 							}
-						} else if (literal.relation == "beside") {
-							if (xpos1 == -2) { //current place is hand
-								//Move the item one less space than the distance to the target and then drop it (+1)
-								//Todo: if above the target, this can be improved
-								current += Math.abs(state.arm - xpos1);
-							} else if (Math.abs(xpos2 - xpos1) != 1) {
-								current += Math.abs(xpos2 - xpos1 + 1) ;
-							} //else already beside
+							//if "ontop", "in" or "below"
+							//Need to get adjacent in the y-direction to target 
+							//- so clear both above source and target
+							else {								
+								current += 4*abovecount1;
+								current += 4*abovecount2;
+							}
+						} 
+						//else object is already in correct column 
+						//(but literal is not fulfilled - so need to dig up lowest of target/source)
+						else {
+							//move to stack with objects
+							current += Math.abs(state.arm - xpos1);
+							//Removing comment worsens performance---WHY?
+							//current += Math.max(abovecount1,abovecount2)*4;
 						}
 							
+					} 
+					//If Source should be left of target
+					else if (literal.relation == "leftof") {
+						if (xpos1 == -2) { //current place is hand
+							if (xpos2 >= state.arm) {
+								//Move the hand (+1 to get to other side of target) , then drop it (+1)
+								current += xpos2 - state.arm + 2;
+							} else {
+								//Drop the item
+								current += 1;
+							}
+						} else {
+							//Get to source
+							current += Math.abs(state.arm - xpos1);
+							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+							//and drop it (+1) or 
+							//if already to the left, this part of the goal is already reached (0)
+							current += Math.max(xpos1 - xpos2 + 3, 0) ;
+							
+						}
+					} 
+					//If Source should be right of target
+					else if (literal.relation == "rightof") {
+						if (xpos1 == -2) { //current place is hand
+							if (xpos2 <= state.arm) {
+								//Move the hand (+1 to get to other side of target) then drop it (+1)
+								current += state.arm - xpos2 + 2;
+							} else {
+								//Drop the item
+								current += 1;
+							}
+						} else {
+							//Get to source
+							current += Math.abs(state.arm - xpos1);
+							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+							//and drop it (+1) or 
+							//if already to the right, this part of the goal is already reached (0)
+							
+							current += Math.max(xpos2 - xpos1 + 3, 0) ;
+						}
+					} else if (literal.relation == "beside") {
+						if (xpos1 == -2) { //current place is hand
+							//Move the item one less space than the distance to the target and then drop it (+1)
+							current += Math.abs(state.arm - xpos2);
+							//if above the target, move one step and drop it
+							if (state.arm == xpos2) {
+								current += 2;
+							}
+						} else if (Math.abs(xpos2 - xpos1) != 1) {
+							current += Math.abs(xpos2 - xpos1 + 1) ;
+						} //else already beside
 					}
-					//Find smallest heuristic for any of the disjunctive expressions
-					shortest = Math.min(current, shortest);
+					longest = Math.max(current, longest);
+						
 				}
-				//console.log(shortest);
-				return shortest;
+				//Find smallest heuristic for any of the disjunctive expressions
+				shortest = Math.min(longest, shortest);
 			}
+			//console.log(shortest);
+			return shortest;
+			
+			
+			
+			
+		}
+		/**
+		*  Simple heuristic. Uses (almost) only the difference in x-positions of targets and sources. 
+		*/
+		function manhattanish (state : WorldStateNode) : number {
+			var shortest : number = 100000000;
+			var longest : number = 0;
+			var current : number = 0;
+			//A dictionary from string id:s of objects to positions in the world
+			var positions = getPositions(state);
+			//Find the minimum Manhattan distance of any conjunctive expression
+			for (var conjunct of interpretation) {
+				//The Manhattan distance is given by the sum of the Manhattan distance
+				//to travel to satisfy each of the literals. 
+				longest = 0;
+				for (var literal of conjunct) {
+					var xpos1 : number = positions.getValue(literal.args[0])[0];;
+					var xpos2 : number;
+					if (literal.relation != "holding")
+						xpos2 = positions.getValue(literal.args[1])[0];
+					//If we wish to hold the target object, only check x-distance to goal. 
+					if (literal.relation =="holding") {
+						current += (Math.abs(xpos1 - state.arm) + 1);
+					} 
+					//if the goal is to put the source in the same x-coordinate as the goal
+					else if (literal.relation == "ontop" || literal.relation == "under" ||
+								literal.relation == "inside" ||literal.relation == "above")  {
+						
+						if (xpos2 == -1) { //target is floor
+							current += 1;
+						} else if (xpos1 == -2) { //current place is hand
+							//Move the hand, and the drop it (+1)
+							current += Math.abs(xpos2 - state.arm) + 1;
+						} else if (Math.abs(xpos1 - xpos2) != 0){
+							//Pick up an object (+1) move the hand and drop it (+1)
+							current += Math.abs(xpos1 - xpos2) + 2;
+						} //else object is already in correct column 
+							
+					} 
+					//If Source should be left of target
+					else if (literal.relation == "leftof") {
+						if (xpos1 == -2) { //current place is hand
+							if (xpos2 >= state.arm) {
+								//Move the hand (+1 to get to other side of target) , then drop it (+1)
+								current += xpos2 - state.arm + 2;
+							} else {
+								//Drop the item
+								current += 1;
+							}
+						} else {
+							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+							//and drop it (+1) or 
+							//if already to the left, this part of the goal is already reached (0)
+							current += Math.max(xpos1 - xpos2 + 3, 0) ;
+						}
+					} 
+					//If Source should be right of target
+					else if (literal.relation == "rightof") {
+						if (xpos1 == -2) { //current place is hand
+							if (xpos2 <= state.arm) {
+								//Move the hand (+1 to get to other side of target) then drop it (+1)
+								current += state.arm - xpos2 + 2;
+							} else {
+								//Drop the item
+								current += 1;
+							}
+						} else {
+							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
+							//and drop it (+1) or 
+							//if already to the right, this part of the goal is already reached (0)
+							current += Math.max(xpos2 - xpos1 + 3, 0) ;
+						}
+					} else if (literal.relation == "beside") {
+						if (xpos1 == -2) { //current place is hand
+							//Move the item one less space than the distance to the target and then drop it (+1)
+							//Todo: if above the target, this can be improved
+							current += Math.abs(state.arm - xpos2);
+						} else if (Math.abs(xpos2 - xpos1) != 1) {
+							current += Math.abs(xpos2 - xpos1 + 1) ;
+						} //else already beside
+					}
+					longest = Math.max(current, longest);	
+				}
+				//Find smallest heuristic for any of the disjunctive expressions
+				shortest = Math.min(longest, shortest);
+			}
+			//console.log(shortest);
+			return shortest;
+		}
 		//Return value
 		var plan : string[] = [];
 		//Create a start node object
