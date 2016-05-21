@@ -89,6 +89,7 @@ module Interpreter {
     }
 
     export function stringify(result: InterpretationResult): string {
+		
         return result.interpretation.map((literals) => {
             return literals.map((lit) => stringifyLiteral(lit)).join(" & ");
             // return literals.map(stringifyLiteral).join(" & ");
@@ -173,6 +174,7 @@ module Interpreter {
         }
 
     
+	
         if (cmd.command == "move" || cmd.command == "put") {
             if (targetobj.length < 1) {
                 // If no target object is found, we cannot continue the move,
@@ -196,10 +198,11 @@ module Interpreter {
                     var sourceObject: ObjectDefinition = theObjects[0];
                     var targetObject: ObjectDefinition = theObjects[1];
                     // The position of the objects
-                    if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
+					console.log(sourceObject); console.log(targetObject); console.log(cmd.location.relation);
+					if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 
-                    }
+                    } 
                 }
             }
         }
@@ -215,7 +218,7 @@ module Interpreter {
         }
         // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
-            interpretation.push(null);
+            throw new Error("No interpretation found");
         }
         return interpretation;
     }
