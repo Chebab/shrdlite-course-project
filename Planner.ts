@@ -125,7 +125,10 @@ module Planner {
 					}
 					//For "holding", only check if wanted object is held
 				    if (literal.relation=="holding"){
-					    goalReached = state.holding==literal.args[0];
+					    if (state.holding!=literal.args[0]) {
+							goalReached = false;
+							break;
+						}
 				    }
 					//For other relations, use isFeasible of the interpreter to check
 					//whether the relation holds between the two objects in the literal
