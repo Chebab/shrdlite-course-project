@@ -177,16 +177,26 @@ module Planner {
 					var ypos2 : number;
 					var abovecount2 : number;
 					var smallestStackSize : number  = 1000000;
-					var smallestStackIndex : number;
+					var smallestStackIndices : [number];
 					for (var i :number = 0; i < state.stacks.length; i++) {
+						if (smallestStackSize == state.stacks[i].length) {
+							smallestStackIndices.push(i);
+						}
 						if (smallestStackSize > state.stacks[i].length) {
 							smallestStackSize = state.stacks[i].length;
-							smallestStackIndex = i;
+							smallestStackIndices = [i];
 						}
+						
 					}
 					if (literal.relation != "holding") {
 						xpos2 = positions.getValue(literal.args[1])[0];
 						ypos2 = positions.getValue(literal.args[1])[1];
+						
+						//If literal already fulfilled, move on
+						if (Interpreter.isFeasible(literal.relation, [xpos1, ypos1], [xpos2, ypos2])) {
+							continue;
+						}
+						
 						//Target is floor
 						if (xpos2 == -1) {
 							//Find size of smallest stack on floor
@@ -219,8 +229,9 @@ module Planner {
 						if (xpos2 == -1) { //target is floor
 							//(We cannot be in here unless the relation is "ontop" or ("above" and source is held))
 							//if source is held
-							if (xpos1 == -1) {
+							if (xpos1 == -2) {
 								//If there is no free column, clear the smallest column
+								
 								if (literal.relation != "above")
 									current += 4*smallestStackSize;
 								//drop the held item
@@ -231,7 +242,7 @@ module Planner {
 								//move to source
 								current += Math.abs(xpos1 - state.arm);
 								//if need to clear to get to object and then clear a stack to get to floor
-								if (smallestStackIndex != xpos1) {
+								if (smallestStackIndices.indexOf(xpos1) == -1) {
 									//remove stuff above source
 									//(pick up, move, drop, move back)
 									current += 4*abovecount1;
@@ -244,6 +255,7 @@ module Planner {
 									//move, pick up, move, move, drop OR move, move, pick up, move, drop OR
 									//last item of smallest stack was placed 2 slots away from smallest stack)
 									current += 4*smallestStackSize + 5;
+									
 								}
 								//Drop it
 								current += 1;
