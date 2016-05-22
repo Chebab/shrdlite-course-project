@@ -198,7 +198,6 @@ module Interpreter {
                     var sourceObject: ObjectDefinition = theObjects[0];
                     var targetObject: ObjectDefinition = theObjects[1];
                     // The position of the objects
-					console.log(sourceObject); console.log(targetObject); console.log(cmd.location.relation);
 					if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 
@@ -339,15 +338,12 @@ module Interpreter {
             var temptargetobjs: string[] =
                 findEntites(obj.location.entity, state, objects, currentState);
 			
-			console.log("tempsource: " + tempsourceobjs);
-			console.log("temptarget: " + temptargetobjs);
 			
 			
             // Filter objects in obj.objects on the relation to the objects in
             // the location entity
             sourceobjs = filterRelation(obj.location.relation, tempsourceobjs,
                 temptargetobjs, state, currentState);
-			console.log("sourceobjs: " + sourceobjs);
         }
         return sourceobjs;
     }
@@ -541,7 +537,8 @@ module Interpreter {
                 if ((sourceObj.size == "large" && targetObj.size == "small") ||
 					targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
-                        targetObj.form == "brick" || targetObj.form == "plank")) ||
+                        targetObj.form == "brick" || targetObj.form == "plank" 
+						|| targetObj.form == "pyramid)) ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
                         targetObj.form == "brick" && targetObj.size == "small") ||
