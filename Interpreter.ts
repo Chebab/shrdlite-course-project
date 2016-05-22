@@ -537,8 +537,7 @@ module Interpreter {
                 if ((sourceObj.size == "large" && targetObj.size == "small") ||
 					targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
-                        targetObj.form == "brick" || targetObj.form == "plank" 
-						|| targetObj.form == "pyramid)) ||
+                        targetObj.form == "brick" || targetObj.form == "plank" || targetObj.form == "pyramid")) ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
                         targetObj.form == "brick" && targetObj.size == "small") ||
