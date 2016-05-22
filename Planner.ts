@@ -157,7 +157,7 @@ module Planner {
 				//to satisfy each of the literals. 
 				longest = 0;
 				for (var literal of conjunct) {
-					//if !isphysical (gluecode(literal)) -- ADD THIS!
+					
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
 					var abovecount1 : number;
@@ -293,8 +293,7 @@ module Planner {
 						else {
 							//move to stack with objects
 							current += Math.abs(state.arm - xpos1);
-							//Removing comment worsens performance---WHY?
-							//current += Math.max(abovecount1,abovecount2)*4;
+							current += Math.max(abovecount1,abovecount2)*4;
 						}
 							
 					} 
@@ -463,8 +462,8 @@ module Planner {
 				goalIsReached, //goal
 				manhattanishv2, //heuristic
 				100);	  //time
-		console.log("Found result:");
-		console.log(foundResult);
+		//console.log("Found result:");
+		//console.log(foundResult);
 
 		// Handle the found result
 
