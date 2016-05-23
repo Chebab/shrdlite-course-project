@@ -65,50 +65,81 @@ var Interpreter;
             var targetQuant = cmd.location.entity.quantifier;
             console.log("Source:" + sourceobj);
             console.log("Target:" + targetobj);
+            var sourceChecked = [];
+            var targetChecked = [];
+            var allCombinations = [];
             for (var i = 0; i < sourceobj.length; i++) {
-                var conjunctions = [];
                 for (var j = 0; j < targetobj.length; j++) {
                     if (sourceobj[i] == targetobj[j]) {
                         continue;
                     }
-                    var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                    var theObjects = objectFactory(sourceobj[i], targetobj[j], state);
                     var sourceObject = theObjects[0];
                     var targetObject = theObjects[1];
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        var addLiteral = { polarity: true,
+                        allCombinations.push({ polarity: true,
                             relation: cmd.location.relation,
-                            args: [sourceobj[i], targetobj[j]] };
-                        if (sourceQuant != "all" && targetQuant != "all") {
-                            interpretation.push([addLiteral]);
+                            args: [sourceobj[i], targetobj[j]] });
+                        if (sourceChecked.indexOf(sourceobj[i]) < 0) {
+                            sourceChecked.push(sourceobj[i]);
                         }
-                        else if (sourceQuant != "all" && targetQuant == "all") {
-                            if (interpretation.length - 1 < j) {
-                                interpretation.push([addLiteral]);
-                            }
-                            else {
-                                interpretation[j].push(addLiteral);
-                            }
-                        }
-                        else if (sourceQuant == "all" && targetQuant != "all") {
-                            if (interpretation.length - 1 < j) {
-                                interpretation.push([addLiteral]);
-                            }
-                            else {
-                                interpretation[j].push(addLiteral);
-                            }
-                        }
-                        else if (sourceQuant == "all" && targetQuant == "all") {
-                            if (interpretation.length == 0) {
-                                interpretation.push([addLiteral]);
-                            }
-                            else {
-                                interpretation[0].push(addLiteral);
-                            }
+                        if (targetChecked.indexOf(targetobj[j]) < 0) {
+                            targetChecked.push(targetobj[j]);
                         }
                     }
                 }
-                if (conjunctions.length > 0)
-                    interpretation.push(conjunctions);
+            }
+            console.log("sourceChecked:" + sourceChecked);
+            console.log("targetChecked:" + targetChecked);
+            var checkedQuant;
+            for (var i = 0; i < allCombinations.length; i++) {
+                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
+                checkedQuant = [];
+                var cComb = allCombinations[i];
+                if (sourceQuant != "all" && targetQuant != "all") {
+                    interpretation.push([cComb]);
+                }
+                else if ((sourceQuant != "all" && targetQuant == "all") ||
+                    (sourceQuant == "all" && targetQuant != "all")) {
+                    var conjunctions = [];
+                    conjunctions.push(cComb);
+                    checkedQuant.push(cComb.args[0]);
+                    checkedQuant.push(cComb.args[1]);
+                    for (var j = i + 1; j < allCombinations.length; j++) {
+                        var nComb = allCombinations[j];
+                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
+                        if (sourceQuant == "all" && checkedQuant.indexOf(nComb.args[0]) < 0 ||
+                            (checkedQuant.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
+                            conjunctions.push(nComb);
+                            checkedQuant.push(nComb.args[0]);
+                            checkedQuant.push(nComb.args[1]);
+                        }
+                    }
+                    var qualified;
+                    if (sourceQuant == "all") {
+                        qualified = sourceChecked;
+                    }
+                    else {
+                        qualified = targetChecked;
+                    }
+                    console.log("qualified:" + qualified);
+                    console.log("checkedQuant:" + checkedQuant);
+                    if (qualified.every(function (val) { return checkedQuant.indexOf(val) >= 0; })) {
+                        console.log("conjunctions: OKEY");
+                        interpretation.push(conjunctions);
+                    }
+                    else {
+                        console.log("conjunctions: FAILED");
+                    }
+                }
+                else if (sourceQuant == "all" && targetQuant == "all") {
+                    if (interpretation.length == 0) {
+                        interpretation.push([cComb]);
+                    }
+                    else {
+                        interpretation[0].push(cComb);
+                    }
+                }
             }
         }
         else if (cmd.command == "take") {
@@ -179,7 +210,7 @@ var Interpreter;
         var result = [];
         outer: for (var i = 0; i < sourceobj.length; i++) {
             for (var j = 0; j < targetobj.length; j++) {
-                var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
+                var theObjects = objectFactory(sourceobj[i], targetobj[j], state);
                 var sourceObject = theObjects[0];
                 var targetObject = theObjects[1];
                 var cpos = currentState.getValue(sourceobj[i]);
@@ -306,7 +337,9 @@ var Interpreter;
         }
     }
     Interpreter.isPhysical = isPhysical;
-    function objectFactory(sourceObject, targetObject, source, target, state) {
+    function objectFactory(source, target, state) {
+        var sourceObject;
+        var targetObject;
         if (source == "floor") {
             sourceObject = { form: "floor", size: null, color: null };
             targetObject = state.objects[target];
@@ -327,7 +360,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put a ball in every large box");
+var result = Parser.parse("put all balls left of a box on the floor");
 console.log(Parser.stringify(result[0]));
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));
