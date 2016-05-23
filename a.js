@@ -127,9 +127,9 @@ ExampleWorlds["medium"] = {
     ]
 };
 ExampleWorlds["small"] = {
-    "stacks": [["a"], ["b", "g", "l", "e"], ["m"], ["k"], ["f"]],
-    "holding": null,
-    "arm": 4,
+    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+    "holding": "a",
+    "arm": 0,
     "objects": {
         "a": { "form": "brick", "size": "large", "color": "green" },
         "b": { "form": "brick", "size": "small", "color": "white" },
@@ -146,8 +146,8 @@ ExampleWorlds["small"] = {
         "m": { "form": "box", "size": "small", "color": "blue" }
     },
     "examples": [
-        "put the large blue table on the floor",
-        "put the black ball beside the large yellow box",
+        "put the white ball in a box on the floor",
+        "put the black ball in a box on the floor",
         "take a blue object",
         "take the white ball",
         "put all boxes on the floor",
@@ -2840,6 +2840,8 @@ var Interpreter;
             // Source and target quantifiers
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
+            console.log("Source:" + sourceobj);
+            console.log("Target:" + targetobj);
             // Find all of the combinations of goals
             for (var i = 0; i < sourceobj.length; i++) {
                 var conjunctions = [];
@@ -2866,7 +2868,12 @@ var Interpreter;
                             // if the target quantifier is all, do disjunction for
                             // each source element with conjunctions on all target
                             // elements
-                            conjunctions.push(addLiteral);
+                            if (interpretation.length - 1 < j) {
+                                interpretation.push([addLiteral]);
+                            }
+                            else {
+                                interpretation[j].push(addLiteral);
+                            }
                         }
                         else if (sourceQuant == "all" && targetQuant != "all") {
                             if (interpretation.length - 1 < j) {
@@ -3016,7 +3023,7 @@ var Interpreter;
         // The result
         var result = [];
         // Go through all of the possible combinations
-        for (var i = 0; i < sourceobj.length; i++) {
+        outer: for (var i = 0; i < sourceobj.length; i++) {
             for (var j = 0; j < targetobj.length; j++) {
                 // Fetch the objects from the WorldState
                 var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
@@ -3038,7 +3045,7 @@ var Interpreter;
                 else if (isFeasible(filter, cpos, rpos)) {
                     // Once found add the source object to the result list.
                     result.push(sourceobj[i]);
-                    continue;
+                    continue outer;
                 }
             }
         }
@@ -3235,7 +3242,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("move a ball to the left of all boxes");
+var result = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);

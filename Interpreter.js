@@ -63,6 +63,8 @@ var Interpreter;
             }
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
+            console.log("Source:" + sourceobj);
+            console.log("Target:" + targetobj);
             for (var i = 0; i < sourceobj.length; i++) {
                 var conjunctions = [];
                 for (var j = 0; j < targetobj.length; j++) {
@@ -80,7 +82,12 @@ var Interpreter;
                             interpretation.push([addLiteral]);
                         }
                         else if (sourceQuant != "all" && targetQuant == "all") {
-                            conjunctions.push(addLiteral);
+                            if (interpretation.length - 1 < j) {
+                                interpretation.push([addLiteral]);
+                            }
+                            else {
+                                interpretation[j].push(addLiteral);
+                            }
                         }
                         else if (sourceQuant == "all" && targetQuant != "all") {
                             if (interpretation.length - 1 < j) {
@@ -170,7 +177,7 @@ var Interpreter;
     }
     function filterRelation(filter, sourceobj, targetobj, state, currentState) {
         var result = [];
-        for (var i = 0; i < sourceobj.length; i++) {
+        outer: for (var i = 0; i < sourceobj.length; i++) {
             for (var j = 0; j < targetobj.length; j++) {
                 var theObjects = objectFactory(sourceObject, targetObject, sourceobj[i], targetobj[j], state);
                 var sourceObject = theObjects[0];
@@ -185,11 +192,14 @@ var Interpreter;
                 }
                 else if (isFeasible(filter, cpos, rpos)) {
                     result.push(sourceobj[i]);
-                    continue;
+                    continue outer;
                 }
             }
         }
         return result;
+    }
+    function allHandle(relation, sourceobj, targetobj, state) {
+        return [];
     }
     function isFeasible(relation, spos, tpos) {
         var xs = spos[0];
@@ -317,7 +327,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("move a ball to the left of all boxes");
+var result = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));

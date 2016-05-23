@@ -174,6 +174,12 @@ module Interpreter {
             // Source and target quantifiers
             var sourceQuant: string = cmd.entity.quantifier;
             var targetQuant: string = cmd.location.entity.quantifier;
+
+            console.log("Source:"+sourceobj);
+            console.log("Target:"+targetobj);
+
+            //interpretation = allHandle(cmd.location.relation,sourceobj,targetobj,state);
+
             // Find all of the combinations of goals
             for (var i = 0; i < sourceobj.length; i++) {
                 var conjunctions: Literal[] = [];
@@ -210,7 +216,13 @@ module Interpreter {
                           // if the target quantifier is all, do disjunction for
                           // each source element with conjunctions on all target
                           // elements
-                          conjunctions.push(addLiteral);
+                          if(interpretation.length-1<j){
+                            interpretation.push([addLiteral]);
+                          }
+                          else {
+                            interpretation[j].push(addLiteral);
+                          }
+                          //conjunctions.push(addLiteral);
                         }
                         else if (sourceQuant == "all" && targetQuant != "all") {
 
@@ -399,7 +411,7 @@ module Interpreter {
         // The result
         var result: string[] = [];
         // Go through all of the possible combinations
-        for (var i = 0; i < sourceobj.length; i++) {
+        outer: for (var i = 0; i < sourceobj.length; i++) {
             for (var j = 0; j < targetobj.length; j++) {
 
                 // Fetch the objects from the WorldState
@@ -432,13 +444,24 @@ module Interpreter {
                 else if (isFeasible(filter, cpos, rpos)) {
                     // Once found add the source object to the result list.
                     result.push(sourceobj[i]);
-                    continue;
+                    continue outer;
                 }
             }
         }
 
         return result;
     }
+
+    function allHandle(
+      relation : string,
+      sourceobj : string[],
+      targetobj :string[],
+      state : WorldState) : Literal[][]
+      {
+
+        return [];
+      }
+
     /**
      * isFeasible() checks the feasiblity of the position of two objects
      * based on the relation between them.
@@ -639,7 +662,7 @@ module Interpreter {
 }
 
 
-var result: Parser.ParseResult[] = Parser.parse("move a ball to the left of all boxes");
+var result: Parser.ParseResult[] = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
