@@ -143,9 +143,117 @@ module Planner {
 			return false;
 		}
 		
+		function manhattanishv3(state : WorldStateNode) : number {
+			var minDigDepths : number[] = [];
+			var connections : number[][] = [];
+			var minDigDepthsLeftRight : number[]; 
+			for (var i = 0; i < state.stacks.length; i++) {
+				minDigDepths.push(0);
+				minDigDepthsLeftRight.push(0);
+				connections.push([]);
+			}
+			//A dictionary from string id:s of objects to positions in the world
+			var positions = getPositions(state);
+			for (var conjunct of interpretation) {
+				//heuristic is given by the min of max of of the heuristics 
+				//to satisfy each of the literals. 
+				
+				for (var literal of conjunct) {
+					var xpos1 : number = positions.getValue(literal.args[0])[0];
+					var ypos1 : number = positions.getValue(literal.args[0])[1];
+					//if held, set to 0
+					var abovecount1 = Math.max(state.stacks[xpos1].length - ypos1 - 1, 0);
+					var xpos2 : number;
+					var ypos2 : number;
+					var abovecount2 : number;
+					if (literal.relation != "holding") {
+						xpos2 = positions.getValue(literal.args[1])[0];
+						ypos2 = positions.getValue(literal.args[1])[1];
+						abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
+						if (xpos2 == -1) {
+							//TODO: work on this (if target is floor, find smallest stack)
+							abovecount2 = 0;
+						}
+					}
+
+					//If literal already fulfilled, move on
+					if (Interpreter.isFeasible(literal.relation, [xpos1, ypos1], [xpos2, ypos2])) {
+						continue;
+					}
+					switch (literal.relation) {
+						case "holding": 
+							minDigDepths[xpos1] = Math.max(minDigDepths[xpos1], abovecount1);
+							break;
+						case "ontop": case "inside": 
+							if (xpos1 != -2) {
+								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
+							}
+							if (xpos2 != -1 && xpos2 != -2) {
+								minDigDepths[xpos2] = Math.max(minDigDepths[xpos1],abovecount1);
+							}
+							
+							break;
+						case "under":	
+							if (xpos1 != -2) {
+								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
+							}
+							if (xpos2 != -1 && xpos2 != -2) {
+								minDigDepths[xpos2] = Math.max(minDigDepths[xpos1],abovecount1 + 1);
+							}							
+							break;
+						case "above": 
+							if (xpos1 != -2) {
+								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
+							}
+							break;
+						case "leftof": case "rightof" :
+							connections.push([xpos1,ypos1,abovecount1,xpos2,ypos2,abovecount2])
+								
+							break;
+					}
+					
+					
+				}
+				//Really if... while(true)
+				while (connections.length > 0) {
+					//Find deepest pair
+					var deepest : number [] = [];
+					var deepestValue : number = 0;
+					var xcoord : number;
+					for (c of connections) {
+						var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
+						var depth2 : number = Math.max(c[5] - minDigDepths[c[3]],0);
+						var depth : number;
+						var xcoordtemp : number;
+						if (depth1 < depth2) {
+							depth = depth1;
+							xcoordtemp = c[0];
+						} else {
+							depth = depth2;
+							xcoordtemp= c[3];
+						}
+						if (depth > deepestValue) {
+							deepest = connections.indexOf(c);
+							deeepestValue = depth;
+							xcoord = xcoordtemp;
+						}
+					}
+					//none left to dig up
+					if (deepest.length == 0) {
+						break;
+					}
+					minDigDepths[xcoord] = depth;
+				}
+				
+			}
+			var sum : number = 0;
+			for(var val of minDigDepths) {
+				sum += val*4;
+			}
+			return sum;
+		}
 		
 		function manhattanishv2(state : WorldStateNode) : number {
-			//If goal fulfilled, return 0?
 			var shortest : number = 100000000;
 			var longest : number = 0;
 			var current : number = 0;
@@ -460,7 +568,7 @@ module Planner {
 				new WorldStateGraph(),
 				startNode,
 				goalIsReached, //goal
-				manhattanishv2, //heuristic
+				manhattanish, //heuristic
 				100);	  //time
 		//console.log("Found result:");
 		//console.log(foundResult);
