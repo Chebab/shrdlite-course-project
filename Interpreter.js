@@ -89,12 +89,10 @@ var Interpreter;
                     }
                 }
             }
-            console.log("sourceChecked:" + sourceChecked);
-            console.log("targetChecked:" + targetChecked);
-            var checkedQuant;
+            var checkedElements;
             for (var i = 0; i < allCombinations.length; i++) {
                 console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
-                checkedQuant = [];
+                checkedElements = [];
                 var cComb = allCombinations[i];
                 if (sourceQuant != "all" && targetQuant != "all") {
                     interpretation.push([cComb]);
@@ -103,16 +101,16 @@ var Interpreter;
                     (sourceQuant == "all" && targetQuant != "all")) {
                     var conjunctions = [];
                     conjunctions.push(cComb);
-                    checkedQuant.push(cComb.args[0]);
-                    checkedQuant.push(cComb.args[1]);
+                    checkedElements.push(cComb.args[0]);
+                    checkedElements.push(cComb.args[1]);
                     for (var j = i + 1; j < allCombinations.length; j++) {
                         var nComb = allCombinations[j];
                         console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
-                        if (sourceQuant == "all" && checkedQuant.indexOf(nComb.args[0]) < 0 ||
-                            (checkedQuant.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
+                        if (sourceQuant == "all" && checkedElements.indexOf(nComb.args[0]) < 0 ||
+                            (checkedElements.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
                             conjunctions.push(nComb);
-                            checkedQuant.push(nComb.args[0]);
-                            checkedQuant.push(nComb.args[1]);
+                            checkedElements.push(nComb.args[0]);
+                            checkedElements.push(nComb.args[1]);
                         }
                     }
                     var qualified;
@@ -123,8 +121,8 @@ var Interpreter;
                         qualified = targetChecked;
                     }
                     console.log("qualified:" + qualified);
-                    console.log("checkedQuant:" + checkedQuant);
-                    if (qualified.every(function (val) { return checkedQuant.indexOf(val) >= 0; })) {
+                    console.log("checkedElements:" + checkedElements);
+                    if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
                         console.log("conjunctions: OKEY");
                         interpretation.push(conjunctions);
                     }
@@ -360,7 +358,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put all balls left of a box on the floor");
+var result = Parser.parse(ExampleWorlds["medium"].examples[8]);
 console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
 console.log(Interpreter.stringify(formula[0]));

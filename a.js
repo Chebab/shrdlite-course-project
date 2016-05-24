@@ -2842,7 +2842,7 @@ var Interpreter;
             var targetQuant = cmd.location.entity.quantifier;
             console.log("Source:" + sourceobj);
             console.log("Target:" + targetobj);
-            //interpretation = allHandle(cmd.location.relation,sourceobj,targetobj,state);
+            // Variables for keeping track of which elements have been explored
             var sourceChecked = [];
             var targetChecked = [];
             // Find all of the combinations of goals
@@ -2862,23 +2862,27 @@ var Interpreter;
                         allCombinations.push({ polarity: true,
                             relation: cmd.location.relation,
                             args: [sourceobj[i], targetobj[j]] });
+                        //If the source element does not exist in the list, add it
                         if (sourceChecked.indexOf(sourceobj[i]) < 0) {
                             sourceChecked.push(sourceobj[i]);
                         }
+                        //If the target element does not exist in the list, add it
                         if (targetChecked.indexOf(targetobj[j]) < 0) {
                             targetChecked.push(targetobj[j]);
                         }
                     }
                 }
             }
-            console.log("sourceChecked:" + sourceChecked);
-            console.log("targetChecked:" + targetChecked);
+            //console.log("sourceChecked:"+sourceChecked);
+            //console.log("targetChecked:"+targetChecked);
+            var checkedElements; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
-            var checkedQuant;
             for (var i = 0; i < allCombinations.length; i++) {
                 console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
-                checkedQuant = [];
+                // Initialize the checkedElements list
+                checkedElements = [];
+                // Fetch the current combination
                 var cComb = allCombinations[i];
                 if (sourceQuant != "all" && targetQuant != "all") {
                     // if none of the quantifiers are all, any combination of
@@ -2887,18 +2891,23 @@ var Interpreter;
                 }
                 else if ((sourceQuant != "all" && targetQuant == "all") ||
                     (sourceQuant == "all" && targetQuant != "all")) {
-                    var conjunctions = [];
+                    // if either of source or target wuantifiers specify
+                    // all, do the following
+                    var conjunctions = []; // Conjunctions to be added
+                    // Add the current combination to the conjunctions list and
+                    // add the indentifiers of the elements to the list of checkedElements.
+                    // This is used for
                     conjunctions.push(cComb);
-                    checkedQuant.push(cComb.args[0]);
-                    checkedQuant.push(cComb.args[1]);
+                    checkedElements.push(cComb.args[0]);
+                    checkedElements.push(cComb.args[1]);
                     for (var j = i + 1; j < allCombinations.length; j++) {
                         var nComb = allCombinations[j];
                         console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
-                        if (sourceQuant == "all" && checkedQuant.indexOf(nComb.args[0]) < 0 ||
-                            (checkedQuant.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
+                        if (sourceQuant == "all" && checkedElements.indexOf(nComb.args[0]) < 0 ||
+                            (checkedElements.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
                             conjunctions.push(nComb);
-                            checkedQuant.push(nComb.args[0]);
-                            checkedQuant.push(nComb.args[1]);
+                            checkedElements.push(nComb.args[0]);
+                            checkedElements.push(nComb.args[1]);
                         }
                     }
                     var qualified;
@@ -2909,8 +2918,8 @@ var Interpreter;
                         qualified = targetChecked;
                     }
                     console.log("qualified:" + qualified);
-                    console.log("checkedQuant:" + checkedQuant);
-                    if (qualified.every(function (val) { return checkedQuant.indexOf(val) >= 0; })) {
+                    console.log("checkedElements:" + checkedElements);
+                    if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
                         console.log("conjunctions: OKEY");
                         interpretation.push(conjunctions);
                     }
@@ -3278,10 +3287,10 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put all balls left of a box on the floor");
+var result = Parser.parse(ExampleWorlds["medium"].examples[8]);
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 console.log("First parse");
