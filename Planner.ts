@@ -145,35 +145,37 @@ module Planner {
 		
 		function manhattanishv3(state : WorldStateNode) : number {
 			var minDigDepths : number[] = [];
+			//For leftof/rightof - tracks where stuff is that needs to be moved and how much stuff is 
+			//above that stuff 
 			var connections : number[][] = [];
-			var minDigDepthsLeftRight : number[]; 
 			for (var i = 0; i < state.stacks.length; i++) {
 				minDigDepths.push(0);
-				minDigDepthsLeftRight.push(0);
 				connections.push([]);
 			}
 			//A dictionary from string id:s of objects to positions in the world
 			var positions = getPositions(state);
 			for (var conjunct of interpretation) {
-				//heuristic is given by the min of max of of the heuristics 
-				//to satisfy each of the literals. 
+				//heuristic is given by sum of minimum number of items to remove from each stack
 				
 				for (var literal of conjunct) {
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
+					var abovecount1 : number = 0;
 					//if held, set to 0
-					var abovecount1 = Math.max(state.stacks[xpos1].length - ypos1 - 1, 0);
+					if (xpos1 != -1 && xpos1 != -2)
+						abovecount1 = Math.max(state.stacks[xpos1].length - ypos1 - 1, 0);
 					var xpos2 : number;
 					var ypos2 : number;
 					var abovecount2 : number;
 					if (literal.relation != "holding") {
 						xpos2 = positions.getValue(literal.args[1])[0];
 						ypos2 = positions.getValue(literal.args[1])[1];
-						abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
-						if (xpos2 == -1) {
+						if (xpos2 == -1 || xpos2 == -2) {
 							//TODO: work on this (if target is floor, find smallest stack)
 							abovecount2 = 0;
-						}
+						} else 
+							abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
+						
 					}
 
 					//If literal already fulfilled, move on
@@ -220,7 +222,7 @@ module Planner {
 					var deepest : number [] = [];
 					var deepestValue : number = 0;
 					var xcoord : number;
-					for (c of connections) {
+					for (var c of connections) {
 						var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
 						var depth2 : number = Math.max(c[5] - minDigDepths[c[3]],0);
 						var depth : number;
@@ -233,8 +235,8 @@ module Planner {
 							xcoordtemp= c[3];
 						}
 						if (depth > deepestValue) {
-							deepest = connections.indexOf(c);
-							deeepestValue = depth;
+							deepest = c;
+							deepestValue = depth;
 							xcoord = xcoordtemp;
 						}
 					}
@@ -253,6 +255,7 @@ module Planner {
 			return sum;
 		}
 		
+		//Really detailed. Should work well for goals with only a few easily reached subgoals
 		function manhattanishv2(state : WorldStateNode) : number {
 			var shortest : number = 100000000;
 			var longest : number = 0;
@@ -568,7 +571,7 @@ module Planner {
 				new WorldStateGraph(),
 				startNode,
 				goalIsReached, //goal
-				manhattanish, //heuristic
+				manhattanishv3, //heuristic
 				100);	  //time
 		//console.log("Found result:");
 		//console.log(foundResult);
