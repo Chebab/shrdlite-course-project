@@ -150,7 +150,6 @@ module Planner {
 			var connections : number[][] = [];
 			for (var i = 0; i < state.stacks.length; i++) {
 				minDigDepths.push(0);
-				connections.push([]);
 			}
 			//A dictionary from string id:s of objects to positions in the world
 			var positions = getPositions(state);
@@ -161,9 +160,10 @@ module Planner {
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
 					var abovecount1 : number = 0;
-					//if held, set to 0
+					//if held, leave at 0
 					if (xpos1 != -1 && xpos1 != -2)
 						abovecount1 = Math.max(state.stacks[xpos1].length - ypos1 - 1, 0);
+					
 					var xpos2 : number;
 					var ypos2 : number;
 					var abovecount2 : number;
@@ -191,7 +191,7 @@ module Planner {
 								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
 							}
 							if (xpos2 != -1 && xpos2 != -2) {
-								minDigDepths[xpos2] = Math.max(minDigDepths[xpos1],abovecount1);
+								minDigDepths[xpos2] = Math.max(minDigDepths[xpos2],abovecount2);
 							}
 							
 							break;
@@ -200,7 +200,7 @@ module Planner {
 								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
 							}
 							if (xpos2 != -1 && xpos2 != -2) {
-								minDigDepths[xpos2] = Math.max(minDigDepths[xpos1],abovecount1 + 1);
+								minDigDepths[xpos2] = Math.max(minDigDepths[xpos2],abovecount2 + 1);
 							}							
 							break;
 						case "above": 
@@ -222,10 +222,11 @@ module Planner {
 					var deepest : number [] = [];
 					var deepestValue : number = 0;
 					var xcoord : number;
+					var depth : number;
 					for (var c of connections) {
 						var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
 						var depth2 : number = Math.max(c[5] - minDigDepths[c[3]],0);
-						var depth : number;
+						
 						var xcoordtemp : number;
 						if (depth1 < depth2) {
 							depth = depth1;
