@@ -143,22 +143,35 @@ module Planner {
 			return false;
 		}
 		
+		function manhattanishcombo(state: WorldStateNode) : number {
+			//console.log(state.stacks);
+			//var v1 = manhattanishv3(state);
+			//var v2 = manhattanishv2(state);
+			//console.log(v1 + "        " + v2);
+			
+			return Math.max(manhattanishv3(state), manhattanishv2(state));
+		}
+		
 		function manhattanishv3(state : WorldStateNode) : number {
 			var minDigDepths : number[] = [];
 			//For leftof/rightof - tracks where stuff is that needs to be moved and how much stuff is 
 			//above that stuff 
 			var connections : number[][] = [];
+			var bestConjunctVal : number = 1000000000;
 			for (var i = 0; i < state.stacks.length; i++) {
 				minDigDepths.push(0);
 			}
 			//A dictionary from string id:s of objects to positions in the world
 			var positions = getPositions(state);
+			var minMoveDistance : number = 0;
+			var closestDistFromArm : number = 1000000;
 			for (var conjunct of interpretation) {
 				//heuristic is given by sum of minimum number of items to remove from each stack
-				
+				var penalty = 0;
 				for (var literal of conjunct) {
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
+					var moved : string[] = [];
 					var abovecount1 : number = 0;
 					//if held, leave at 0
 					if (xpos1 != -1 && xpos1 != -2)
@@ -182,17 +195,51 @@ module Planner {
 					if (Interpreter.isFeasible(literal.relation, [xpos1, ypos1], [xpos2, ypos2])) {
 						continue;
 					}
+					penalty += 40;
+					
 					switch (literal.relation) {
 						case "holding": 
 							minDigDepths[xpos1] = Math.max(minDigDepths[xpos1], abovecount1);
+							minMoveDistance += Math.abs(xpos1 - state.arm);
 							break;
 						case "ontop": case "inside": 
+							if (state.holding == null) {
+								closestDistFromArm = Math.min(closestDistFromArm, Math.abs(state.arm - xpos1));
+								if (xpos2 != -1 && xpos2 != -2) { 
+									closestDistFromArm = Math.min(closestDistFromArm, Math.abs(state.arm - xpos2));
+								}
+							}
+							//source not held
 							if (xpos1 != -2) {
 								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
-							}
+							} 
+							//target neither held nor floor
 							if (xpos2 != -1 && xpos2 != -2) {
 								minDigDepths[xpos2] = Math.max(minDigDepths[xpos2],abovecount2);
+								if (xpos1 != -2) {
+									if (moved.indexOf(literal.args[0]) == -1 &&
+										moved.indexOf(literal.args[1]) == -1)
+										minMoveDistance += Math.abs(xpos2-xpos1);
+										moved.push(literal.args[0]);
+										moved.push(literal.args[1]);
+								} else {
+									if (moved.indexOf(literal.args[0]) == -1 &&
+										moved.indexOf(literal.args[1]) == -1) {
+										minMoveDistance += Math.abs(xpos2 - state.arm);
+										moved.push(literal.args[0]);
+										moved.push(literal.args[1]);
+									}
+								}
 							}
+							if (xpos2 == -2) {
+								if (moved.indexOf(literal.args[0]) == -1 &&
+									moved.indexOf(literal.args[1]) == -1) {
+									minMoveDistance += Math.abs(xpos1 - state.arm);
+									moved.push(literal.args[0]);
+									moved.push(literal.args[1]);
+								}
+							}
+							
 							
 							break;
 						case "under":	
@@ -241,19 +288,43 @@ module Planner {
 							xcoord = xcoordtemp;
 						}
 					}
-					//none left to dig up
+						//none left to dig up
 					if (deepest.length == 0) {
 						break;
 					}
 					minDigDepths[xcoord] = depth;
 				}
+				var sum : number = 0;
+				for(var val of minDigDepths) {
+					
+					sum += val*4;
+				}
+				if (closestDistFromArm == 1000000) closestDistFromArm = 0;
 				
+				var debug = false;
+				
+				if (debug) console.log("---------------------------------------");
+				if (state.holding == null) {
+					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + closestDistFromArm + 0);
+					if (debug) console.log("sum: " + sum);
+					if (debug) console.log("mindigdepths" + minDigDepths);
+					if (debug) console.log("minMoveDistance: " + minMoveDistance);
+					if (debug) console.log("closestDistFromArm: " + closestDistFromArm);
+					if (debug) console.log("penalty: " + penalty);
+				}
+				else {
+					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + 0);
+					if (debug) console.log("sum: " + sum);
+					if (debug) console.log("mindigdepths: " + minDigDepths);
+					if (debug) console.log("minMoveDistance: " + minMoveDistance);
+					if (debug) console.log("penalty: " + penalty);
+				}
 			}
-			var sum : number = 0;
-			for(var val of minDigDepths) {
-				sum += val*4;
-			}
-			return sum;
+			if (debug) console.log("arm: " + state.arm);
+			if (debug) console.log("holding: " + state.holding);
+			if (debug) console.log(state.stacks);
+			if (debug) console.log(bestConjunctVal);
+			return bestConjunctVal;
 		}
 		
 		//Really detailed. Should work well for goals with only a few easily reached subgoals
@@ -572,7 +643,7 @@ module Planner {
 				new WorldStateGraph(),
 				startNode,
 				goalIsReached, //goal
-				manhattanishv3, //heuristic
+				manhattanishcombo, //heuristic
 				100);	  //time
 		//console.log("Found result:");
 		//console.log(foundResult);
