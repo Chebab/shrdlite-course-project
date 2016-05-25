@@ -662,7 +662,22 @@ module Planner {
 			for(var i = 0;i<nodeResult.length - 1;i++){
 				currNode = nodeResult[i];
 				nextNode = nodeResult[i+1];
-				//Go right 
+					if (currNode.arm > nextNode.arm) {
+						for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
+							plan.push('l');
+						}
+					} else {
+						for (var j = 0; j < nextNode.arm - currNode.arm; j++) {
+							plan.push('r');							
+						}
+					}
+				if (currNode.holding) {
+					plan.push('d');
+				} else {
+					plan.push('p');
+				}
+				
+				/*//Go right 
 				if (currNode.arm == nextNode.arm - 1) {
 					plan.push('r');
 				//Go left
@@ -674,13 +689,12 @@ module Planner {
 				//Pick up an item
 				} else {
 					plan.push('p');
-				}			
+				}*/			
 			}
 		} else {
 			//The goal is fulfilled at the starting world state
 			return [];
 		}
-
 		return plan;
 		}
 
@@ -729,10 +743,57 @@ class WorldStateNode implements WorldState {
 
 class WorldStateGraph implements Graph<WorldStateNode> {
 	
+	
+	outgoingEdges(gn : WorldStateNode) : Edge<WorldStateNode>[] {
+		var results : Edge<WorldStateNode>[] = [];
+		if (!gn.holding) {
+			for (var i = 0; i < gn.stacks.length; i++) {
+				var gnnew = gn.clone();
+				gnnew.arm = i;
+				var currStack : Stack = gnnew.stacks[i];
+				var elemheld = currStack.pop();
+				var newEdge : Edge<WorldStateNode>;
+				if (elemheld) {
+					gnnew.holding = elemheld;
+					newEdge  = {from: gn, to: gnnew, cost: (1 + Math.abs(gn.arm - i))};
+					results.push(newEdge);
+				}
+			}
+		} else {
+			for (var i = 0; i < gn.stacks.length; i++) {
+				var gnnew = gn.clone();
+				gnnew.arm = i;
+				var currStack : Stack = gnnew.stacks[i];
+				if (currStack.length > 0) {
+					var heldObject : ObjectDefinition = gn.objects[gn.holding];
+					var topObject : ObjectDefinition = gn.objects[currStack[currStack.length-1]];
+					
+					if (Interpreter.isPhysical("ontop", heldObject, topObject)||
+						Interpreter.isPhysical("inside", heldObject, topObject)) {
+						currStack.push(gnnew.holding);
+						gnnew.holding = null;
+						
+						var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost: 1 + Math.abs(gn.arm - i)};
+						results.push(newEdge);
+					}
+				} else {
+					currStack.push(gnnew.holding);
+					gnnew.holding = null;
+					
+					var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost: 1 + Math.abs(gn.arm - i)};
+					results.push(newEdge);
+				}
+					
+			}
+		}
+		return results;
+	}
+	
+	
 	/**
 	* Find all allowed moves from a world state; return edges to the resulting world states for those moves
 	*/
-	outgoingEdges(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
+	outgoingEdgesOld(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
 
 		var results : Edge<WorldStateNode>[] = [];
 		//Can we pick up an item? We cannot be holding anything and the stack below the arm needs to be non-empty
