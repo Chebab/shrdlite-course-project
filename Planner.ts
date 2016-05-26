@@ -167,7 +167,8 @@ module Planner {
 			var closestDistFromArm : number = 1000000;
 			for (var conjunct of interpretation) {
 				//heuristic is given by sum of minimum number of items to remove from each stack
-				var penalty = 0;
+				var penalty = 0; 
+				var toFloorCount : number = 0;
 				for (var literal of conjunct) {
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
@@ -183,19 +184,28 @@ module Planner {
 					if (literal.relation != "holding") {
 						xpos2 = positions.getValue(literal.args[1])[0];
 						ypos2 = positions.getValue(literal.args[1])[1];
-						if (xpos2 == -1 || xpos2 == -2) {
-							//TODO: work on this (if target is floor, find smallest stack)
+						if (xpos2 == -2) {
+							
 							abovecount2 = 0;
-						} else 
+						} else if (xpos2 == -1) {
+							
+						} else {
 							abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
+						}
 						
 					}
+					
 
 					//If literal already fulfilled, move on
 					if (Interpreter.isFeasible(literal.relation, [xpos1, ypos1], [xpos2, ypos2])) {
 						continue;
 					}
-					penalty += 40;
+					
+					if (literal.relation != "holding" && xpos2 == -1) {
+						toFloorCount++;
+					}
+					
+					penalty += 40; 
 					
 					switch (literal.relation) {
 						case "holding": 
@@ -294,18 +304,35 @@ module Planner {
 					}
 					minDigDepths[xcoord] = depth;
 				}
+				
 				var sum : number = 0;
 				for(var val of minDigDepths) {
 					
 					sum += val*4;
 				}
+				
+				if (toFloorCount > 0) {
+					var leftAfterMinDig : number[] = []
+					for (var i = 0; i < state.stacks.length; i++) {
+						leftAfterMinDig[i] = state.stacks[i].length - minDigDepths[i];
+					}
+					leftAfterMinDig.sort(function s(a : number, b : number) : number {return a - b;} );
+					
+					for (var i = 0; i < toFloorCount; i++) {
+						//console.log(toFloorCount);
+						sum += leftAfterMinDig[i]*4;
+					}
+				}
+				
+				
 				if (closestDistFromArm == 1000000) closestDistFromArm = 0;
 				
 				var debug = false;
 				
 				if (debug) console.log("---------------------------------------");
 				if (state.holding == null) {
-					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + closestDistFromArm + 0);
+					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + closestDistFromArm ); 
+					
 					if (debug) console.log("sum: " + sum);
 					if (debug) console.log("mindigdepths" + minDigDepths);
 					if (debug) console.log("minMoveDistance: " + minMoveDistance);
@@ -313,7 +340,8 @@ module Planner {
 					if (debug) console.log("penalty: " + penalty);
 				}
 				else {
-					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + 0);
+					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance );
+					
 					if (debug) console.log("sum: " + sum);
 					if (debug) console.log("mindigdepths: " + minDigDepths);
 					if (debug) console.log("minMoveDistance: " + minMoveDistance);
@@ -644,7 +672,7 @@ module Planner {
 				startNode,
 				goalIsReached, //goal
 				manhattanishcombo, //heuristic
-				100);	  //time
+				400);	  //time
 		//console.log("Found result:");
 		//console.log(foundResult);
 
@@ -676,7 +704,8 @@ module Planner {
 				} else {
 					plan.push('p');
 				}
-				
+				console.log(manhattanishcombo(currNode));
+				console.log(currNode.stacks);
 				/*//Go right 
 				if (currNode.arm == nextNode.arm - 1) {
 					plan.push('r');
@@ -742,8 +771,6 @@ class WorldStateNode implements WorldState {
 
 
 class WorldStateGraph implements Graph<WorldStateNode> {
-	
-	
 	outgoingEdges(gn : WorldStateNode) : Edge<WorldStateNode>[] {
 		var results : Edge<WorldStateNode>[] = [];
 		if (!gn.holding) {
