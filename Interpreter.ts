@@ -181,29 +181,86 @@ module Interpreter {
                 // throw error.
                 throw new Error("No target objects")
             }
+			if (cmd.entity.quantifier == "all") {
+				
 
-            // Find all of the combinations of goals
-            for (var i = 0; i < sourceobj.length; i++) {
-                for (var j = 0; j < targetobj.length; j++) {
+				for (var i = 0; i < sourceobj.length; i++) {
+					var allLits : Literal[] = [];
+					for (var j = 0; j < targetobj.length; j++) {
+						if (sourceobj[i] == targetobj[j]) {
+							// if the objects are the same, nothing can be done
+							continue;
+						}
+						var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
+						sourceobj[i], targetobj[j], state);
+						var sourceObject: ObjectDefinition = theObjects[0];
+						var targetObject: ObjectDefinition = theObjects[1];
+						allLits = allLits.concat(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
+						
+					}	
+					if (interpretation.length == 0) {
+						for (var lit of allLits)
+							interpretation.push([lit]);
+					} else {
+						var newInterpretation : DNFFormula = [];
+						for (var original of interpretation) {
+							for(var newLit of allLits) {
+								var originalCopy : Literal[] = [];
+								for (var o of original)
+									originalCopy.push(o);
+								originalCopy.push(newLit);
+								newInterpretation.push(originalCopy);
+							}
+						}
+						interpretation = newInterpretation;
+					}
+				}
+			} else
+			for (var j = 0; j < targetobj.length; j++) {
+				var allLits : Literal[] = [];
+				for (var i = 0; i < sourceobj.length; i++) {
+					if (sourceobj[i] == targetobj[j]) {
+						// if the objects are the same, nothing can be done
+						continue;
+					}
 
-                    if (sourceobj[i] == targetobj[j]) {
-                        // if the objects are the same, nothing can be done
-                        continue;
-                    }
+					// Fetch the objects from the WorldState
+					var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
+						sourceobj[i], targetobj[j], state);
+					// The objects to be checked
+					var sourceObject: ObjectDefinition = theObjects[0];
+					var targetObject: ObjectDefinition = theObjects[1];
+					// The position of the objects
+					
+					if (isPhysical(cmd.location.relation, sourceObject, targetObject) || cmd.entity.quantifier == "all") {
+						if (cmd.location.entity.quantifier != "all") {					
+							interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
+						} else {
+							allLits = allLits.concat(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]))							
+						}
+					} 
+					
+				}
+				if (cmd.location.entity.quantifier == "all") {
+					if (allLits.length == 0) {
+						throw new Error("unable to find a source for one of the targets");
+					}
+					var newInterpretation : DNFFormula = [];
+					for (var k = 0; k < interpretation.length; k++) {
+						for (var l = 0; l < allLits.length; l++) {
+							newInterpretation.push(interpretation[k].concat([allLits[l]]));
+						}
+					}
+					interpretation = newInterpretation;
+					if (interpretation.length == 0) {
+						for (var m = 0; m < allLits.length; m++) {
+							interpretation.push([allLits[m]]);
+						}
+					}
+				}
 
-                    // Fetch the objects from the WorldState
-                    var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
-                        sourceobj[i], targetobj[j], state);
-                    // The objects to be checked
-                    var sourceObject: ObjectDefinition = theObjects[0];
-                    var targetObject: ObjectDefinition = theObjects[1];
-                    // The position of the objects
-					if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        interpretation.push(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
-
-                    } 
-                }
-            }
+				
+			} 
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
@@ -219,6 +276,21 @@ module Interpreter {
         if (interpretation.length < 1) {
             throw new Error("No interpretation found");
         }
+//		interpretation = [];
+		//complex
+//		interpretation.push(makeLiteral(true, "ontop", ["k","floor"])
+//			.concat(makeLiteral(true, "ontop", ["l","floor"])));
+		//Small 
+		//interpretation.push(makeLiteral(true, "ontop", ["m","g"])
+		//	.concat(makeLiteral(true, "ontop", ["k","l"]))
+		//	.concat(makeLiteral(true, "ontop", ["l","a"]))
+		//	.concat(makeLiteral(true, "ontop", ["a","e"])));
+		//Medium
+		//interpretation.push(makeLiteral(true, "ontop", ["j","c"])
+		//	.concat(makeLiteral(true, "ontop", ["m","a"])));
+			//.concat(makeLiteral(true, "ontop", ["f", "m"] )));
+		
+		
         return interpretation;
     }
 
@@ -241,7 +313,7 @@ module Interpreter {
         : string[] {
 
         var obj: Parser.Object = ent.object; // The object in the entity
-
+ 
         // Find all of the objects inside of the Entity
         var currobjs: string[] = findObjects(obj, state, objects, currentState);
 
@@ -262,10 +334,17 @@ module Interpreter {
         var relobjs: string[] =
             findEntites(obj.location.entity, state, objects, currentState);
 
-        // Filter between the objects within the entity and at the location
-        // based on the relation between
-        var result: string[] =
-            filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
+		var result : string[];
+		if (obj.location.entity.quantifier == "all") {
+			result = currobjs;
+			for(var i = 0; i < relobjs.length; i++) {
+				result = filterRelation(obj.location.relation, result, [relobjs[i]], state, currentState);
+			}
+		} else {
+			// Filter between the objects within the entity and at the location
+			// based on the relation between
+			result = filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
+		}
         return result;
     }
     /**
