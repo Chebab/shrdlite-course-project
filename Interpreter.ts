@@ -182,7 +182,6 @@ module Interpreter {
                 throw new Error("No target objects")
             }
 			if (cmd.entity.quantifier == "all") {
-				
 
 				for (var i = 0; i < sourceobj.length; i++) {
 					var allLits : Literal[] = [];
@@ -191,7 +190,7 @@ module Interpreter {
 							// if the objects are the same, nothing can be done
 							continue;
 						}
-						var theObjects: ObjectDefinition[] = objectFactory(sourceObject, targetObject,
+						var theObjects: ObjectDefinition[] = objectFactory(null, null,
 						sourceobj[i], targetobj[j], state);
 						var sourceObject: ObjectDefinition = theObjects[0];
 						var targetObject: ObjectDefinition = theObjects[1];
@@ -208,8 +207,19 @@ module Interpreter {
 								var originalCopy : Literal[] = [];
 								for (var o of original)
 									originalCopy.push(o);
-								originalCopy.push(newLit);
-								newInterpretation.push(originalCopy);
+								// Fetch the objects from the WorldState
+								var theObjects: ObjectDefinition[] = objectFactory(null, null,
+									newLit.args[0], newLit.args[1], state);
+								
+								// The objects to be checked
+								var sourceObject: ObjectDefinition = theObjects[0];
+								var targetObject: ObjectDefinition = theObjects[1];
+								
+								if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
+									originalCopy.push(newLit);
+									newInterpretation.push(originalCopy);
+								}
+								
 							}
 						}
 						interpretation = newInterpretation;
@@ -258,9 +268,29 @@ module Interpreter {
 						}
 					}
 				}
-
 				
 			} 
+			
+			if (cmd.location.entity.quantifier == "all") {
+				var newInterpretation : DNFFormula = [];
+				for(var lits of interpretation) {
+					var failed = false;
+					for(var lit of lits) {
+						var theObjs = objectFactory(null,null,lit.args[0],lit.args[1], state);
+
+						if (!isPhysical(cmd.location.relation,theObjs[0],theObjs[1])) {
+							failed = true;
+							break;
+						}
+						
+					}
+					if (!failed) {
+						newInterpretation.push(lits);
+					}
+				}
+				interpretation = newInterpretation;
+			}
+			
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
@@ -639,7 +669,8 @@ module Interpreter {
 				
                 // Nothing can be placed below the floor or a ball 
                 // Nothing that is small can be below anything that is big
-                if (targetObj.form == "floor" || sourceObj.form == "ball" || 
+				// Do not allow stuff like "put the floor under the table"
+                if (sourceObj.form == "floor" || targetObj.form == "floor" || sourceObj.form == "ball" || 
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
                 }
