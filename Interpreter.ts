@@ -193,6 +193,7 @@ module Interpreter {
 						sourceobj[i], targetobj[j], state);
 						var sourceObject: ObjectDefinition = theObjects[0];
 						var targetObject: ObjectDefinition = theObjects[1];
+						//Do not add isphysical-check here!! Add it at the end of computation if anywhere
 						allLits = allLits.concat(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 						
 					}	
@@ -204,8 +205,11 @@ module Interpreter {
 						}
 						
 					} else if (interpretation.length == 0) {
-						for (var lit of allLits)
+						for (var lit of allLits) {
+							//TODO: add isphysical-check
 							interpretation.push([lit]);
+							
+						}
 					} else {
 						var newInterpretation : DNFFormula = [];
 						for (var original of interpretation) {
@@ -220,15 +224,18 @@ module Interpreter {
 								// The objects to be checked
 								var sourceObject: ObjectDefinition = theObjects[0];
 								var targetObject: ObjectDefinition = theObjects[1];
-								
 								if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
 									originalCopy.push(newLit);
 									newInterpretation.push(originalCopy);
 								}
-								
+								//if none isphysical, this should probably fail
 							}
 						}
-						interpretation = newInterpretation;
+						//this covers the case when all things are to be put above one thing
+						//and that one thing is to be put above itself (need to ignore this)
+						if (allLits.length > 0) {
+							interpretation = newInterpretation;
+						}
 					}
 				}
 				
