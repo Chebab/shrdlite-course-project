@@ -3309,10 +3309,12 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put every ball in a box");
+var world = "complex";
+var example = 0;
+var result = Parser.parse(ExampleWorlds[world].examples[example]);
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 console.log("First parse");

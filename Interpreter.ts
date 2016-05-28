@@ -250,9 +250,9 @@ module Interpreter {
                         var nComb: Literal = allCombinations[j];
                         var sourceElemExists: boolean = checkedElements.indexOf(nComb.args[0]) >= 0;
                         var targetElemExists: boolean = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:["+nComb.args[0]+","+nComb.args[1]+"]" );
+                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
                         if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
-                            if (!targetElemExists && !sourceElemExists || nComb.args[1]=="floor") {
+                            if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
                                 conjunctions.push(nComb);
                                 checkedElements.push(nComb.args[0]);
                                 checkedElements.push(nComb.args[1]);
@@ -273,7 +273,7 @@ module Interpreter {
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
-                        console.log("Checked elems: "+checkedElements);
+                        console.log("Checked elems: " + checkedElements);
                     }
                     var qualified: string[];
                     if (isAllsrc) {
@@ -322,75 +322,6 @@ module Interpreter {
             throw new Error("No interpretations found");
         }
         return interpretation;
-    }
-
-    function findFeasibleCombinations(
-      combinations : Literal[][],
-      allCombinations : Literal[],
-      isSourceAll : boolean,
-      isTargetAll : boolean
-    ): Literal[][]{
-      var returnVal : Literal[][];
-
-
-      if(allCombinations.length < 1){
-        return combinations;
-      }
-      var isDone : boolean = true;
-      for(var i = 0;i<combinations.length;i++){
-        var res = feasibleCombination(combinations[i],allCombinations,isSourceAll,isTargetAll);
-        var unchanged : boolean = res.length == 1 && res[0].length == combinations[i].length;
-        isDone = isDone && unchanged;
-        var returnVal = returnVal.concat(res);
-      }
-      if(!isDone){
-        returnVal = findFeasibleCombinations(returnVal,allCombinations,isSourceAll,isTargetAll);
-      }
-
-      return returnVal;
-    }
-    // Finds the feasible combination given the
-    function feasibleCombination(
-      combination : Literal[],
-      allCombinations : Literal[],
-      isSourceAll : boolean,
-      isTargetAll : boolean
-    ): Literal[][] {
-
-
-      if(combination.length < 1){
-        throw new Error("No combination to evaluate");
-      }
-
-      var returnVal : Literal[][];
-      var srcIndent : string[];
-      var trgtIndent : string[];
-      for(var i = 0; i<combination.length;i++){
-        srcIndent.push(combination[i].args[0]);
-        trgtIndent.push(combination[i].args[1]);
-      }
-
-      for(var i = 0;i<allCombinations.length;i++){
-        var comb : Literal = allCombinations[i];
-        var sourceElemExists: boolean = srcIndent.indexOf(comb.args[0]) >= 0;
-        var targetElemExists: boolean = trgtIndent.indexOf(comb.args[1]) >= 0;
-        if(combination[0].relation=="inside"||combination[0].relation=="outside"){
-          if(!sourceElemExists && !targetElemExists){
-            returnVal.push(combination.concat([comb]));
-          }
-        }
-        else if (isSourceAll && !isTargetAll){
-          if(!sourceElemExists){
-            returnVal.push(combination.concat([comb]));
-          }
-        }
-        else if (!isSourceAll && isTargetAll){
-          if(!targetElemExists){
-            returnVal.push(combination.concat([comb]));
-          }
-        }
-      }
-      return returnVal;
     }
 
     /**
@@ -787,12 +718,13 @@ module Interpreter {
     }
 }
 
-
-var result: Parser.ParseResult[] = Parser.parse("put every ball in a box");
+var world : string  = "complex";
+var example : number = 0;
+var result: Parser.ParseResult[] = Parser.parse(ExampleWorlds[world].examples[example]);
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 console.log("First parse");

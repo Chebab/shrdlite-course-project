@@ -172,56 +172,6 @@ var Interpreter;
         }
         return interpretation;
     }
-    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll) {
-        var returnVal;
-        if (allCombinations.length < 1) {
-            return combinations;
-        }
-        var isDone = true;
-        for (var i = 0; i < combinations.length; i++) {
-            var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
-            var unchanged = res.length == 1 && res[0].length == combinations[i].length;
-            isDone = isDone && unchanged;
-            var returnVal = returnVal.concat(res);
-        }
-        if (!isDone) {
-            returnVal = findFeasibleCombinations(returnVal, allCombinations, isSourceAll, isTargetAll);
-        }
-        return returnVal;
-    }
-    function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
-        if (combination.length < 1) {
-            throw new Error("No combination to evaluate");
-        }
-        var returnVal;
-        var srcIndent;
-        var trgtIndent;
-        for (var i = 0; i < combination.length; i++) {
-            srcIndent.push(combination[i].args[0]);
-            trgtIndent.push(combination[i].args[1]);
-        }
-        for (var i = 0; i < allCombinations.length; i++) {
-            var comb = allCombinations[i];
-            var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
-            var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
-            if (combination[0].relation == "inside" || combination[0].relation == "outside") {
-                if (!sourceElemExists && !targetElemExists) {
-                    returnVal.push(combination.concat([comb]));
-                }
-            }
-            else if (isSourceAll && !isTargetAll) {
-                if (!sourceElemExists) {
-                    returnVal.push(combination.concat([comb]));
-                }
-            }
-            else if (!isSourceAll && isTargetAll) {
-                if (!targetElemExists) {
-                    returnVal.push(combination.concat([comb]));
-                }
-            }
-        }
-        return returnVal;
-    }
     function findEntites(ent, state, objects, currentState) {
         var obj = ent.object;
         var currobjs = findObjects(obj, state, objects, currentState);
@@ -428,7 +378,9 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put every ball in a box");
+var world = "complex";
+var example = 0;
+var result = Parser.parse(ExampleWorlds[world].examples[example]);
 console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
