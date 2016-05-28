@@ -1,7 +1,5 @@
 ///<reference path="World.ts"/>
-
 var ExampleWorlds : {[s:string]: WorldState} = {};
-
 
 ExampleWorlds["complex"] = {
     "stacks": [["e"],["a","l"],["i","h","j"],["c","k","g","b"],["d","m","f"]],
@@ -23,6 +21,7 @@ ExampleWorlds["complex"] = {
         "m": { "form":"box",     "size":"small",  "color":"blue"  }
     },
     "examples": [
+		"put all planks left of all balls",
         "put a box in a box",
         "put all balls on the floor",
         "take the yellow box",
@@ -69,15 +68,16 @@ ExampleWorlds["medium"] = {
         "put all boxes on the floor",
         "put the large plank under the blue brick",
         "move all bricks on a table",
-        "move all balls inside a large box"
+        "move all balls inside a large box",
+		"move the green plank beside the yellow pyramid"
     ]
 };
 
 
 ExampleWorlds["small"] = {
-    "stacks": [["a"],["b","g","l","e"],["m"],["k"],["f"]],
-    "holding": null,
-    "arm": 4,
+    "stacks": [["e"],["g","l"],[],["k","m","f"],[]],
+    "holding": "a",
+    "arm": 0,
     "objects": {
         "a": { "form":"brick",   "size":"large",  "color":"green" },
         "b": { "form":"brick",   "size":"small",  "color":"white" },
@@ -94,8 +94,10 @@ ExampleWorlds["small"] = {
         "m": { "form":"box",     "size":"small",  "color":"blue"  }
     },
     "examples": [
-        "put the large blue table on the floor",
-        "put the black ball beside the large yellow box",
+		"put all balls beside all boxes",
+		"put a ball in every large box",
+        "put the white ball in a box on the floor",
+        "put the black ball in a box on the floor",
         "take a blue object",
         "take the white ball",
         "put all boxes on the floor",

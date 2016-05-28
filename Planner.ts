@@ -408,12 +408,9 @@ module Planner {
 				minMoveDistance += distances[0];
 				closestDistFromArm = Math.max(distances[1],closestDistFromArm);
 				
-				
 				var score = sumUpAllCostFactors(minDigDepths, toFloorCount, minMoveDistance, closestDistFromArm, penalty, state);
 				
 				bestConjunctVal = Math.min(bestConjunctVal,score); 
-
-					
 			}
 			return bestConjunctVal;
 		}

@@ -55,7 +55,6 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-
 	var goalNode : Node;
     // For each node, the cost of getting from the start node to that node
     var gScores = new collections.Dictionary<Node, number>();
@@ -89,8 +88,9 @@ function aStarSearch<Node> (
 		e : Edge<Node>
 	) : number {
 		var h = cachedHeuristics.getValue(e.to)
+		
 		if (!h){
-			h = heuristics(e.to);
+			h = heuristics(e.to);		
 			cachedHeuristics.setValue(e.to, h);
 		}
 		return gScores.getValue(e.from) + e.cost + h;
@@ -121,11 +121,12 @@ function aStarSearch<Node> (
         // cost of the edge
 		gScores.setValue(e.to, oldCost + e.cost);
 
-		// Loop over all outgoing edges from edge.to
+		// Loop over all outgoing edges from edge.to 
         // If the target node does not exist in the frontier, add the out edge.
 		// (If we dont have the gScore value we know it is not in the frontier)
         for (var outEdge of outEdges) {
 			if ((gScores.getValue(outEdge.to) == null)) {
+
 				frontier.add(outEdge);
 			}
 		}
@@ -133,6 +134,7 @@ function aStarSearch<Node> (
 
 
 	if (goal(start)) {
+		
 		return result;
 	}
 
@@ -187,7 +189,8 @@ function aStarSearch<Node> (
         // Get the "parent"/"previous" node
         n = priorNodes.getValue(n);
 		//Assert that the heuristic was correct all through the path (for debugging)
-		console.log("heuristic: " + heuristics(n));
+		//console.log("heuristic: " + heuristics(n));
+		//console.log(n);
     } while (graph.compareNodes(n,start));
 
     // Result must be in end to start order, so we have to reverse it
