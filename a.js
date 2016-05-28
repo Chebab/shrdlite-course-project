@@ -2840,8 +2840,8 @@ var Interpreter;
             // Source and target quantifiers
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
+            //console.log("Source:" + sourceobj);
+            //console.log("Target:" + targetobj);
             // Variables for keeping track of which elements have been explored
             var sourceChecked = [];
             var targetChecked = [];
@@ -2875,13 +2875,13 @@ var Interpreter;
                     }
                 }
             }
-            //console.log("sourceChecked:"+sourceChecked);
-            //console.log("targetChecked:"+targetChecked);
+            ////console.log("sourceChecked:"+sourceChecked);
+            ////console.log("targetChecked:"+targetChecked);
             var checkedElements; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
             for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
+                //console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
                 // Initialize the checkedElements list
                 checkedElements = [];
                 // Fetch the current combination
@@ -2908,7 +2908,7 @@ var Interpreter;
                         var nComb = allCombinations[j];
                         var sourceElemExists = checkedElements.indexOf(nComb.args[0]) >= 0;
                         var targetElemExists = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
+                        //console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
                         if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
                             if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
                                 conjunctions.push(nComb);
@@ -2929,7 +2929,6 @@ var Interpreter;
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
-                        console.log("Checked elems: " + checkedElements);
                     }
                     var qualified;
                     if (isAllsrc) {
@@ -2938,14 +2937,13 @@ var Interpreter;
                     else {
                         qualified = targetChecked;
                     }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
+                    //console.log("qualified:" + qualified);
+                    //console.log("checkedElements:" + checkedElements);
                     if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
-                        console.log("conjunctions: OKEY");
+                        //console.log("conjunctions: OKEY")
                         interpretation.push(conjunctions);
                     }
                     else {
-                        console.log("conjunctions: FAILED");
                     }
                 }
                 else if (sourceQuant == "all" && targetQuant == "all") {
@@ -3310,14 +3308,16 @@ var Interpreter;
     }
 })(Interpreter || (Interpreter = {}));
 var world = "complex";
-var example = 0;
-var result = Parser.parse(ExampleWorlds[world].examples[example]);
-console.log(Parser.stringify(result[0]));
+var example = 2;
+var sentence = ExampleWorlds[world].examples[example];
+console.log("Sentence: " + sentence);
+var result = Parser.parse(sentence);
+//console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
 /*
-console.log("First parse");
-console.log(Parser.stringify(result[0]));
+//console.log("First parse");
+//console.log(Parser.stringify(result[0]));
 
 */

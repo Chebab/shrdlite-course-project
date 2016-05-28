@@ -175,9 +175,6 @@ module Interpreter {
             var sourceQuant: string = cmd.entity.quantifier;
             var targetQuant: string = cmd.location.entity.quantifier;
 
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
-
             // Variables for keeping track of which elements have been explored
             var sourceChecked: string[] = [];
             var targetChecked: string[] = [];
@@ -195,6 +192,7 @@ module Interpreter {
                     // The objects to be checked
                     var sourceObject: ObjectDefinition = theObjects[0];
                     var targetObject: ObjectDefinition = theObjects[1];
+                    // Check if the combination is physically possible
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
                         allCombinations.push(
                             {
@@ -213,14 +211,11 @@ module Interpreter {
                     }
                 }
             }
-            //console.log("sourceChecked:"+sourceChecked);
-            //console.log("targetChecked:"+targetChecked);
 
-            var checkedElements: string[]; // Keep tack of
+            var checkedElements: string[]; // Keep tack of the explored elements
             // Loop through all combinations and do different things depending
             // on the quantifier
             for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
                 // Initialize the checkedElements list
                 checkedElements = [];
                 // Fetch the current combination
@@ -236,45 +231,66 @@ module Interpreter {
                 }
                 else if ((!isAllsrc && isAlltrgt) ||
                     (isAllsrc && !isAlltrgt)) {
-                    // if either of source or target wuantifiers specify
+                    // if either of source or target quantifiers specify
                     // all, do the following
 
                     var conjunctions: Literal[] = []; // Conjunctions to be added
+
                     // Add the current combination to the conjunctions list and
                     // add the indentifiers of the elements to the list of checkedElements.
-                    // This is used for
                     conjunctions.push(cComb);
                     checkedElements.push(cComb.args[0]);
                     checkedElements.push(cComb.args[1]);
+
+                    // Check for each combination if it is valid for different conjunctions.
+                    // if it is, add it
                     for (var j = i + 1; j < allCombinations.length; j++) {
+                        // The element we are currently looking at
                         var nComb: Literal = allCombinations[j];
+
+                        // Check if any of the elements have already been explored in
+                        // the conjunctions
                         var sourceElemExists: boolean = checkedElements.indexOf(nComb.args[0]) >= 0;
                         var targetElemExists: boolean = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
+
+
                         if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
+                          // Only one element can be inside or ontop of another,
+                          // therefor this check exists
                             if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
+                              // If none of the elements have been explored, or if the
+                              // target is the floor, add i to the conjunction
                                 conjunctions.push(nComb);
+
+                                // Mark the elements explored
                                 checkedElements.push(nComb.args[0]);
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
+                        // If the relation is not inside or ontop, check which
+                        // has the all quantifier
                         else if (isAllsrc) {
                             if (!sourceElemExists) {
+                              // Since the all quantifier is on the source,
+                              // make sure that is not already explored
                                 conjunctions.push(nComb);
+                                //Mark the element explored
                                 checkedElements.push(nComb.args[0]);
-                                //checkedElements.push(nComb.args[1]);
+
                             }
 
                         }
                         else if (isAlltrgt) {
                             if (!targetElemExists) {
+                              // Since the all quantifier is on the target,
+                              // make sure that is not already explored
                                 conjunctions.push(nComb);
-                                //checkedElements.push(nComb.args[0]);
+                                // Mark the element is explored
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
-                        console.log("Checked elems: " + checkedElements);
                     }
+
                     var qualified: string[];
                     if (isAllsrc) {
                         qualified = sourceChecked;
@@ -282,19 +298,18 @@ module Interpreter {
                     else {
                         qualified = targetChecked;
                     }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
-
+                    //console.log("qualified:" + qualified);
+                    //console.log("checkedElements:" + checkedElements);
+                    // Make sure that the elements of the all quantifier have
+                    // all been explored. If it has, then push the conjunctions
                     if (qualified.every(function(val) { return checkedElements.indexOf(val) >= 0 })) {
-                        console.log("conjunctions: OKEY")
+
                         interpretation.push(conjunctions);
-                    }
-                    else {
-                        console.log("conjunctions: FAILED")
                     }
                 }
 
-                else if (sourceQuant == "all" && targetQuant == "all") {
+                else if (isAllsrc && isAlltrgt) {
+                  // If both are all
                     if (interpretation.length == 0) {
                         interpretation.push([cComb]);
                     }
@@ -509,14 +524,6 @@ module Interpreter {
         return result;
     }
 
-    function allHandle(
-        relation: string,
-        sourceobj: string[],
-        targetobj: string[],
-        state: WorldState): Literal[][] {
-
-        return [];
-    }
 
     /**
      * isFeasible() checks the feasiblity of the position of two objects
@@ -719,15 +726,17 @@ module Interpreter {
 }
 
 var world : string  = "complex";
-var example : number = 0;
-var result: Parser.ParseResult[] = Parser.parse(ExampleWorlds[world].examples[example]);
-console.log(Parser.stringify(result[0]));
+var example : number = 2;
+var sentence :string = ExampleWorlds[world].examples[example];
+console.log("Sentence: " + sentence);
+var result: Parser.ParseResult[] = Parser.parse(sentence);
+//console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
 /*
-console.log("First parse");
-console.log(Parser.stringify(result[0]));
+//console.log("First parse");
+//console.log(Parser.stringify(result[0]));
 
 */

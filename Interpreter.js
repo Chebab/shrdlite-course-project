@@ -63,8 +63,6 @@ var Interpreter;
             }
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
             var sourceChecked = [];
             var targetChecked = [];
             var allCombinations = [];
@@ -93,7 +91,6 @@ var Interpreter;
             }
             var checkedElements;
             for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
                 checkedElements = [];
                 var cComb = allCombinations[i];
                 var isAllsrc = sourceQuant == "all";
@@ -111,7 +108,6 @@ var Interpreter;
                         var nComb = allCombinations[j];
                         var sourceElemExists = checkedElements.indexOf(nComb.args[0]) >= 0;
                         var targetElemExists = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
                         if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
                             if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
                                 conjunctions.push(nComb);
@@ -131,7 +127,6 @@ var Interpreter;
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
-                        console.log("Checked elems: " + checkedElements);
                     }
                     var qualified;
                     if (isAllsrc) {
@@ -140,17 +135,11 @@ var Interpreter;
                     else {
                         qualified = targetChecked;
                     }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
                     if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
-                        console.log("conjunctions: OKEY");
                         interpretation.push(conjunctions);
                     }
-                    else {
-                        console.log("conjunctions: FAILED");
-                    }
                 }
-                else if (sourceQuant == "all" && targetQuant == "all") {
+                else if (isAllsrc && isAlltrgt) {
                     if (interpretation.length == 0) {
                         interpretation.push([cComb]);
                     }
@@ -246,9 +235,6 @@ var Interpreter;
             }
         }
         return result;
-    }
-    function allHandle(relation, sourceobj, targetobj, state) {
-        return [];
     }
     function isFeasible(relation, spos, tpos) {
         var xs = spos[0];
@@ -379,8 +365,9 @@ var Interpreter;
     }
 })(Interpreter || (Interpreter = {}));
 var world = "complex";
-var example = 0;
-var result = Parser.parse(ExampleWorlds[world].examples[example]);
-console.log(Parser.stringify(result[0]));
+var example = 2;
+var sentence = ExampleWorlds[world].examples[example];
+console.log("Sentence: " + sentence);
+var result = Parser.parse(sentence);
 var formula = Interpreter.interpret(result, ExampleWorlds[world]);
 console.log(Interpreter.stringify(formula[0]));
