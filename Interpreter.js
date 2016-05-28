@@ -63,8 +63,6 @@ var Interpreter;
             }
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
             var sourceChecked = [];
             var targetChecked = [];
             var allCombinations = [];
@@ -92,73 +90,24 @@ var Interpreter;
                 }
             }
             var checkedElements;
-            for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
-                checkedElements = [];
-                var cComb = allCombinations[i];
-                var isAllsrc = sourceQuant == "all";
-                var isAlltrgt = targetQuant == "all";
-                if (!isAllsrc && !isAlltrgt) {
-                    interpretation.push([cComb]);
-                }
-                else if ((!isAllsrc && isAlltrgt) ||
-                    (isAllsrc && !isAlltrgt)) {
-                    var conjunctions = [];
-                    conjunctions.push(cComb);
-                    checkedElements.push(cComb.args[0]);
-                    checkedElements.push(cComb.args[1]);
-                    for (var j = i + 1; j < allCombinations.length; j++) {
-                        var nComb = allCombinations[j];
-                        var sourceElemExists = checkedElements.indexOf(nComb.args[0]) >= 0;
-                        var targetElemExists = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
-                        if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
-                            if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
-                                conjunctions.push(nComb);
-                                checkedElements.push(nComb.args[0]);
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                        else if (isAllsrc) {
-                            if (!sourceElemExists) {
-                                conjunctions.push(nComb);
-                                checkedElements.push(nComb.args[0]);
-                            }
-                        }
-                        else if (isAlltrgt) {
-                            if (!targetElemExists) {
-                                conjunctions.push(nComb);
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                        console.log("Checked elems: " + checkedElements);
-                    }
-                    var qualified;
-                    if (isAllsrc) {
-                        qualified = sourceChecked;
-                    }
-                    else {
-                        qualified = targetChecked;
-                    }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
-                    if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
-                        console.log("conjunctions: OKEY");
-                        interpretation.push(conjunctions);
-                    }
-                    else {
-                        console.log("conjunctions: FAILED");
-                    }
-                }
-                else if (sourceQuant == "all" && targetQuant == "all") {
-                    if (interpretation.length == 0) {
-                        interpretation.push([cComb]);
-                    }
-                    else {
-                        interpretation[0].push(cComb);
-                    }
+            console.log("starting calculations");
+            var temp = [[allCombinations[0]], [allCombinations[2]]];
+            for (var i = 0; i < temp.length; i++) {
+                for (var j = 0; j < temp[i].length; j++) {
+                    console.log(stringifyLiteral(temp[i][j]));
                 }
             }
+            console.log("----------------------");
+            var interptemp = findFeasibleCombinations1(temp, allCombinations, sourceQuant == "all", targetQuant == "all", sourceChecked, targetChecked, 0);
+            console.log("new interp, length:" + interptemp.length);
+            for (var i = 0; i < interptemp.length; i++) {
+                console.log("new interp[" + i + "], length:" + interptemp.length);
+                for (var j = 0; j < interptemp[i].length; j++) {
+                    console.log(stringifyLiteral(interptemp[i][j]));
+                }
+            }
+            console.log("----------------------");
+            interpretation = interptemp;
         }
         else if (cmd.command == "take") {
             for (var i = 0; i < sourceobj.length; i++) {
@@ -182,7 +131,6 @@ var Interpreter;
             var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
             var unchanged = res.length == 1 && res[0].length == combinations[i].length;
             if (res == null) {
-                console.log("res is null");
             }
             isDone = isDone && unchanged;
             var returnVal = returnVal.concat(res);
@@ -192,12 +140,61 @@ var Interpreter;
         }
         return returnVal;
     }
-    function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
-        if (combination == null) {
-            console.log("combination is null");
+    function findFeasibleCombinations1(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
+        if (allCombinations.length < 1) {
+            throw new Error("No combinations to evaluate");
         }
-        if (combination.length < 1) {
-            throw new Error("No combination to evaluate");
+        var returnVal = [];
+        if (isSourceAll && isTargetAll || !isSourceAll && !isTargetAll) {
+            return feasibleCombination([], allCombinations, isSourceAll, isTargetAll);
+        }
+        else if (isSourceAll && !isTargetAll) {
+            if (index > sourceIDs.length - 1) {
+                return combinations;
+            }
+            var partCombinations = [];
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (sourceIDs[index] == allCombinations[i].args[0]) {
+                    partCombinations.push(allCombinations[i]);
+                }
+            }
+            var newCombinations = [];
+            for (var i = 0; i < combinations.length; i++) {
+                newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
+            }
+            for (var i = 0; i < newCombinations.length; i++) {
+                for (var j = 0; j < newCombinations[i].length; j++) {
+                }
+            }
+            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+        }
+        else {
+            if (index > sourceIDs.length - 1) {
+                return combinations;
+            }
+            var partCombinations = [];
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (targetIDs[index] == allCombinations[i].args[1]) {
+                    partCombinations.push(allCombinations[i]);
+                }
+            }
+            var newCombinations = [];
+            for (var i = 0; i < combinations.length; i++) {
+                newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
+            }
+            for (var i = 0; i < newCombinations.length; i++) {
+                console.log("newCombination[" + i + "], length:" + newCombinations.length);
+                for (var j = 0; j < newCombinations[i].length; j++) {
+                    console.log(stringifyLiteral(newCombinations[i][j]));
+                }
+            }
+            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+        }
+        return returnVal;
+    }
+    function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
+        if (allCombinations.length < 1) {
+            throw new Error("allCombinations empty");
         }
         var returnVal = [];
         var srcIndent = [];
@@ -210,7 +207,18 @@ var Interpreter;
             var comb = allCombinations[i];
             var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
             var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
-            if (combination[0].relation == "inside" || combination[0].relation == "outside") {
+            if (isSourceAll && isTargetAll) {
+                if (returnVal.length < 1) {
+                    returnVal.push([comb]);
+                }
+                else {
+                    returnVal[0].push(comb);
+                }
+            }
+            else if (!isSourceAll && !isTargetAll) {
+                returnVal.push([comb]);
+            }
+            else if (combination[0].relation == "inside" || combination[0].relation == "ontop") {
                 if (!sourceElemExists && !targetElemExists) {
                     returnVal.push(combination.concat([comb]));
                 }
@@ -437,7 +445,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put every ball in a box");
+var result = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));

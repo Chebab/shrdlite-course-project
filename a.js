@@ -2840,8 +2840,8 @@ var Interpreter;
             // Source and target quantifiers
             var sourceQuant = cmd.entity.quantifier;
             var targetQuant = cmd.location.entity.quantifier;
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
+            //console.log("Source:" + sourceobj);
+            //console.log("Target:" + targetobj);
             // Variables for keeping track of which elements have been explored
             var sourceChecked = [];
             var targetChecked = [];
@@ -2875,17 +2875,21 @@ var Interpreter;
                     }
                 }
             }
-            //console.log("sourceChecked:"+sourceChecked);
-            //console.log("targetChecked:"+targetChecked);
+            ////console.log("sourceChecked:"+sourceChecked);
+            ////console.log("targetChecked:"+targetChecked);
             var checkedElements; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
-            var temp = [];
-            for (var i = 0; i < allCombinations.length; i++) {
-                temp.push([allCombinations[i]]);
-                console.log(allCombinations[i]);
+            console.log("starting calculations");
+            var temp = [[allCombinations[0]], [allCombinations[2]]];
+            for (var i = 0; i < temp.length; i++) {
+                //temp.push([allCombinations[i]]);
+                for (var j = 0; j < temp[i].length; j++) {
+                    console.log(stringifyLiteral(temp[i][j]));
+                }
             }
-            var interptemp = findFeasibleCombinations(temp, allCombinations, sourceQuant == "all", targetQuant == "all");
+            console.log("----------------------");
+            var interptemp = findFeasibleCombinations1(temp, allCombinations, sourceQuant == "all", targetQuant == "all", sourceChecked, targetChecked, 0);
             console.log("new interp, length:" + interptemp.length);
             for (var i = 0; i < interptemp.length; i++) {
                 console.log("new interp[" + i + "], length:" + interptemp.length);
@@ -2893,6 +2897,8 @@ var Interpreter;
                     console.log(stringifyLiteral(interptemp[i][j]));
                 }
             }
+            console.log("----------------------");
+            interpretation = interptemp;
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
@@ -2921,7 +2927,6 @@ var Interpreter;
             var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
             var unchanged = res.length == 1 && res[0].length == combinations[i].length;
             if (res == null) {
-                console.log("res is null");
             }
             isDone = isDone && unchanged;
             var returnVal = returnVal.concat(res);
@@ -2931,13 +2936,69 @@ var Interpreter;
         }
         return returnVal;
     }
+    function findFeasibleCombinations1(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
+        if (allCombinations.length < 1) {
+            throw new Error("No combinations to evaluate");
+        }
+        var returnVal = [];
+        if (isSourceAll && isTargetAll || !isSourceAll && !isTargetAll) {
+            return feasibleCombination([], allCombinations, isSourceAll, isTargetAll);
+        }
+        else if (isSourceAll && !isTargetAll) {
+            //console.log("index:"+index);
+            if (index > sourceIDs.length - 1) {
+                return combinations;
+            }
+            // Find the next source relation
+            var partCombinations = [];
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (sourceIDs[index] == allCombinations[i].args[0]) {
+                    partCombinations.push(allCombinations[i]);
+                }
+            }
+            //console.log("partCombinations:"+partCombinations.length);
+            var newCombinations = [];
+            for (var i = 0; i < combinations.length; i++) {
+                newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
+            }
+            //console.log("Content of the newCombinations is:")
+            for (var i = 0; i < newCombinations.length; i++) {
+                //console.log("newCombination["+i+"], length:" + newCombinations.length);
+                for (var j = 0; j < newCombinations[i].length; j++) {
+                }
+            }
+            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+        }
+        else {
+            if (index > sourceIDs.length - 1) {
+                return combinations;
+            }
+            // Find the next source relation
+            var partCombinations = [];
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (targetIDs[index] == allCombinations[i].args[1]) {
+                    partCombinations.push(allCombinations[i]);
+                }
+            }
+            var newCombinations = [];
+            for (var i = 0; i < combinations.length; i++) {
+                newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
+            }
+            //console.log("Content of the newCombinations is:")
+            for (var i = 0; i < newCombinations.length; i++) {
+                console.log("newCombination[" + i + "], length:" + newCombinations.length);
+                for (var j = 0; j < newCombinations[i].length; j++) {
+                    console.log(stringifyLiteral(newCombinations[i][j]));
+                }
+            }
+            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+        }
+        return returnVal;
+    }
     // Finds the feasible combination given the
     function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
-        if (combination == null) {
-            console.log("combination is null");
-        }
-        if (combination.length < 1) {
-            throw new Error("No combination to evaluate");
+        if (allCombinations.length < 1) {
+            throw new Error("allCombinations empty");
         }
         var returnVal = [];
         var srcIndent = [];
@@ -2950,8 +3011,24 @@ var Interpreter;
             var comb = allCombinations[i];
             var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
             var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
-            if (combination[0].relation == "inside" || combination[0].relation == "outside") {
+            if (isSourceAll && isTargetAll) {
+                if (returnVal.length < 1) {
+                    returnVal.push([comb]);
+                }
+                else {
+                    returnVal[0].push(comb);
+                }
+            }
+            else if (!isSourceAll && !isTargetAll) {
+                returnVal.push([comb]);
+            }
+            else if (combination[0].relation == "inside" || combination[0].relation == "ontop") {
+                ////console.log("Inside entered")
+                ////console.log("srcIndent:"+srcIndent);
+                ////console.log("trgtIndent:"+trgtIndent);
+                ////console.log("Unpushed Literal: "+stringifyLiteral(comb));
                 if (!sourceElemExists && !targetElemExists) {
+                    ////console.log("Pushed to return, literal: "+stringifyLiteral(comb));
                     returnVal.push(combination.concat([comb]));
                 }
             }
@@ -3305,13 +3382,13 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put every ball in a box");
+var result = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
-console.log("First parse");
-console.log(Parser.stringify(result[0]));
+//console.log("First parse");
+//console.log(Parser.stringify(result[0]));
 
 */

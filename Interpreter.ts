@@ -175,8 +175,8 @@ module Interpreter {
             var sourceQuant: string = cmd.entity.quantifier;
             var targetQuant: string = cmd.location.entity.quantifier;
 
-            console.log("Source:" + sourceobj);
-            console.log("Target:" + targetobj);
+            //console.log("Source:" + sourceobj);
+            //console.log("Target:" + targetobj);
 
             // Variables for keeping track of which elements have been explored
             var sourceChecked: string[] = [];
@@ -213,23 +213,29 @@ module Interpreter {
                     }
                 }
             }
-            //console.log("sourceChecked:"+sourceChecked);
-            //console.log("targetChecked:"+targetChecked);
+            ////console.log("sourceChecked:"+sourceChecked);
+            ////console.log("targetChecked:"+targetChecked);
 
             var checkedElements: string[]; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
-            /*
-            var temp : Literal[][]= [];
-            for(var i = 0; i<allCombinations.length;i++){
-              temp.push([allCombinations[i]]);
-              console.log(allCombinations[i]);
+            console.log("starting calculations")
+            var temp : Literal[][]= [[allCombinations[0]],[allCombinations[2]]];
+            for(var i = 0; i<temp.length;i++){
+              //temp.push([allCombinations[i]]);
+              for(var j = 0;j<temp[i].length;j++){
+                console.log(stringifyLiteral(temp[i][j]));
+              }
             }
-            var interptemp = findFeasibleCombinations(
+            console.log("----------------------");
+            var interptemp = findFeasibleCombinations1(
               temp,
               allCombinations,
               sourceQuant == "all",
-              targetQuant == "all"
+              targetQuant == "all",
+              sourceChecked,
+              targetChecked,
+              0
             );
             console.log("new interp, length:"+interptemp.length);
 
@@ -238,11 +244,12 @@ module Interpreter {
               for(var j = 0; j<interptemp[i].length;j++){
                 console.log(stringifyLiteral(interptemp[i][j]));
               }
-            }*/
-
-
+            }
+            console.log("----------------------");
+            interpretation=interptemp;
+/*
             for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
+                //console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
                 // Initialize the checkedElements list
                 checkedElements = [];
                 // Fetch the current combination
@@ -272,7 +279,7 @@ module Interpreter {
                         var nComb: Literal = allCombinations[j];
                         var sourceElemExists: boolean = checkedElements.indexOf(nComb.args[0]) >= 0;
                         var targetElemExists: boolean = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:["+nComb.args[0]+","+nComb.args[1]+"]" );
+                        //console.log("nComb:["+nComb.args[0]+","+nComb.args[1]+"]" );
                         if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
                             if (!targetElemExists && !sourceElemExists || nComb.args[1]=="floor") {
                                 conjunctions.push(nComb);
@@ -295,7 +302,7 @@ module Interpreter {
                                 checkedElements.push(nComb.args[1]);
                             }
                         }
-                        console.log("Checked elems: "+checkedElements);
+                        //console.log("Checked elems: "+checkedElements);
                     }
                     var qualified: string[];
                     if (isAllsrc) {
@@ -304,15 +311,15 @@ module Interpreter {
                     else {
                         qualified = targetChecked;
                     }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
+                    //console.log("qualified:" + qualified);
+                    //console.log("checkedElements:" + checkedElements);
 
                     if (qualified.every(function(val) { return checkedElements.indexOf(val) >= 0 })) {
-                        console.log("conjunctions: OKEY")
+                        //console.log("conjunctions: OKEY")
                         interpretation.push(conjunctions);
                     }
                     else {
-                        console.log("conjunctions: FAILED")
+                        //console.log("conjunctions: FAILED")
                     }
                 }
 
@@ -325,7 +332,7 @@ module Interpreter {
                     }
                 }
 
-            }
+            }*/
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
@@ -363,7 +370,7 @@ module Interpreter {
         var res = feasibleCombination(combinations[i],allCombinations,isSourceAll,isTargetAll);
         var unchanged : boolean = res.length == 1 && res[0].length == combinations[i].length;
         if(res == null){
-          console.log("res is null");
+          //console.log("res is null");
         }
         isDone = isDone && unchanged;
         var returnVal = returnVal.concat(res);
@@ -374,6 +381,101 @@ module Interpreter {
 
       return returnVal;
     }
+
+    function findFeasibleCombinations1(
+      combinations : Literal[][],
+      allCombinations : Literal[],
+      isSourceAll : boolean,
+      isTargetAll : boolean,
+      sourceIDs :string[],
+      targetIDs :string[],
+      index : number
+    ): Literal[][]{
+      if(allCombinations.length < 1){
+        throw new Error("No combinations to evaluate");
+      }
+
+      var returnVal : Literal[][] = [];
+      if(isSourceAll && isTargetAll || !isSourceAll && !isTargetAll){
+        return feasibleCombination([],allCombinations,isSourceAll,isTargetAll);
+      }
+      else if(isSourceAll && !isTargetAll){
+        //console.log("index:"+index);
+        if(index > sourceIDs.length-1){
+          return combinations;
+        }
+        // Find the next source relation
+        var partCombinations : Literal[] = [];
+        for(var i = 0;i<allCombinations.length;i++){
+          if(sourceIDs[index]==allCombinations[i].args[0]){
+              partCombinations.push(allCombinations[i]);
+              //console.log("Added Literal: "+stringifyLiteral(allCombinations[i]))
+          }
+        }
+        //console.log("partCombinations:"+partCombinations.length);
+        var newCombinations : Literal[][] = [];
+        for(var i = 0; i<combinations.length;i++){
+          newCombinations= newCombinations.concat(
+            feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
+          );
+        }
+        //console.log("Content of the newCombinations is:")
+        for(var i = 0; i<newCombinations.length;i++){
+          //console.log("newCombination["+i+"], length:" + newCombinations.length);
+          for(var j = 0; j<newCombinations[i].length;j++){
+            //console.log(stringifyLiteral(newCombinations[i][j]));
+          }
+        }
+        returnVal = findFeasibleCombinations1(
+          newCombinations,
+          allCombinations,
+          isSourceAll,
+          isTargetAll,
+          sourceIDs,
+          targetIDs,
+          ++index
+        );
+      }
+      //!isSourceAll && isTargetAll
+      else{
+        if(index > sourceIDs.length-1){
+          return combinations;
+        }
+        // Find the next source relation
+        var partCombinations : Literal[] = [];
+        for(var i = 0;i<allCombinations.length;i++){
+          if(targetIDs[index]==allCombinations[i].args[1]){
+              partCombinations.push(allCombinations[i]);
+              //console.log("Added Literal: "+stringifyLiteral(allCombinations[i]))
+          }
+        }
+        var newCombinations : Literal[][] = [];
+        for(var i = 0; i<combinations.length;i++){
+          newCombinations= newCombinations.concat(
+            feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
+          );
+        }
+        //console.log("Content of the newCombinations is:")
+        for(var i = 0; i<newCombinations.length;i++){
+          console.log("newCombination["+i+"], length:" + newCombinations.length);
+          for(var j = 0; j<newCombinations[i].length;j++){
+            console.log(stringifyLiteral(newCombinations[i][j]));
+          }
+        }
+        returnVal = findFeasibleCombinations1(
+          newCombinations,
+          allCombinations,
+          isSourceAll,
+          isTargetAll,
+          sourceIDs,
+          targetIDs,
+          ++index
+        );
+      }
+
+      return returnVal;
+    }
+
     // Finds the feasible combination given the
     function feasibleCombination(
       combination : Literal[],
@@ -381,15 +483,9 @@ module Interpreter {
       isSourceAll : boolean,
       isTargetAll : boolean
     ): Literal[][] {
-
-      if(combination == null){
-        console.log("combination is null");
+      if(allCombinations.length < 1){
+        throw new Error("allCombinations empty");
       }
-
-      if(combination.length < 1){
-        throw new Error("No combination to evaluate");
-      }
-
       var returnVal : Literal[][] = [];
       var srcIndent : string[] = [];
       var trgtIndent : string[]= [];
@@ -402,8 +498,24 @@ module Interpreter {
         var comb : Literal = allCombinations[i];
         var sourceElemExists: boolean = srcIndent.indexOf(comb.args[0]) >= 0;
         var targetElemExists: boolean = trgtIndent.indexOf(comb.args[1]) >= 0;
-        if(combination[0].relation=="inside"||combination[0].relation=="outside"){
+        if(isSourceAll && isTargetAll){
+          if(returnVal.length < 1){
+            returnVal.push([comb]);
+          }
+          else{
+            returnVal[0].push(comb);
+          }
+        }
+        else if(!isSourceAll && !isTargetAll){
+          returnVal.push([comb]);
+        }
+        else if(combination[0].relation=="inside"||combination[0].relation=="ontop"){
+          ////console.log("Inside entered")
+          ////console.log("srcIndent:"+srcIndent);
+          ////console.log("trgtIndent:"+trgtIndent);
+          ////console.log("Unpushed Literal: "+stringifyLiteral(comb));
           if(!sourceElemExists && !targetElemExists){
+            ////console.log("Pushed to return, literal: "+stringifyLiteral(comb));
             returnVal.push(combination.concat([comb]));
           }
         }
@@ -819,14 +931,14 @@ module Interpreter {
 }
 
 
-var result: Parser.ParseResult[] = Parser.parse("put every ball in a box");
+var result: Parser.ParseResult[] = Parser.parse("put a ball in every large box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
-console.log("First parse");
-console.log(Parser.stringify(result[0]));
+//console.log("First parse");
+//console.log(Parser.stringify(result[0]));
 
 */
