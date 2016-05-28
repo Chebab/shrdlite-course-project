@@ -144,119 +144,242 @@ module Planner {
 			return false;
 		}
 		
-		function manhattanishcombo(state: WorldStateNode) : number {
-			//console.log(state.stacks);
-			//var v1 = manhattanishv3(state);
-			//var v2 = manhattanishv2(state);
-			//console.log(v1 + "        " + v2);
-			
-			return Math.max(manhattanishv3(state), manhattanishv2(state));
-		}
 		
-		function manhattanishv3(state : WorldStateNode) : number {
+		function combinationHeuristic(state: WorldStateNode) : number {			
+			return Math.max(combineAllConjunctsheuristic(state), focusOnOneConjunctHeuristic(state));
+		}
+
+
+
+
+		
+		//This heurstic looks at all the literals of a conjunct and tries finds
+		//a lower bound for the cost of fulfilling all those literals. 
+		//This should often work less well than focusOnOneConjunctHeuristic on
+		//goals with just one or a few literals. 
+		function combineAllConjunctsheuristic(state : WorldStateNode) : number {
+			function filterMoveNeeded(moved : string[], literal : Interpreter.Literal, distance : number) : number { 
+				if (moved.indexOf(literal.args[0]) == -1 &&
+					moved.indexOf(literal.args[1]) == -1) {
+					
+					moved.push(literal.args[0]);
+					moved.push(literal.args[1]);
+					return distance;
+				} else {
+					return 0;
+				}
+			}
+
+			function updateDigDepthsFromConnections(minDigDepths : number[], connections : number[][]) : number[] {
+				
+				var moveDistance : number = 0;
+				var closestArmDistance : number = 0;
+				while (connections.length > 0) {
+					
+					//Find deepest pair
+					var deepest : number [] = [];
+					var deepestValue : number = 0;
+					var xcoord : number;
+					var depth : number;
+					//Look for the deepest pair of items (the item with the largest minimum depth)
+					//after accounting for stuff that has already been removed to deal with 
+					//above/under/ontop/inside - literals. 
+					//A connection is an array of the form [x1, y1, depth1, x2, y2, depth2, z] where z
+					//is -1 if this comes from a beside-literal and 1 if it is a leftof/rightof-literal
+					//corresponding to a literal with leftof/rightof as the relation
+					//console.log("entering loop ---------------");
+					//This should maybe be expressed as       if (connections.length > 0){ while (true) {...
+					for (var c of connections) {
+						var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
+						var depth2 : number = Math.max(c[5] - minDigDepths[c[3]],0);
+							
+						var xcoordtemp : number;
+						//Find shallowest of items in this literal
+						if (depth1 < depth2) {
+							depth = depth1;
+							xcoordtemp = c[0];
+						} else {
+							depth = depth2;
+							xcoordtemp= c[3];
+						}
+						//If minimum depth of the pair is greater than what has previously been seen
+						if (depth > deepestValue) {
+							deepest = c;
+							deepestValue = depth;
+							xcoord = xcoordtemp;
+						}
+					}
+					//Break when no new literal can be found, under the ones already accounted for. 
+					if (deepest.length == 0) {
+						break;
+					}
+					//Set the minimum dig depth to the 
+					//depth of the shallowest item in the found literal for the column in which it is found
+					//console.log("setting x: " + xcoord  + " to " + deepestValue);
+					minDigDepths[xcoord] += deepestValue;
+					//The last term is either 1 or -1 depending on whether this is a "beside" or "leftof/rightof"
+					//literal
+					if (deepest[0] != -2 && deepest[3] != -2) {
+						moveDistance += Math.max(Math.abs(deepest[0] - deepest[3]) + deepest[6], 0);
+					}
+					else {
+						//exactly one of objects is in hand
+						closestArmDistance = Math.abs(state.arm - Math.max(deepest[0],deepest[3]));
+					}
+					
+				}
+				return [moveDistance, closestArmDistance];
+			}
+			
+			function sumUpAllCostFactors(minDigDepths : number[], toFloorCount : number, 
+										minMoveDistance : number, closestDistFromArm : number, 
+										penalty : number, state: WorldState) : number {
+				
+				
+				var sum : number = 0;
+				//for all columns, sum up how many items need to be moved above the items mentioned in the literals
+				for (var val of minDigDepths) {
+					//4 actions per item to move: pick up, move, drop, move back
+					sum += val*4;
+				}
+				
+				//Find the number of columns that need to be cleared. 
+				if (toFloorCount > 0) {
+					//leftAfterMinDig is height of columns after items mentioned in the literals have been
+					//removed. 
+					var leftAfterMinDig : number[] = []
+					for (var i = 0; i < state.stacks.length; i++) {
+						leftAfterMinDig[i] = state.stacks[i].length - minDigDepths[i];
+					}
+					//Find the smallest columns
+					leftAfterMinDig.sort(function s(a : number, b : number) : number {return a - b;} );
+					for (var i = 0; i < toFloorCount; i++) {
+						//4 actions per item to move: pick up, move, drop, move back
+						sum += leftAfterMinDig[i]*4;
+					}
+				}
+				
+				//If closestDistFromArm was not updated in the for loops, we do not have a value for this
+				if (closestDistFromArm == 1000000) closestDistFromArm = 0;
+				
+				if (state.arm == null) {
+					return sum + minMoveDistance + closestDistFromArm + penalty;
+				} else {
+					return sum + minMoveDistance  + penalty;
+				}
+			}
+		
+			//This counts how many items need to be removed above the items mentioned in the 
+			//literals
 			var minDigDepths : number[] = [];
-			//For leftof/rightof - tracks where stuff is that needs to be moved and how much stuff is 
-			//above that stuff 
-			var connections : number[][] = [];
-			var bestConjunctVal : number = 1000000000;
 			for (var i = 0; i < state.stacks.length; i++) {
 				minDigDepths.push(0);
 			}
+			//For leftof/rightof/under/above - tracks where stuff is that needs to be moved and how much stuff is 
+			//above that stuff 
+			var connections : number[][] = [];
+			//Set this to any other value than 0 to get a non-admissible heuristic that
+			//penalizes states where more literals are unfulfilled
+			var penaltyPerLiteral = 0;
+			//The result of this heuristic is the minimum of the estimated costs for fulfilling each conjunct. 
+			var bestConjunctVal : number = 1000000000;
 			//A dictionary from string id:s of objects to positions in the world
 			var positions = getPositions(state);
+			//A measure of minimum distance to travel between items
 			var minMoveDistance : number = 0;
+			//A measure of distance from arm to an item
 			var closestDistFromArm : number = 1000000;
 			for (var conjunct of interpretation) {
-				//heuristic is given by sum of minimum number of items to remove from each stack
+				//added to for each unfulfilled literal (if penaltyPerLiteral != 0)
 				var penalty = 0; 
+				//Number of items that need to be placed ontop of floor
 				var toFloorCount : number = 0;
 				for (var literal of conjunct) {
+					//moved is used to keep track so that no double-counting is done. 
+					//If an object is mentioned in more than one literal, only allow one of 
+					//those literals to be used in this heuristic. Should maybe be a set
+					//but since the number of items is so small, this should work just as well
+					var moved : string[] = [];
 					var xpos1 : number = positions.getValue(literal.args[0])[0];
 					var ypos1 : number = positions.getValue(literal.args[0])[1];
-					var moved : string[] = [];
+					//number of items above the first argument of the literal
 					var abovecount1 : number = 0;
-					//if held, leave at 0
+					//if held, leave at 0 (xpos1 should never be -2)
 					if (xpos1 != -1 && xpos1 != -2)
 						abovecount1 = Math.max(state.stacks[xpos1].length - ypos1 - 1, 0);
 					
 					var xpos2 : number;
 					var ypos2 : number;
 					var abovecount2 : number;
+					//Find position of 2nd argument of literal, and number of items above it
 					if (literal.relation != "holding") {
 						xpos2 = positions.getValue(literal.args[1])[0];
 						ypos2 = positions.getValue(literal.args[1])[1];
 						if (xpos2 == -2) {
-							
 							abovecount2 = 0;
 						} else if (xpos2 == -1) {
-							
+							//Count the number of items that need to be placed on the floor
+							toFloorCount++;
 						} else {
 							abovecount2 = state.stacks[xpos2].length - ypos2 - 1;
 						}
-						
 					}
 					
-
 					//If literal already fulfilled, move on
 					if (Interpreter.isFeasible(literal.relation, [xpos1, ypos1], [xpos2, ypos2])) {
 						continue;
 					}
 					
-					if (literal.relation != "holding" && xpos2 == -1) {
-						toFloorCount++;
-					}
-					
-					penalty += 40; 
+					//This makes the heuristic non-admissible if penaltyPerLiteral != 0. But it 
+					//can speed the planning up quite a bit for goals with many literals. 
+					penalty += penaltyPerLiteral; 
 					
 					switch (literal.relation) {
+						//if we want to be holding an item, find the number of items above it and how far to move
+						//to the stack containing it
 						case "holding": 
 							minDigDepths[xpos1] = Math.max(minDigDepths[xpos1], abovecount1);
 							minMoveDistance += Math.abs(xpos1 - state.arm);
 							break;
+						//if we want to put something directly above an item, find how many items need to be
+						//moved to access both items, and the distance to move the arm to one of the items
 						case "ontop": case "inside": 
+							//Closest distance to move the arm to either of the arguments of the literal
 							if (state.holding == null) {
 								closestDistFromArm = Math.min(closestDistFromArm, Math.abs(state.arm - xpos1));
+								//if target is neiher floor, nor held
 								if (xpos2 != -1 && xpos2 != -2) { 
 									closestDistFromArm = Math.min(closestDistFromArm, Math.abs(state.arm - xpos2));
 								}
 							}
-							//source not held
+							//Find how many items need to be removed above 1st argument of literal.
+							//if source not held
 							if (xpos1 != -2) {
 								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
 							} 
+							
+							//Find how far the arm needs to be moved between items
 							//target neither held nor floor
 							if (xpos2 != -1 && xpos2 != -2) {
 								minDigDepths[xpos2] = Math.max(minDigDepths[xpos2],abovecount2);
+								//1st item not held
 								if (xpos1 != -2) {
-									if (moved.indexOf(literal.args[0]) == -1 &&
-										moved.indexOf(literal.args[1]) == -1)
-										minMoveDistance += Math.abs(xpos2-xpos1);
-										moved.push(literal.args[0]);
-										moved.push(literal.args[1]);
-								} else {
-									if (moved.indexOf(literal.args[0]) == -1 &&
-										moved.indexOf(literal.args[1]) == -1) {
-										minMoveDistance += Math.abs(xpos2 - state.arm);
-										moved.push(literal.args[0]);
-										moved.push(literal.args[1]);
-									}
+									//addToMoved returns 0 if we cannot certainly know that this move will occur
+									minMoveDistance += filterMoveNeeded(moved, literal, Math.abs(xpos2-xpos1));
+								} 
+								//1st item held
+								else {
+									minMoveDistance += filterMoveNeeded(moved, literal, Math.abs(xpos2 - state.arm));
 								}
 							}
+							//2nd item held, need to move arm to first item
 							if (xpos2 == -2) {
-								if (moved.indexOf(literal.args[0]) == -1 &&
-									moved.indexOf(literal.args[1]) == -1) {
-									minMoveDistance += Math.abs(xpos1 - state.arm);
-									moved.push(literal.args[0]);
-									moved.push(literal.args[1]);
-								}
+								minMoveDistance += filterMoveNeeded(moved, literal, Math.abs(xpos1 - state.arm));
 							}
-							
-							
 							break;
+						//Could do the same things as in "ontop" and "inside" here (move this case up, add the +1?)
 						case "under":	
-							if (xpos1 != -2) {
-								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
-							}
+							//Can only be sure that the target needs to be cleared and lifted. 
 							if (xpos2 != -1 && xpos2 != -2) {
 								minDigDepths[xpos2] = Math.max(minDigDepths[xpos2],abovecount2 + 1);
 							}							
@@ -266,101 +389,38 @@ module Planner {
 								minDigDepths[xpos1] = Math.max(minDigDepths[xpos1],abovecount1);
 							}
 							break;
+						//Deal with leftof/rightof after finding all the literals that have a 
+						//leftof/rightof relation. Just gather them up here.
 						case "leftof": case "rightof" :
 							if (xpos1 != -2) {
-								connections.push([xpos1,ypos1,abovecount1,xpos2,ypos2,abovecount2])
+								connections.push([xpos1,ypos1,abovecount1,xpos2,ypos2,abovecount2, 1])
 							}
-								
+							break;
+						case "beside": 
+							if (xpos1 != -2)
+								connections.push([xpos1, ypos1, abovecount1, xpos2, ypos2, abovecount2, -1]);
 							break;
 					}
-					
-					
-				}
-				//Really if... while(true)
-					
-				while (connections.length > 0) {
-					//Find deepest pair
-					var deepest : number [] = [];
-					var deepestValue : number = 0;
-					var xcoord : number;
-					var depth : number;
-					for (var c of connections) {
-						var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
-						var depth2 : number = Math.max(c[5] - minDigDepths[c[3]],0);
-						
-						var xcoordtemp : number;
-						if (depth1 < depth2) {
-							depth = depth1;
-							xcoordtemp = c[0];
-						} else {
-							depth = depth2;
-							xcoordtemp= c[3];
-						}
-						if (depth > deepestValue) {
-							deepest = c;
-							deepestValue = depth;
-							xcoord = xcoordtemp;
-						}
-					}
-						//none left to dig up
-					if (deepest.length == 0) {
-						break;
-					}
-					minDigDepths[xcoord] = depth;
 				}
 				
-				var sum : number = 0;
-				for(var val of minDigDepths) {
+				//This is for the leftof/rightof/beside literals in this conjunction, if any
+				var distances : number[] = updateDigDepthsFromConnections(minDigDepths, connections);
+				minMoveDistance += distances[0];
+				closestDistFromArm = Math.max(distances[1],closestDistFromArm);
+				
+				
+				var score = sumUpAllCostFactors(minDigDepths, toFloorCount, minMoveDistance, closestDistFromArm, penalty, state);
+				
+				bestConjunctVal = Math.min(bestConjunctVal,score); 
+
 					
-					sum += val*4;
-				}
-				
-				if (toFloorCount > 0) {
-					var leftAfterMinDig : number[] = []
-					for (var i = 0; i < state.stacks.length; i++) {
-						leftAfterMinDig[i] = state.stacks[i].length - minDigDepths[i];
-					}
-					leftAfterMinDig.sort(function s(a : number, b : number) : number {return a - b;} );
-					
-					for (var i = 0; i < toFloorCount; i++) {
-						//console.log(toFloorCount);
-						sum += leftAfterMinDig[i]*4;
-					}
-				}
-				
-				
-				if (closestDistFromArm == 1000000) closestDistFromArm = 0;
-				
-				var debug = false;
-				
-				if (debug) console.log("---------------------------------------");
-				if (state.holding == null) {
-					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance + closestDistFromArm ); 
-					
-					if (debug) console.log("sum: " + sum);
-					if (debug) console.log("mindigdepths" + minDigDepths);
-					if (debug) console.log("minMoveDistance: " + minMoveDistance);
-					if (debug) console.log("closestDistFromArm: " + closestDistFromArm);
-					if (debug) console.log("penalty: " + penalty);
-				}
-				else {
-					bestConjunctVal = Math.min(bestConjunctVal,sum + minMoveDistance );
-					
-					if (debug) console.log("sum: " + sum);
-					if (debug) console.log("mindigdepths: " + minDigDepths);
-					if (debug) console.log("minMoveDistance: " + minMoveDistance);
-					if (debug) console.log("penalty: " + penalty);
-				}
 			}
-			if (debug) console.log("arm: " + state.arm);
-			if (debug) console.log("holding: " + state.holding);
-			if (debug) console.log(state.stacks);
-			if (debug) console.log(bestConjunctVal);
 			return bestConjunctVal;
 		}
 		
-		//Really detailed. Should work well for goals with only a few easily reached subgoals
-		function manhattanishv2(state : WorldStateNode) : number {
+		//Detailed heuristic that returns the largest estimated cost of fulfilling one of the 
+		//conjuncts in the DNFFormula. Should work well for goals with only a few easily reached subgoals left
+		function focusOnOneConjunctHeuristic(state : WorldStateNode) : number {
 			var shortest : number = 100000000;
 			var longest : number = 0;
 			var current : number = 0;
@@ -514,17 +574,17 @@ module Planner {
 					} 
 					//If Source should be left of target
 					else if (literal.relation == "leftof") {
-						if (xpos1 == -2) { //current place is hand
-							if (xpos2 >= state.arm) {
+						if (xpos1 == -2 || xpos2 == -2) { //current place is hand
+							if (Math.max(xpos1,xpos2) >= state.arm) {
 								//Move the hand (+1 to get to other side of target) , then drop it (+1)
-								current += state.arm - xpos2 + 2;
+								current += state.arm - Math.max(xpos1,xpos2) + 2;
 							} else {
 								//Drop the item
 								current += 1;
 							}
 						} else {
 							//Get to source
-							current += Math.abs(state.arm - xpos1);
+							current += Math.min(Math.abs(state.arm - xpos1),Math.abs(state.arm - xpos2));
 							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
 							//and drop it (+1) or 
 							//if already to the left, this part of the goal is already reached (0)
@@ -534,10 +594,10 @@ module Planner {
 					} 
 					//If Source should be right of target
 					else if (literal.relation == "rightof") {
-						if (xpos1 == -2) { //current place is hand
-							if (xpos2 <= state.arm) {
+						if (xpos1 == -2 || xpos2 == -2) { //current place is hand
+							if (Math.max(xpos1,xpos2) <= state.arm) {
 								//Move the hand (+1 to get to other side of target) then drop it (+1)
-								current += xpos2 - state.arm + 2;
+								current += Math.max(xpos1,xpos2) - state.arm + 2;
 							} else {
 								//Drop the item
 								current += 1;
@@ -552,16 +612,18 @@ module Planner {
 							current += Math.max(xpos2 - xpos1 + 3, 0) ;
 						}
 					} else if (literal.relation == "beside") {
-						if (xpos1 == -2) { //current place is hand
+						if (xpos1 == -2 || xpos2 == -2) { //current place is hand
 							//Move the item one less space than the distance to the target and then drop it (+1)
-							current += Math.abs(state.arm - xpos2);
+							current += Math.abs(state.arm - Math.max(xpos1,xpos2));
 							//if above the target, move one step and drop it
-							if (state.arm == xpos2) {
+							if (state.arm == Math.max(xpos1,xpos2)) {
 								current += 2;
 							}
 						} else if (Math.abs(xpos2 - xpos1) != 1) {
 							current += Math.abs(xpos2 - xpos1 + 1) ;
 						} //else already beside
+						
+						
 					}
 					longest = Math.max(current, longest);
 					current = 0;	
@@ -572,99 +634,8 @@ module Planner {
 			//console.log(shortest);
 			return shortest;
 			
-			
-			
-			
 		}
-		/**
-		*  Simple heuristic. Uses (almost) only the difference in x-positions of targets and sources. 
-		*/
-		function manhattanish (state : WorldStateNode) : number {
-			var shortest : number = 100000000;
-			var longest : number = 0;
-			var current : number = 0;
-			//A dictionary from string id:s of objects to positions in the world
-			var positions = getPositions(state);
-			//Find the minimum Manhattan distance of any conjunctive expression
-			for (var conjunct of interpretation) {
-				//The Manhattan distance is given by the sum of the Manhattan distance
-				//to travel to satisfy each of the literals. 
-				longest = 0;
-				for (var literal of conjunct) {
-					var xpos1 : number = positions.getValue(literal.args[0])[0];;
-					var xpos2 : number;
-					if (literal.relation != "holding")
-						xpos2 = positions.getValue(literal.args[1])[0];
-					//If we wish to hold the target object, only check x-distance to goal. 
-					if (literal.relation =="holding") {
-						current += (Math.abs(xpos1 - state.arm) + 1);
-					} 
-					//if the goal is to put the source in the same x-coordinate as the goal
-					else if (literal.relation == "ontop" || literal.relation == "under" ||
-								literal.relation == "inside" ||literal.relation == "above")  {
-						
-						if (xpos2 == -1) { //target is floor
-							current += 1;
-						} else if (xpos1 == -2) { //current place is hand
-							//Move the hand, and the drop it (+1)
-							current += Math.abs(xpos2 - state.arm) + 1;
-						} else if (Math.abs(xpos1 - xpos2) != 0){
-							//Pick up an object (+1) move the hand and drop it (+1)
-							current += Math.abs(xpos1 - xpos2) + 2;
-						} //else object is already in correct column 
-							
-					} 
-					//If Source should be left of target
-					else if (literal.relation == "leftof") {
-						if (xpos1 == -2) { //current place is hand
-							if (xpos2 >= state.arm) {
-								//Move the hand (+1 to get to other side of target) , then drop it (+1)
-								current += state.arm - xpos2 + 2;
-							} else {
-								//Drop the item
-								current += 1;
-							}
-						} else {
-							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
-							//and drop it (+1) or 
-							//if already to the left, this part of the goal is already reached (0)
-							current += Math.max(xpos1 - xpos2 + 3, 0) ;
-						}
-					} 
-					//If Source should be right of target
-					else if (literal.relation == "rightof") {
-						if (xpos1 == -2) { //current place is hand
-							if (xpos2 <= state.arm) {
-								//Move the hand (+1 to get to other side of target) then drop it (+1)
-								current += xpos2 - state.arm + 2;
-							} else {
-								//Drop the item
-								current += 1;
-							}
-						} else {
-							//Pick up an object (+1) move the hand (+1 to get to other side of target) 
-							//and drop it (+1) or 
-							//if already to the right, this part of the goal is already reached (0)
-							current += Math.max(xpos2 - xpos1 + 3, 0) ;
-						}
-					} else if (literal.relation == "beside") {
-						if (xpos1 == -2) { //current place is hand
-							//Move the item one less space than the distance to the target and then drop it (+1)
-							//Todo: if above the target, this can be improved
-							current += Math.abs(state.arm - xpos2);
-						} else if (Math.abs(xpos2 - xpos1) != 1) {
-							current += Math.abs(xpos2 - xpos1 + 1) ;
-						} //else already beside
-					}
-					longest = Math.max(current, longest);	
-					current = 0;
-				}
-				//Find smallest heuristic for any of the disjunctive expressions
-				shortest = Math.min(longest, shortest);
-			}
-			//console.log(shortest);
-			return shortest;
-		}
+
 		//Return value
 		var plan : string[] = [];
 		//Create a start node object
@@ -675,10 +646,8 @@ module Planner {
 				new WorldStateGraph(),
 				startNode,
 				goalIsReached, //goal
-				manhattanishcombo, //heuristic
+				combinationHeuristic, //heuristic... focusOnOneConjunctHeuristic
 				400);	  //time
-		//console.log("Found result:");
-		//console.log(foundResult);
 
 		// Handle the found result
 
@@ -708,21 +677,9 @@ module Planner {
 				} else {
 					plan.push('p');
 				}
-				console.log(manhattanishcombo(currNode));
+				console.log(combinationHeuristic(currNode));
 				console.log(currNode.stacks);
-				/*//Go right 
-				if (currNode.arm == nextNode.arm - 1) {
-					plan.push('r');
-				//Go left
-				} else if (currNode.arm == nextNode.arm + 1) {
-					plan.push('l');
-				//Drop a held item
-				} else if (nextNode.holding == null) {
-					plan.push('d');
-				//Pick up an item
-				} else {
-					plan.push('p');
-				}*/			
+				
 			}
 		} else {
 			//The goal is fulfilled at the starting world state
@@ -821,69 +778,6 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 	}
 	
 	
-	/**
-	* Find all allowed moves from a world state; return edges to the resulting world states for those moves
-	*/
-	outgoingEdgesOld(gn : WorldStateNode) :  Edge<WorldStateNode>[] {
-
-		var results : Edge<WorldStateNode>[] = [];
-		//Can we pick up an item? We cannot be holding anything and the stack below the arm needs to be non-empty
-		if (!gn.holding && gn.stacks[gn.arm].length > 0) {
-			//New world state
-			var gnnew = gn.clone();
-			//Move an item from a stack to the arm
-			var currStack : Stack = gnnew.stacks[gnnew.arm];
-			gnnew.holding = currStack.pop();
-			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
-			//Add new world state to results
-			results.push(newEdge);
-		}
-		//Can we drop an item? We need to be holding an item
-		if (gn.holding) {
-			//Create a new world state
-			var gnnew = gn.clone();
-			var currStack : Stack = gnnew.stacks[gnnew.arm];
-			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
-			//If an item is below the arm, check that the held item can be dropped on it
-			if (currStack.length > 0) {
-				var heldObject : ObjectDefinition = gn.objects[gn.holding];
-				var topObject : ObjectDefinition = gn.objects[currStack[currStack.length-1]];
-				if (Interpreter.isPhysical("ontop", heldObject, topObject)||
-					Interpreter.isPhysical("inside", heldObject, topObject)) {
-					currStack.push(gn.holding);
-					gnnew.holding = null;
-					//Add new world state to results
-					results.push(newEdge);
-				}
-			} 
-			//No item below the arm, just drop the held item
-			else {
-				currStack.push(gn.holding);
-				gnnew.holding = null;
-				//Add new world state to results
-				results.push(newEdge);
-			}
-		}
-		//Can we move left? If so, we cannot be at the leftmost coordinate.  
-		if (gn.arm != 0) {
-			var gnnew = gn.clone();
-			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
-			//Move arm left
-			gnnew.arm--;
-			//Add new world state to results
-			results.push(newEdge);
-		}
-		//Can we move right? If so, we cannot be at the rightmost coordinate. 
-		if (gn.arm != gn.stacks.length -1) {
-			var gnnew = gn.clone();
-			var newEdge : Edge<WorldStateNode> = {from: gn, to: gnnew, cost : 1};
-			//Move arm right
-			gnnew.arm++;
-			//Add new world state to results
-			results.push(newEdge);
-		}
-		return results;
-	}
 
 	/* 
 	* Helper function for compareNodes, checking whether two arrays of stacks contain the same objects
