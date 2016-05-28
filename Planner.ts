@@ -80,6 +80,7 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+		var penaltyPerLiteral = 0;
 	
 		function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
 			var positions: collections.Dictionary<string, number[]>
@@ -279,7 +280,6 @@ module Planner {
 			var connections : number[][] = [];
 			//Set this to any other value than 0 to get a non-admissible heuristic that
 			//penalizes states where more literals are unfulfilled
-			var penaltyPerLiteral = 0;
 			//The result of this heuristic is the minimum of the estimated costs for fulfilling each conjunct. 
 			var bestConjunctVal : number = 1000000000;
 			//A dictionary from string id:s of objects to positions in the world
@@ -644,15 +644,39 @@ module Planner {
 		
 		//Create a start node object
 		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
-		//Result from aStarSearch (needs to be massaged to get a list of command strings
-		var foundResult : SearchResult<WorldStateNode> =
-			aStarSearch<WorldStateNode>(
-				new WorldStateGraph(),
-				startNode,
-				goalIsReached, //goal
-				combinationHeuristic, //heuristic... focusOnOneConjunctHeuristic
-				400);	  //time
-
+		var foundResult : SearchResult<WorldStateNode>;
+		var searchTime : number = 50;
+		var attemptStrings : string[] = [
+				"Failed to find a solution in " + searchTime + "s. Trying to cheat a little bit.", 
+				"Failed to find a solution in " + (2*searchTime) + "s. Trying to cheat a bit more.", 
+				"Failed to find a solution in " + (3*searchTime) + "s. Trying to cheat quite a lot."];
+		penaltyPerLiteral = 0;
+		for(var i = 0; i < attemptStrings.length + 1; i++ ) {
+			try {
+				
+				foundResult  =
+					aStarSearch<WorldStateNode>(
+						new WorldStateGraph(),
+						startNode,
+						goalIsReached, //goal
+						combinationHeuristic, //heuristic... focusOnOneConjunctHeuristic
+						searchTime);	  //time
+				//break;
+				
+			}
+			
+			catch (error) {
+				if (error.message == "Timed out" && i != attemptStrings.length - 1) {
+					plan.push(attemptStrings[i]);
+					
+				} else {
+					throw error;
+				}
+			} finally {
+				penaltyPerLiteral += 4;
+			}
+		}
+		
 		// Handle the found result
 
 		var nodeResult : WorldStateNode[] = foundResult.path;
