@@ -175,108 +175,133 @@ module Interpreter {
             var sourceQuant: string = cmd.entity.quantifier;
             var targetQuant: string = cmd.location.entity.quantifier;
 
-            console.log("Source:"+sourceobj);
-            console.log("Target:"+targetobj);
+            console.log("Source:" + sourceobj);
+            console.log("Target:" + targetobj);
 
             // Variables for keeping track of which elements have been explored
-            var sourceChecked : string[]=[];
-            var targetChecked : string[]=[];
+            var sourceChecked: string[] = [];
+            var targetChecked: string[] = [];
             // Find all of the combinations of goals
-            var allCombinations: Literal[]=[];
+            var allCombinations: Literal[] = [];
             for (var i = 0; i < sourceobj.length; i++) {
                 for (var j = 0; j < targetobj.length; j++) {
-                  if (sourceobj[i] == targetobj[j]) {
-                      // if the objects are the same, nothing can be done
-                      continue;
-                  }
-                  // Fetch the objects from the WorldState
-                  var theObjects: ObjectDefinition[] = objectFactory(
-                      sourceobj[i], targetobj[j], state);
-                  // The objects to be checked
-                  var sourceObject: ObjectDefinition = theObjects[0];
-                  var targetObject: ObjectDefinition = theObjects[1];
-                  if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                      allCombinations.push(
-                        { polarity: true,
-                          relation:cmd.location.relation,
-                          args:[sourceobj[i],targetobj[j]]});
+                    if (sourceobj[i] == targetobj[j]) {
+                        // if the objects are the same, nothing can be done
+                        continue;
+                    }
+                    // Fetch the objects from the WorldState
+                    var theObjects: ObjectDefinition[] = objectFactory(
+                        sourceobj[i], targetobj[j], state);
+                    // The objects to be checked
+                    var sourceObject: ObjectDefinition = theObjects[0];
+                    var targetObject: ObjectDefinition = theObjects[1];
+                    if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
+                        allCombinations.push(
+                            {
+                                polarity: true,
+                                relation: cmd.location.relation,
+                                args: [sourceobj[i], targetobj[j]]
+                            });
                         //If the source element does not exist in the list, add it
-                      if(sourceChecked.indexOf(sourceobj[i])<0){
-                        sourceChecked.push(sourceobj[i]);
-                      }
-                      //If the target element does not exist in the list, add it
-                      if(targetChecked.indexOf(targetobj[j])<0){
-                        targetChecked.push(targetobj[j]);
-                      }
-                  }
+                        if (sourceChecked.indexOf(sourceobj[i]) < 0) {
+                            sourceChecked.push(sourceobj[i]);
+                        }
+                        //If the target element does not exist in the list, add it
+                        if (targetChecked.indexOf(targetobj[j]) < 0) {
+                            targetChecked.push(targetobj[j]);
+                        }
+                    }
                 }
             }
             //console.log("sourceChecked:"+sourceChecked);
             //console.log("targetChecked:"+targetChecked);
 
-            var checkedElements : string[]; // Keep tack of
+            var checkedElements: string[]; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
-            for(var i = 0;i<allCombinations.length;i++){
-              console.log("cComb:["+allCombinations[i].args[0]+","+allCombinations[i].args[1]+"]");
-              // Initialize the checkedElements list
-              checkedElements = [];
-              // Fetch the current combination
-              var cComb : Literal = allCombinations[i];
+            for (var i = 0; i < allCombinations.length; i++) {
+                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
+                // Initialize the checkedElements list
+                checkedElements = [];
+                // Fetch the current combination
+                var cComb: Literal = allCombinations[i];
 
-              if (sourceQuant != "all" && targetQuant != "all") {
-                // if none of the quantifiers are all, any combination of
-                // the elements are a valid goal
-                interpretation.push([cComb]);
-              }
-              else if ((sourceQuant != "all" && targetQuant == "all")||
-                        (sourceQuant == "all" && targetQuant != "all")) {
-                          // if either of source or target wuantifiers specify
-                          // all, do the following
+                var isAllsrc: boolean = sourceQuant == "all";
+                var isAlltrgt: boolean = targetQuant == "all";
 
-                var conjunctions: Literal[] = []; // Conjunctions to be added
-                // Add the current combination to the conjunctions list and
-                // add the indentifiers of the elements to the list of checkedElements.
-                // This is used for
-                conjunctions.push(cComb);
-                checkedElements.push(cComb.args[0]);
-                checkedElements.push(cComb.args[1]);
-                for(var j = i+1;j<allCombinations.length;j++){
-                  var nComb : Literal = allCombinations[j];
-                  console.log("nComb:["+nComb.args[0]+","+nComb.args[1]+"]");
-                  if (sourceQuant=="all" && checkedElements.indexOf(nComb.args[0])<0 ||
-                    (checkedElements.indexOf(nComb.args[1])<0||nComb.args[1]=="floor")&&targetQuant=="all"){
-                    conjunctions.push(nComb);
-                    checkedElements.push(nComb.args[0]);
-                    checkedElements.push(nComb.args[1]);
+                if (!isAllsrc && !isAlltrgt) {
+                    // if none of the quantifiers are all, any combination of
+                    // the elements are a valid goal
+                    interpretation.push([cComb]);
+                }
+                else if ((!isAllsrc && isAlltrgt) ||
+                    (isAllsrc && !isAlltrgt)) {
+                    // if either of source or target wuantifiers specify
+                    // all, do the following
 
-                  }
+                    var conjunctions: Literal[] = []; // Conjunctions to be added
+                    // Add the current combination to the conjunctions list and
+                    // add the indentifiers of the elements to the list of checkedElements.
+                    // This is used for
+                    conjunctions.push(cComb);
+                    checkedElements.push(cComb.args[0]);
+                    checkedElements.push(cComb.args[1]);
+                    for (var j = i + 1; j < allCombinations.length; j++) {
+                        var nComb: Literal = allCombinations[j];
+                        var sourceElemExists: boolean = checkedElements.indexOf(nComb.args[0]) >= 0;
+                        var targetElemExists: boolean = checkedElements.indexOf(nComb.args[1]) >= 0;
+                        console.log("nComb:["+nComb.args[0]+","+nComb.args[1]+"]" );
+                        if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
+                            if (!targetElemExists && !sourceElemExists || nComb.args[1]=="floor") {
+                                conjunctions.push(nComb);
+                                checkedElements.push(nComb.args[0]);
+                                checkedElements.push(nComb.args[1]);
+                            }
+                        }
+                        else if (isAllsrc) {
+                            if (!sourceElemExists) {
+                                conjunctions.push(nComb);
+                                checkedElements.push(nComb.args[0]);
+                                //checkedElements.push(nComb.args[1]);
+                            }
+
+                        }
+                        else if (isAlltrgt) {
+                            if (!targetElemExists) {
+                                conjunctions.push(nComb);
+                                //checkedElements.push(nComb.args[0]);
+                                checkedElements.push(nComb.args[1]);
+                            }
+                        }
+                        console.log("Checked elems: "+checkedElements);
+                    }
+                    var qualified: string[];
+                    if (isAllsrc) {
+                        qualified = sourceChecked;
+                    }
+                    else {
+                        qualified = targetChecked;
+                    }
+                    console.log("qualified:" + qualified);
+                    console.log("checkedElements:" + checkedElements);
+
+                    if (qualified.every(function(val) { return checkedElements.indexOf(val) >= 0 })) {
+                        console.log("conjunctions: OKEY")
+                        interpretation.push(conjunctions);
+                    }
+                    else {
+                        console.log("conjunctions: FAILED")
+                    }
                 }
-                var qualified : string[];
-                if(sourceQuant == "all"){
-                  qualified = sourceChecked;
+
+                else if (sourceQuant == "all" && targetQuant == "all") {
+                    if (interpretation.length == 0) {
+                        interpretation.push([cComb]);
+                    }
+                    else {
+                        interpretation[0].push(cComb);
+                    }
                 }
-                else{
-                  qualified = targetChecked;
-                }
-                console.log("qualified:"+qualified);
-                console.log("checkedElements:"+checkedElements);
-                if(qualified.every(function(val){return checkedElements.indexOf(val)>=0})){
-                  console.log("conjunctions: OKEY")
-                  interpretation.push(conjunctions);
-                }
-                else{
-                  console.log("conjunctions: FAILED")
-                }
-              }
-              else if (sourceQuant == "all" && targetQuant == "all") {
-                if(interpretation.length==0){
-                  interpretation.push([cComb]);
-                }
-                else {
-                  interpretation[0].push(cComb);
-                }
-              }
 
             }
         }
@@ -293,9 +318,79 @@ module Interpreter {
         }
         // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
-            interpretation.push(null);
+            //interpretation.push(null);
+            throw new Error("No interpretations found");
         }
         return interpretation;
+    }
+
+    function findFeasibleCombinations(
+      combinations : Literal[][],
+      allCombinations : Literal[],
+      isSourceAll : boolean,
+      isTargetAll : boolean
+    ): Literal[][]{
+      var returnVal : Literal[][];
+
+
+      if(allCombinations.length < 1){
+        return combinations;
+      }
+      var isDone : boolean = true;
+      for(var i = 0;i<combinations.length;i++){
+        var res = feasibleCombination(combinations[i],allCombinations,isSourceAll,isTargetAll);
+        var unchanged : boolean = res.length == 1 && res[0].length == combinations[i].length;
+        isDone = isDone && unchanged;
+        var returnVal = returnVal.concat(res);
+      }
+      if(!isDone){
+        returnVal = findFeasibleCombinations(returnVal,allCombinations,isSourceAll,isTargetAll);
+      }
+
+      return returnVal;
+    }
+    // Finds the feasible combination given the
+    function feasibleCombination(
+      combination : Literal[],
+      allCombinations : Literal[],
+      isSourceAll : boolean,
+      isTargetAll : boolean
+    ): Literal[][] {
+
+
+      if(combination.length < 1){
+        throw new Error("No combination to evaluate");
+      }
+
+      var returnVal : Literal[][];
+      var srcIndent : string[];
+      var trgtIndent : string[];
+      for(var i = 0; i<combination.length;i++){
+        srcIndent.push(combination[i].args[0]);
+        trgtIndent.push(combination[i].args[1]);
+      }
+
+      for(var i = 0;i<allCombinations.length;i++){
+        var comb : Literal = allCombinations[i];
+        var sourceElemExists: boolean = srcIndent.indexOf(comb.args[0]) >= 0;
+        var targetElemExists: boolean = trgtIndent.indexOf(comb.args[1]) >= 0;
+        if(combination[0].relation=="inside"||combination[0].relation=="outside"){
+          if(!sourceElemExists && !targetElemExists){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+        else if (isSourceAll && !isTargetAll){
+          if(!sourceElemExists){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+        else if (!isSourceAll && isTargetAll){
+          if(!targetElemExists){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+      }
+      return returnVal;
     }
 
     /**
@@ -484,14 +579,13 @@ module Interpreter {
     }
 
     function allHandle(
-      relation : string,
-      sourceobj : string[],
-      targetobj :string[],
-      state : WorldState) : Literal[][]
-      {
+        relation: string,
+        sourceobj: string[],
+        targetobj: string[],
+        state: WorldState): Literal[][] {
 
         return [];
-      }
+    }
 
     /**
      * isFeasible() checks the feasiblity of the position of two objects
@@ -661,8 +755,8 @@ module Interpreter {
     *			it returns the object that corresponds in the WorldState
     */
     function objectFactory(source: string, target: string, state: WorldState): ObjectDefinition[] {
-          var sourceObject : ObjectDefinition;
-          var targetObject : ObjectDefinition;
+        var sourceObject: ObjectDefinition;
+        var targetObject: ObjectDefinition;
         if (source == "floor") {
             sourceObject = { form: "floor", size: null, color: null };
             targetObject = state.objects[target];
@@ -694,7 +788,7 @@ module Interpreter {
 }
 
 
-var result: Parser.ParseResult[] = Parser.parse(ExampleWorlds["medium"].examples[8]);
+var result: Parser.ParseResult[] = Parser.parse("put every ball in a box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);

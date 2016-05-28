@@ -2859,9 +2859,11 @@ var Interpreter;
                     var sourceObject = theObjects[0];
                     var targetObject = theObjects[1];
                     if (isPhysical(cmd.location.relation, sourceObject, targetObject)) {
-                        allCombinations.push({ polarity: true,
+                        allCombinations.push({
+                            polarity: true,
                             relation: cmd.location.relation,
-                            args: [sourceobj[i], targetobj[j]] });
+                            args: [sourceobj[i], targetobj[j]]
+                        });
                         //If the source element does not exist in the list, add it
                         if (sourceChecked.indexOf(sourceobj[i]) < 0) {
                             sourceChecked.push(sourceobj[i]);
@@ -2884,13 +2886,15 @@ var Interpreter;
                 checkedElements = [];
                 // Fetch the current combination
                 var cComb = allCombinations[i];
-                if (sourceQuant != "all" && targetQuant != "all") {
+                var isAllsrc = sourceQuant == "all";
+                var isAlltrgt = targetQuant == "all";
+                if (!isAllsrc && !isAlltrgt) {
                     // if none of the quantifiers are all, any combination of
                     // the elements are a valid goal
                     interpretation.push([cComb]);
                 }
-                else if ((sourceQuant != "all" && targetQuant == "all") ||
-                    (sourceQuant == "all" && targetQuant != "all")) {
+                else if ((!isAllsrc && isAlltrgt) ||
+                    (isAllsrc && !isAlltrgt)) {
                     // if either of source or target wuantifiers specify
                     // all, do the following
                     var conjunctions = []; // Conjunctions to be added
@@ -2902,16 +2906,33 @@ var Interpreter;
                     checkedElements.push(cComb.args[1]);
                     for (var j = i + 1; j < allCombinations.length; j++) {
                         var nComb = allCombinations[j];
+                        var sourceElemExists = checkedElements.indexOf(nComb.args[0]) >= 0;
+                        var targetElemExists = checkedElements.indexOf(nComb.args[1]) >= 0;
                         console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
-                        if (sourceQuant == "all" && checkedElements.indexOf(nComb.args[0]) < 0 ||
-                            (checkedElements.indexOf(nComb.args[1]) < 0 || nComb.args[1] == "floor") && targetQuant == "all") {
-                            conjunctions.push(nComb);
-                            checkedElements.push(nComb.args[0]);
-                            checkedElements.push(nComb.args[1]);
+                        if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
+                            if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
+                                conjunctions.push(nComb);
+                                checkedElements.push(nComb.args[0]);
+                                checkedElements.push(nComb.args[1]);
+                            }
                         }
+                        else if (isAllsrc) {
+                            if (!sourceElemExists) {
+                                conjunctions.push(nComb);
+                                checkedElements.push(nComb.args[0]);
+                            }
+                        }
+                        else if (isAlltrgt) {
+                            if (!targetElemExists) {
+                                conjunctions.push(nComb);
+                                //checkedElements.push(nComb.args[0]);
+                                checkedElements.push(nComb.args[1]);
+                            }
+                        }
+                        console.log("Checked elems: " + checkedElements);
                     }
                     var qualified;
-                    if (sourceQuant == "all") {
+                    if (isAllsrc) {
                         qualified = sourceChecked;
                     }
                     else {
@@ -2949,7 +2970,8 @@ var Interpreter;
         }
         // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
-            interpretation.push(null);
+            //interpretation.push(null);
+            throw new Error("No interpretations found");
         }
         return interpretation;
     }
@@ -3287,7 +3309,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse(ExampleWorlds["medium"].examples[8]);
+var result = Parser.parse("put every ball in a box");
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
