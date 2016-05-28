@@ -323,8 +323,6 @@ module Interpreter {
         }
 		else if(cmd.command == "find"){
 			
-			console.log("sourceobj.length: " + sourceobj.length);
-			
 			for(var i = 0; i < sourceobj.length; i++){
 				
 				var spos: number[] = currentState.getValue(sourceobj[i]);
@@ -338,15 +336,12 @@ module Interpreter {
 				
 				// Return the special case literal
 				interpretation.push(makeLiteral(false, returnString, special));
-				console.log("interpretation length: " + interpretation.length);
 			}
 			
 		}
 		else if(cmd.command = "what"){
 			
 			var returnString: string = "";
-			
-			console.log("sourceobj.length: " + sourceobj.length);
 			
 			for(var i = 0; i < sourceobj.length; i++){
 				

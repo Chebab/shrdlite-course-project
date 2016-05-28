@@ -636,15 +636,7 @@ module Planner {
 		//Return value
 		var plan : string[] = [];
 		
-		
-		/*
-		if(interpretation[0][0].args[0] == "print" && interpretation[0][0].polarity == false){
-			plan.push(interpretation[0][0].relation);
-			
-		}*/
-		
 		for(var i = 0; i < interpretation.length; i++){
-			console.log("interpretation.length: " + interpretation.length + " i: " + i);
 			if(interpretation[i][0].args[0] == "print" && interpretation[i][0].polarity == false){
 				plan.push(interpretation[i][0].relation);
 				if(i == interpretation.length - 1){
