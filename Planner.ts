@@ -637,21 +637,21 @@ module Planner {
 		var plan : string[] = [];
 		
 		
-		
-		/*if(interpretation[1][0].args[0] == "print" && interpretation[1][0].polarity == false){
-			plan.push(interpretation[1][0].relation);
-			return plan;
+		/*
+		if(interpretation[0][0].args[0] == "print" && interpretation[0][0].polarity == false){
+			plan.push(interpretation[0][0].relation);
+			
 		}*/
 		
-		
-		
 		for(var i = 0; i < interpretation.length; i++){
+			console.log("interpretation.length: " + interpretation.length + " i: " + i);
 			if(interpretation[i][0].args[0] == "print" && interpretation[i][0].polarity == false){
 				plan.push(interpretation[i][0].relation);
+				if(i == interpretation.length - 1){
+					return plan;
+				}
 			}
-			if(i == interpretation.length - 1){
-				return plan;
-			}
+			
 		}
 		
 		//Create a start node object
