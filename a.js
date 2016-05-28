@@ -2880,81 +2880,17 @@ var Interpreter;
             var checkedElements; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
+            var temp = [];
             for (var i = 0; i < allCombinations.length; i++) {
-                console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
-                // Initialize the checkedElements list
-                checkedElements = [];
-                // Fetch the current combination
-                var cComb = allCombinations[i];
-                var isAllsrc = sourceQuant == "all";
-                var isAlltrgt = targetQuant == "all";
-                if (!isAllsrc && !isAlltrgt) {
-                    // if none of the quantifiers are all, any combination of
-                    // the elements are a valid goal
-                    interpretation.push([cComb]);
-                }
-                else if ((!isAllsrc && isAlltrgt) ||
-                    (isAllsrc && !isAlltrgt)) {
-                    // if either of source or target wuantifiers specify
-                    // all, do the following
-                    var conjunctions = []; // Conjunctions to be added
-                    // Add the current combination to the conjunctions list and
-                    // add the indentifiers of the elements to the list of checkedElements.
-                    // This is used for
-                    conjunctions.push(cComb);
-                    checkedElements.push(cComb.args[0]);
-                    checkedElements.push(cComb.args[1]);
-                    for (var j = i + 1; j < allCombinations.length; j++) {
-                        var nComb = allCombinations[j];
-                        var sourceElemExists = checkedElements.indexOf(nComb.args[0]) >= 0;
-                        var targetElemExists = checkedElements.indexOf(nComb.args[1]) >= 0;
-                        console.log("nComb:[" + nComb.args[0] + "," + nComb.args[1] + "]");
-                        if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
-                            if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
-                                conjunctions.push(nComb);
-                                checkedElements.push(nComb.args[0]);
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                        else if (isAllsrc) {
-                            if (!sourceElemExists) {
-                                conjunctions.push(nComb);
-                                checkedElements.push(nComb.args[0]);
-                            }
-                        }
-                        else if (isAlltrgt) {
-                            if (!targetElemExists) {
-                                conjunctions.push(nComb);
-                                //checkedElements.push(nComb.args[0]);
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                        console.log("Checked elems: " + checkedElements);
-                    }
-                    var qualified;
-                    if (isAllsrc) {
-                        qualified = sourceChecked;
-                    }
-                    else {
-                        qualified = targetChecked;
-                    }
-                    console.log("qualified:" + qualified);
-                    console.log("checkedElements:" + checkedElements);
-                    if (qualified.every(function (val) { return checkedElements.indexOf(val) >= 0; })) {
-                        console.log("conjunctions: OKEY");
-                        interpretation.push(conjunctions);
-                    }
-                    else {
-                        console.log("conjunctions: FAILED");
-                    }
-                }
-                else if (sourceQuant == "all" && targetQuant == "all") {
-                    if (interpretation.length == 0) {
-                        interpretation.push([cComb]);
-                    }
-                    else {
-                        interpretation[0].push(cComb);
-                    }
+                temp.push([allCombinations[i]]);
+                console.log(allCombinations[i]);
+            }
+            var interptemp = findFeasibleCombinations(temp, allCombinations, sourceQuant == "all", targetQuant == "all");
+            console.log("new interp, length:" + interptemp.length);
+            for (var i = 0; i < interptemp.length; i++) {
+                console.log("new interp[" + i + "], length:" + interptemp.length);
+                for (var j = 0; j < interptemp[i].length; j++) {
+                    console.log(stringifyLiteral(interptemp[i][j]));
                 }
             }
         }
@@ -2974,6 +2910,66 @@ var Interpreter;
             throw new Error("No interpretations found");
         }
         return interpretation;
+    }
+    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll) {
+        var returnVal = [];
+        if (allCombinations.length < 1) {
+            return combinations;
+        }
+        var isDone = true;
+        for (var i = 0; i < combinations.length; i++) {
+            var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
+            var unchanged = res.length == 1 && res[0].length == combinations[i].length;
+            if (res == null) {
+                console.log("res is null");
+            }
+            isDone = isDone && unchanged;
+            var returnVal = returnVal.concat(res);
+        }
+        if (!isDone) {
+            returnVal = findFeasibleCombinations(returnVal, allCombinations, isSourceAll, isTargetAll);
+        }
+        return returnVal;
+    }
+    // Finds the feasible combination given the
+    function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
+        if (combination == null) {
+            console.log("combination is null");
+        }
+        if (combination.length < 1) {
+            throw new Error("No combination to evaluate");
+        }
+        var returnVal = [];
+        var srcIndent = [];
+        var trgtIndent = [];
+        for (var i = 0; i < combination.length; i++) {
+            srcIndent.push(combination[i].args[0]);
+            trgtIndent.push(combination[i].args[1]);
+        }
+        for (var i = 0; i < allCombinations.length; i++) {
+            var comb = allCombinations[i];
+            var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
+            var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
+            if (combination[0].relation == "inside" || combination[0].relation == "outside") {
+                if (!sourceElemExists && !targetElemExists) {
+                    returnVal.push(combination.concat([comb]));
+                }
+            }
+            else if (isSourceAll && !isTargetAll) {
+                if (!sourceElemExists) {
+                    returnVal.push(combination.concat([comb]));
+                }
+            }
+            else if (!isSourceAll && isTargetAll) {
+                if (!targetElemExists) {
+                    returnVal.push(combination.concat([comb]));
+                }
+            }
+        }
+        if (returnVal.length < 1) {
+            returnVal = [combination];
+        }
+        return returnVal;
     }
     /**
      * findEntities() recursively finds all of the objects within a given entity.
@@ -3312,7 +3308,7 @@ var Interpreter;
 var result = Parser.parse("put every ball in a box");
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 console.log("First parse");

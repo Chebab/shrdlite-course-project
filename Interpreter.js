@@ -173,7 +173,7 @@ var Interpreter;
         return interpretation;
     }
     function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll) {
-        var returnVal;
+        var returnVal = [];
         if (allCombinations.length < 1) {
             return combinations;
         }
@@ -181,6 +181,9 @@ var Interpreter;
         for (var i = 0; i < combinations.length; i++) {
             var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
             var unchanged = res.length == 1 && res[0].length == combinations[i].length;
+            if (res == null) {
+                console.log("res is null");
+            }
             isDone = isDone && unchanged;
             var returnVal = returnVal.concat(res);
         }
@@ -190,12 +193,15 @@ var Interpreter;
         return returnVal;
     }
     function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
+        if (combination == null) {
+            console.log("combination is null");
+        }
         if (combination.length < 1) {
             throw new Error("No combination to evaluate");
         }
-        var returnVal;
-        var srcIndent;
-        var trgtIndent;
+        var returnVal = [];
+        var srcIndent = [];
+        var trgtIndent = [];
         for (var i = 0; i < combination.length; i++) {
             srcIndent.push(combination[i].args[0]);
             trgtIndent.push(combination[i].args[1]);
@@ -219,6 +225,9 @@ var Interpreter;
                     returnVal.push(combination.concat([comb]));
                 }
             }
+        }
+        if (returnVal.length < 1) {
+            returnVal = [combination];
         }
         return returnVal;
     }
@@ -430,5 +439,5 @@ var Interpreter;
 })(Interpreter || (Interpreter = {}));
 var result = Parser.parse("put every ball in a box");
 console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));

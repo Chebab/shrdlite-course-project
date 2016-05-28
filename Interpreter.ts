@@ -219,6 +219,28 @@ module Interpreter {
             var checkedElements: string[]; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
+            /*
+            var temp : Literal[][]= [];
+            for(var i = 0; i<allCombinations.length;i++){
+              temp.push([allCombinations[i]]);
+              console.log(allCombinations[i]);
+            }
+            var interptemp = findFeasibleCombinations(
+              temp,
+              allCombinations,
+              sourceQuant == "all",
+              targetQuant == "all"
+            );
+            console.log("new interp, length:"+interptemp.length);
+
+            for(var i = 0; i<interptemp.length;i++){
+              console.log("new interp["+i+"], length:" + interptemp.length);
+              for(var j = 0; j<interptemp[i].length;j++){
+                console.log(stringifyLiteral(interptemp[i][j]));
+              }
+            }*/
+
+
             for (var i = 0; i < allCombinations.length; i++) {
                 console.log("cComb:[" + allCombinations[i].args[0] + "," + allCombinations[i].args[1] + "]");
                 // Initialize the checkedElements list
@@ -330,7 +352,7 @@ module Interpreter {
       isSourceAll : boolean,
       isTargetAll : boolean
     ): Literal[][]{
-      var returnVal : Literal[][];
+      var returnVal : Literal[][]= [];
 
 
       if(allCombinations.length < 1){
@@ -340,6 +362,9 @@ module Interpreter {
       for(var i = 0;i<combinations.length;i++){
         var res = feasibleCombination(combinations[i],allCombinations,isSourceAll,isTargetAll);
         var unchanged : boolean = res.length == 1 && res[0].length == combinations[i].length;
+        if(res == null){
+          console.log("res is null");
+        }
         isDone = isDone && unchanged;
         var returnVal = returnVal.concat(res);
       }
@@ -357,14 +382,17 @@ module Interpreter {
       isTargetAll : boolean
     ): Literal[][] {
 
+      if(combination == null){
+        console.log("combination is null");
+      }
 
       if(combination.length < 1){
         throw new Error("No combination to evaluate");
       }
 
-      var returnVal : Literal[][];
-      var srcIndent : string[];
-      var trgtIndent : string[];
+      var returnVal : Literal[][] = [];
+      var srcIndent : string[] = [];
+      var trgtIndent : string[]= [];
       for(var i = 0; i<combination.length;i++){
         srcIndent.push(combination[i].args[0]);
         trgtIndent.push(combination[i].args[1]);
@@ -389,6 +417,9 @@ module Interpreter {
             returnVal.push(combination.concat([comb]));
           }
         }
+      }
+      if(returnVal.length < 1){
+        returnVal = [combination];
       }
       return returnVal;
     }
@@ -792,7 +823,7 @@ var result: Parser.ParseResult[] = Parser.parse("put every ball in a box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["medium"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 console.log("First parse");
