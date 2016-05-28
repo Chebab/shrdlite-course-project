@@ -182,7 +182,6 @@ module Interpreter {
                 throw new Error("No target objects")
             }
 			if (cmd.entity.quantifier == "all") {
-
 				for (var i = 0; i < sourceobj.length; i++) {
 					var allLits : Literal[] = [];
 					for (var j = 0; j < targetobj.length; j++) {
@@ -197,7 +196,14 @@ module Interpreter {
 						allLits = allLits.concat(makeLiteral(true, cmd.location.relation, [sourceobj[i], targetobj[j]]));
 						
 					}	
-					if (interpretation.length == 0) {
+					if (cmd.location.entity.quantifier == "all") {
+						if (interpretation.length == 0) {
+							interpretation = [allLits];
+						} else {
+							interpretation = [interpretation[0].concat(allLits)];
+						}
+						
+					} else if (interpretation.length == 0) {
 						for (var lit of allLits)
 							interpretation.push([lit]);
 					} else {
@@ -225,6 +231,7 @@ module Interpreter {
 						interpretation = newInterpretation;
 					}
 				}
+				
 			} else
 			for (var j = 0; j < targetobj.length; j++) {
 				var allLits : Literal[] = [];
@@ -252,6 +259,9 @@ module Interpreter {
 					
 				}
 				if (cmd.location.entity.quantifier == "all") {
+					if (targetobj[j] == "floor") {
+						continue;
+					}
 					if (allLits.length == 0) {
 						throw new Error("unable to find a source for one of the targets");
 					}
