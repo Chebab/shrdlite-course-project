@@ -110,6 +110,7 @@ module Planner {
 		*/
 		function goalIsReached(state : WorldStateNode) : boolean {
 			//A dictionary of positions, given string id:s of objects
+
 			var positions = getPositions(state);
 			//For the goal to be reached...
 			for (var conjunct of interpretation) {
@@ -266,7 +267,9 @@ module Planner {
 							}
 							break;
 						case "leftof": case "rightof" :
-							connections.push([xpos1,ypos1,abovecount1,xpos2,ypos2,abovecount2])
+							if (xpos1 != -2) {
+								connections.push([xpos1,ypos1,abovecount1,xpos2,ypos2,abovecount2])
+							}
 								
 							break;
 					}
@@ -274,6 +277,7 @@ module Planner {
 					
 				}
 				//Really if... while(true)
+					
 				while (connections.length > 0) {
 					//Find deepest pair
 					var deepest : number [] = [];
