@@ -17,6 +17,7 @@ module Parser {
     export function parse(input:string) : ParseResult[] {
         var nearleyParser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
         var parsestr = input.toLowerCase().replace(/\W/g, "");
+		
         try {
             var results : Command[] = nearleyParser.feed(parsestr).results;
         } catch(err) {
@@ -52,6 +53,8 @@ module Parser {
         entity? : Entity;
 	/** For verbs of motion, this specifies the destination of the action. */
         location? : Location;
+		
+		relation? : string;
     }
 
     /** A quantified reference (as yet uninterpreted) to an object in the world. */

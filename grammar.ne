@@ -40,6 +40,8 @@ main --> will_you:? please:? command please:?  {% R(2) %}
 command --> take entity           {% R({command:"take", entity:1}) %}
 command --> move  it    location  {% R({command:"put", location:2}) %}
 command --> move entity location  {% R({command:"move", entity:1, location:2}) %}
+command --> find entity 		  {% R({command:"find", entity:1}) %}
+command --> what relation entity  {% R({command:"what", relation:1, entity:2}) %}
 
 location --> relation entity  {% R({relation:0, entity:1}) %}
 
@@ -98,6 +100,10 @@ form --> "floor"    {% R("floor") %}
 take --> "take" | "grasp" | "pick" "up"
 move --> "move" | "put" | "drop"
 it --> "it"
+
+## User questions
+find --> "where" | "where" "is" | "where" "are" | "find"
+what --> "what" | "what" "is" | "what" "are"
 
 that_is  --> "that" "is"
 that_are --> "that" "are"

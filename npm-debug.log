@@ -1,0 +1,611 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'C:\\Program Files\\nodejs\\node.exe',
+1 verbose cli   'C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js',
+1 verbose cli   'install',
+1 verbose cli   '-g',
+1 verbose cli   'nearley' ]
+2 info using npm@2.14.20
+3 info using node@v4.4.1
+4 verbose install initial load of C:\Users\oskar\AppData\Roaming\npm\package.json
+5 verbose readDependencies loading dependencies from C:\Users\oskar\AppData\Roaming\npm\package.json
+6 silly cache add args [ 'nearley', null ]
+7 verbose cache add spec nearley
+8 silly cache add parsed spec Result {
+8 silly cache add   raw: 'nearley',
+8 silly cache add   scope: null,
+8 silly cache add   name: 'nearley',
+8 silly cache add   rawSpec: '',
+8 silly cache add   spec: 'latest',
+8 silly cache add   type: 'tag' }
+9 silly addNamed nearley@latest
+10 verbose addNamed "latest" is being treated as a dist-tag for nearley
+11 info addNameTag [ 'nearley', 'latest' ]
+12 silly mapToRegistry name nearley
+13 silly mapToRegistry using default registry
+14 silly mapToRegistry registry https://registry.npmjs.org/
+15 silly mapToRegistry uri https://registry.npmjs.org/nearley
+16 verbose addNameTag registry:https://registry.npmjs.org/nearley not in flight; fetching
+17 verbose request uri https://registry.npmjs.org/nearley
+18 verbose request no auth needed
+19 info attempt registry request try #1 at 09:03:56
+20 verbose request id c13c05bb2d3c1c96
+21 verbose etag "8DWT0S2QUPVCC88GIA8QV9Q52"
+22 http request GET https://registry.npmjs.org/nearley
+23 http 304 https://registry.npmjs.org/nearley
+24 verbose headers { date: 'Wed, 18 May 2016 07:04:09 GMT',
+24 verbose headers   via: '1.1 varnish',
+24 verbose headers   'cache-control': 'max-age=300',
+24 verbose headers   etag: '"8DWT0S2QUPVCC88GIA8QV9Q52"',
+24 verbose headers   age: '0',
+24 verbose headers   connection: 'keep-alive',
+24 verbose headers   'x-served-by': 'cache-ams4146-AMS',
+24 verbose headers   'x-cache': 'MISS',
+24 verbose headers   'x-cache-hits': '0',
+24 verbose headers   'x-timer': 'S1463555049.162717,VS0,VE101',
+24 verbose headers   vary: 'Accept-Encoding' }
+25 silly get cb [ 304,
+25 silly get   { date: 'Wed, 18 May 2016 07:04:09 GMT',
+25 silly get     via: '1.1 varnish',
+25 silly get     'cache-control': 'max-age=300',
+25 silly get     etag: '"8DWT0S2QUPVCC88GIA8QV9Q52"',
+25 silly get     age: '0',
+25 silly get     connection: 'keep-alive',
+25 silly get     'x-served-by': 'cache-ams4146-AMS',
+25 silly get     'x-cache': 'MISS',
+25 silly get     'x-cache-hits': '0',
+25 silly get     'x-timer': 'S1463555049.162717,VS0,VE101',
+25 silly get     vary: 'Accept-Encoding' } ]
+26 verbose etag https://registry.npmjs.org/nearley from cache
+27 verbose get saving nearley to C:\Users\oskar\AppData\Roaming\npm-cache\registry.npmjs.org\nearley\.cache.json
+28 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+29 silly addNameTag next cb for nearley with tag latest
+30 silly addNamed nearley@2.4.1
+31 verbose addNamed "2.4.1" is a plain semver version for nearley
+32 silly cache afterAdd nearley@2.4.1
+33 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\nearley\2.4.1\package\package.json not in flight; writing
+34 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+35 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\nearley\2.4.1\package\package.json written
+36 silly install resolved [ { name: 'nearley',
+36 silly install resolved     version: '2.4.1',
+36 silly install resolved     description: 'Simple Earley parsing for JS',
+36 silly install resolved     main: 'lib/nearley.js',
+36 silly install resolved     dependencies:
+36 silly install resolved      { 'cli-color': '^1.0.0',
+36 silly install resolved        nomnom: '~1.6.2',
+36 silly install resolved        'railroad-diagrams': 'git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+36 silly install resolved        randexp: '^0.4.2' },
+36 silly install resolved     bin:
+36 silly install resolved      { nearleyc: 'bin/nearleyc.js',
+36 silly install resolved        'nearley-test': 'bin/nearley-test.js',
+36 silly install resolved        'nearley-unparse': 'bin/nearley-unparse.js',
+36 silly install resolved        'nearley-railroad': 'bin/nearley-railroad.js' },
+36 silly install resolved     keywords: [ 'parser', 'generator', 'compiler' ],
+36 silly install resolved     scripts:
+36 silly install resolved      { bootstrap: 'node bin/nearleyc.js lib/nearley-language-bootstrapped.ne >lib/nearley-language-bootstrapped.js.new && mv lib/nearley-language-bootstrapped.js.new lib/nearley-language-bootstrapped.js',
+36 silly install resolved        test: 'npm install && mocha test/launch.js' },
+36 silly install resolved     author: { name: 'Hardmath123' },
+36 silly install resolved     contributors: [ [Object], [Object], [Object], [Object], [Object], [Object] ],
+36 silly install resolved     license: 'MIT',
+36 silly install resolved     repository:
+36 silly install resolved      { type: 'git',
+36 silly install resolved        url: 'git+https://github.com/hardmath123/nearley.git' },
+36 silly install resolved     devDependencies: { chai: '^3.4.1', 'coffee-script': '^1.10.0', mocha: '^2.3.4' },
+36 silly install resolved     gitHead: 'b3296b31864f60b26237fddae522d18cac7cadc0',
+36 silly install resolved     bugs: { url: 'https://github.com/hardmath123/nearley/issues' },
+36 silly install resolved     homepage: 'https://github.com/hardmath123/nearley#readme',
+36 silly install resolved     _id: 'nearley@2.4.1',
+36 silly install resolved     _shasum: 'b66a2bc148db0833f54ca89e4834d32b226577d7',
+36 silly install resolved     _from: 'nearley@latest',
+36 silly install resolved     _npmVersion: '3.6.0',
+36 silly install resolved     _nodeVersion: '5.7.0',
+36 silly install resolved     _npmUser:
+36 silly install resolved      { name: 'hardmath123',
+36 silly install resolved        email: 'hardmath123@comfortablynumbered.appspotmail.com' },
+36 silly install resolved     maintainers: [ [Object] ],
+36 silly install resolved     dist:
+36 silly install resolved      { shasum: 'b66a2bc148db0833f54ca89e4834d32b226577d7',
+36 silly install resolved        tarball: 'https://registry.npmjs.org/nearley/-/nearley-2.4.1.tgz' },
+36 silly install resolved     _npmOperationalInternal:
+36 silly install resolved      { host: 'packages-13-west.internal.npmjs.com',
+36 silly install resolved        tmp: 'tmp/nearley-2.4.1.tgz_1458404515121_0.34832209697924554' },
+36 silly install resolved     directories: {},
+36 silly install resolved     _resolved: 'https://registry.npmjs.org/nearley/-/nearley-2.4.1.tgz',
+36 silly install resolved     readme: 'ERROR: No README data found!' } ]
+37 info install nearley@2.4.1 into C:\Users\oskar\AppData\Roaming\npm
+38 info installOne nearley@2.4.1
+39 verbose installOne of nearley to C:\Users\oskar\AppData\Roaming\npm not in flight; installing
+40 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache\_locks correctMkdir not in flight; initializing
+41 verbose lock using C:\Users\oskar\AppData\Roaming\npm-cache\_locks\nearley-d2a08407ea7d7a70.lock for C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+42 silly install write writing nearley 2.4.1 to C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+43 verbose unbuild node_modules\nearley
+44 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley is being purged from base C:\Users\oskar\AppData\Roaming\npm
+45 verbose gentlyRm don't care about contents; nuking C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+46 verbose tar unpack C:\Users\oskar\AppData\Roaming\npm-cache\nearley\2.4.1\package.tgz
+47 verbose tar unpacking to C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+48 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley is being purged
+49 verbose gentlyRm don't care about contents; nuking C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+50 silly gunzTarPerm modes [ '777', '666' ]
+51 silly gunzTarPerm extractEntry package.json
+52 silly gunzTarPerm modified mode [ 'package.json', 420, 438 ]
+53 silly gunzTarPerm extractEntry .npmignore
+54 silly gunzTarPerm modified mode [ '.npmignore', 420, 438 ]
+55 silly gunzTarPerm extractEntry README.md
+56 silly gunzTarPerm modified mode [ 'README.md', 420, 438 ]
+57 silly gunzTarPerm extractEntry examples/old-language-specification.js
+58 silly gunzTarPerm modified mode [ 'examples/old-language-specification.js', 420, 438 ]
+59 silly gunzTarPerm extractEntry examples/left.ne
+60 silly gunzTarPerm modified mode [ 'examples/left.ne', 420, 438 ]
+61 silly gunzTarPerm extractEntry examples/calculator/calculator.js
+62 silly gunzTarPerm modified mode [ 'examples/calculator/calculator.js', 420, 438 ]
+63 silly gunzTarPerm extractEntry examples/calculator/grammar.js
+64 silly gunzTarPerm modified mode [ 'examples/calculator/grammar.js', 420, 438 ]
+65 silly gunzTarPerm extractEntry examples/calculator/arithmetic.ne
+66 silly gunzTarPerm modified mode [ 'examples/calculator/arithmetic.ne', 420, 438 ]
+67 silly gunzTarPerm extractEntry examples/calculator/build-and-test.sh
+68 silly gunzTarPerm modified mode [ 'examples/calculator/build-and-test.sh', 493, 511 ]
+69 silly gunzTarPerm extractEntry examples/calculator/index.html
+70 silly gunzTarPerm modified mode [ 'examples/calculator/index.html', 420, 438 ]
+71 silly gunzTarPerm extractEntry examples/csscolor.ne
+72 silly gunzTarPerm modified mode [ 'examples/csscolor.ne', 420, 438 ]
+73 silly gunzTarPerm extractEntry examples/csv.ne
+74 silly gunzTarPerm modified mode [ 'examples/csv.ne', 420, 438 ]
+75 silly gunzTarPerm extractEntry examples/javascript.ne
+76 silly gunzTarPerm modified mode [ 'examples/javascript.ne', 420, 438 ]
+77 silly gunzTarPerm extractEntry examples/js/AycockHorspool.js
+78 silly gunzTarPerm modified mode [ 'examples/js/AycockHorspool.js', 420, 438 ]
+79 silly gunzTarPerm extractEntry examples/js/JoopLeo.js
+80 silly gunzTarPerm modified mode [ 'examples/js/JoopLeo.js', 420, 438 ]
+81 silly gunzTarPerm extractEntry examples/js/csscolor.js
+82 silly gunzTarPerm modified mode [ 'examples/js/csscolor.js', 420, 438 ]
+83 silly gunzTarPerm extractEntry examples/js/csv.js
+84 silly gunzTarPerm modified mode [ 'examples/js/csv.js', 420, 438 ]
+85 silly gunzTarPerm extractEntry examples/js/javascript.js
+86 silly gunzTarPerm modified mode [ 'examples/js/javascript.js', 420, 438 ]
+87 silly gunzTarPerm extractEntry examples/js/left.js
+88 silly gunzTarPerm modified mode [ 'examples/js/left.js', 420, 438 ]
+89 silly gunzTarPerm extractEntry examples/js/lua.js
+90 silly gunzTarPerm modified mode [ 'examples/js/lua.js', 420, 438 ]
+91 silly gunzTarPerm extractEntry examples/js/numberstring.js
+92 silly gunzTarPerm modified mode [ 'examples/js/numberstring.js', 420, 438 ]
+93 silly gunzTarPerm extractEntry examples/js/right.js
+94 silly gunzTarPerm modified mode [ 'examples/js/right.js', 420, 438 ]
+95 silly gunzTarPerm extractEntry examples/js/wikipedia.js
+96 silly gunzTarPerm modified mode [ 'examples/js/wikipedia.js', 420, 438 ]
+97 silly gunzTarPerm extractEntry examples/JoopLeo.ne
+98 silly gunzTarPerm modified mode [ 'examples/JoopLeo.ne', 420, 438 ]
+99 silly gunzTarPerm extractEntry examples/lua.ne
+100 silly gunzTarPerm modified mode [ 'examples/lua.ne', 420, 438 ]
+101 silly gunzTarPerm extractEntry examples/numberstring.ne
+102 silly gunzTarPerm modified mode [ 'examples/numberstring.ne', 420, 438 ]
+103 silly gunzTarPerm extractEntry examples/AycockHorspool.ne
+104 silly gunzTarPerm modified mode [ 'examples/AycockHorspool.ne', 420, 438 ]
+105 silly gunzTarPerm extractEntry examples/railroad-experimental/custom-canvas.js
+106 silly gunzTarPerm modified mode [ 'examples/railroad-experimental/custom-canvas.js', 420, 438 ]
+107 silly gunzTarPerm extractEntry examples/railroad-experimental/index.html
+108 silly gunzTarPerm modified mode [ 'examples/railroad-experimental/index.html', 420, 438 ]
+109 silly gunzTarPerm extractEntry examples/right.ne
+110 silly gunzTarPerm modified mode [ 'examples/right.ne', 420, 438 ]
+111 silly gunzTarPerm extractEntry examples/wikipedia.ne
+112 silly gunzTarPerm modified mode [ 'examples/wikipedia.ne', 420, 438 ]
+113 silly gunzTarPerm extractEntry bin/nearley-railroad.js
+114 silly gunzTarPerm modified mode [ 'bin/nearley-railroad.js', 493, 511 ]
+115 silly gunzTarPerm extractEntry bin/nearley-test.js
+116 silly gunzTarPerm modified mode [ 'bin/nearley-test.js', 493, 511 ]
+117 silly gunzTarPerm extractEntry bin/nearley-unparse.js
+118 silly gunzTarPerm modified mode [ 'bin/nearley-unparse.js', 493, 511 ]
+119 silly gunzTarPerm extractEntry bin/nearleyc.js
+120 silly gunzTarPerm modified mode [ 'bin/nearleyc.js', 493, 511 ]
+121 silly gunzTarPerm extractEntry build.sh
+122 silly gunzTarPerm modified mode [ 'build.sh', 493, 511 ]
+123 silly gunzTarPerm extractEntry builtin/cow.ne
+124 silly gunzTarPerm modified mode [ 'builtin/cow.ne', 420, 438 ]
+125 silly gunzTarPerm extractEntry builtin/number.ne
+126 silly gunzTarPerm modified mode [ 'builtin/number.ne', 420, 438 ]
+127 silly gunzTarPerm extractEntry builtin/postprocessors.ne
+128 silly gunzTarPerm modified mode [ 'builtin/postprocessors.ne', 420, 438 ]
+129 silly gunzTarPerm extractEntry builtin/string.ne
+130 silly gunzTarPerm modified mode [ 'builtin/string.ne', 420, 438 ]
+131 silly gunzTarPerm extractEntry builtin/whitespace.ne
+132 silly gunzTarPerm modified mode [ 'builtin/whitespace.ne', 420, 438 ]
+133 silly gunzTarPerm extractEntry LICENSE.txt
+134 silly gunzTarPerm modified mode [ 'LICENSE.txt', 420, 438 ]
+135 silly gunzTarPerm extractEntry how-to-grammar-good.md
+136 silly gunzTarPerm modified mode [ 'how-to-grammar-good.md', 420, 438 ]
+137 silly gunzTarPerm extractEntry index.html
+138 silly gunzTarPerm modified mode [ 'index.html', 420, 438 ]
+139 silly gunzTarPerm extractEntry lib/compile.js
+140 silly gunzTarPerm modified mode [ 'lib/compile.js', 420, 438 ]
+141 silly gunzTarPerm extractEntry lib/generate.js
+142 silly gunzTarPerm modified mode [ 'lib/generate.js', 420, 438 ]
+143 silly gunzTarPerm extractEntry lib/lint.js
+144 silly gunzTarPerm modified mode [ 'lib/lint.js', 420, 438 ]
+145 silly gunzTarPerm extractEntry lib/nearley-language-bootstrapped.js
+146 silly gunzTarPerm modified mode [ 'lib/nearley-language-bootstrapped.js', 420, 438 ]
+147 silly gunzTarPerm extractEntry lib/nearley.js
+148 silly gunzTarPerm modified mode [ 'lib/nearley.js', 420, 438 ]
+149 silly gunzTarPerm extractEntry lib/stream.js
+150 silly gunzTarPerm modified mode [ 'lib/stream.js', 420, 438 ]
+151 silly gunzTarPerm extractEntry lib/nearley-language-bootstrapped.ne
+152 silly gunzTarPerm modified mode [ 'lib/nearley-language-bootstrapped.ne', 420, 438 ]
+153 silly gunzTarPerm extractEntry test/ebnf.js
+154 silly gunzTarPerm modified mode [ 'test/ebnf.js', 420, 438 ]
+155 silly gunzTarPerm extractEntry test/launch.js
+156 silly gunzTarPerm modified mode [ 'test/launch.js', 420, 438 ]
+157 silly gunzTarPerm extractEntry test/negatable.js
+158 silly gunzTarPerm modified mode [ 'test/negatable.js', 420, 438 ]
+159 silly gunzTarPerm extractEntry test/profile.js
+160 silly gunzTarPerm modified mode [ 'test/profile.js', 493, 511 ]
+161 silly gunzTarPerm extractEntry test/macro.ne
+162 silly gunzTarPerm modified mode [ 'test/macro.ne', 420, 438 ]
+163 silly gunzTarPerm extractEntry test/indentation.ne
+164 silly gunzTarPerm modified mode [ 'test/indentation.ne', 420, 438 ]
+165 silly gunzTarPerm extractEntry test/coffeescript-test.ne
+166 silly gunzTarPerm modified mode [ 'test/coffeescript-test.ne', 420, 438 ]
+167 silly gunzTarPerm extractEntry test/launch.sh
+168 silly gunzTarPerm modified mode [ 'test/launch.sh', 493, 511 ]
+169 silly gunzTarPerm extractEntry test/deploy-site.sh
+170 silly gunzTarPerm modified mode [ 'test/deploy-site.sh', 493, 511 ]
+171 silly gunzTarPerm extractEntry test/ebnf.ne
+172 silly gunzTarPerm modified mode [ 'test/ebnf.ne', 420, 438 ]
+173 silly gunzTarPerm extractEntry test/negatable.ne
+174 silly gunzTarPerm modified mode [ 'test/negatable.ne', 420, 438 ]
+175 silly gunzTarPerm extractEntry test/parens.ne
+176 silly gunzTarPerm modified mode [ 'test/parens.ne', 420, 438 ]
+177 silly gunzTarPerm extractEntry test/percent.ne
+178 silly gunzTarPerm modified mode [ 'test/percent.ne', 420, 438 ]
+179 silly gunzTarPerm extractEntry test/include.ne
+180 silly gunzTarPerm modified mode [ 'test/include.ne', 420, 438 ]
+181 silly gunzTarPerm extractEntry test/whitespace.expected
+182 silly gunzTarPerm modified mode [ 'test/whitespace.expected', 420, 438 ]
+183 silly gunzTarPerm extractEntry test/whitespace.ne
+184 silly gunzTarPerm modified mode [ 'test/whitespace.ne', 420, 438 ]
+185 silly gunzTarPerm extractEntry www/cytoscape.min.js
+186 silly gunzTarPerm modified mode [ 'www/cytoscape.min.js', 493, 511 ]
+187 silly gunzTarPerm extractEntry www/main.js
+188 silly gunzTarPerm modified mode [ 'www/main.js', 420, 438 ]
+189 silly gunzTarPerm extractEntry www/csscolor-railroad.html
+190 silly gunzTarPerm modified mode [ 'www/csscolor-railroad.html', 420, 438 ]
+191 silly gunzTarPerm extractEntry www/main.css
+192 silly gunzTarPerm modified mode [ 'www/main.css', 420, 438 ]
+193 silly gunzTarPerm extractEntry www/railroad-demo.html
+194 silly gunzTarPerm modified mode [ 'www/railroad-demo.html', 420, 438 ]
+195 silly gunzTarPerm extractEntry www/railroad-demo.png
+196 silly gunzTarPerm modified mode [ 'www/railroad-demo.png', 420, 438 ]
+197 verbose write writing to C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley\package.json
+198 info preinstall nearley@2.4.1
+199 verbose readDependencies loading dependencies from C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley\package.json
+200 silly prepareForInstallMany adding cli-color@^1.0.0 from nearley dependencies
+201 silly prepareForInstallMany adding nomnom@~1.6.2 from nearley dependencies
+202 silly prepareForInstallMany adding railroad-diagrams@git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9 from nearley dependencies
+203 silly prepareForInstallMany adding randexp@^0.4.2 from nearley dependencies
+204 verbose readDependencies loading dependencies from C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley\package.json
+205 silly cache add args [ 'cli-color@^1.0.0', null ]
+206 verbose cache add spec cli-color@^1.0.0
+207 silly cache add args [ 'nomnom@~1.6.2', null ]
+208 verbose cache add spec nomnom@~1.6.2
+209 silly cache add parsed spec Result {
+209 silly cache add   raw: 'cli-color@^1.0.0',
+209 silly cache add   scope: null,
+209 silly cache add   name: 'cli-color',
+209 silly cache add   rawSpec: '^1.0.0',
+209 silly cache add   spec: '>=1.0.0 <2.0.0',
+209 silly cache add   type: 'range' }
+210 silly addNamed cli-color@>=1.0.0 <2.0.0
+211 verbose addNamed ">=1.0.0 <2.0.0" is a valid semver range for cli-color
+212 silly addNameRange { name: 'cli-color', range: '>=1.0.0 <2.0.0', hasData: false }
+213 silly mapToRegistry name cli-color
+214 silly mapToRegistry using default registry
+215 silly mapToRegistry registry https://registry.npmjs.org/
+216 silly mapToRegistry uri https://registry.npmjs.org/cli-color
+217 verbose addNameRange registry:https://registry.npmjs.org/cli-color not in flight; fetching
+218 silly cache add parsed spec Result {
+218 silly cache add   raw: 'nomnom@~1.6.2',
+218 silly cache add   scope: null,
+218 silly cache add   name: 'nomnom',
+218 silly cache add   rawSpec: '~1.6.2',
+218 silly cache add   spec: '>=1.6.2 <1.7.0',
+218 silly cache add   type: 'range' }
+219 silly addNamed nomnom@>=1.6.2 <1.7.0
+220 verbose addNamed ">=1.6.2 <1.7.0" is a valid semver range for nomnom
+221 silly addNameRange { name: 'nomnom', range: '>=1.6.2 <1.7.0', hasData: false }
+222 silly mapToRegistry name nomnom
+223 silly mapToRegistry using default registry
+224 silly mapToRegistry registry https://registry.npmjs.org/
+225 silly mapToRegistry uri https://registry.npmjs.org/nomnom
+226 verbose addNameRange registry:https://registry.npmjs.org/nomnom not in flight; fetching
+227 silly cache add args [ 'railroad-diagrams@git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+227 silly cache add   null ]
+228 verbose cache add spec railroad-diagrams@git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9
+229 silly cache add args [ 'randexp@^0.4.2', null ]
+230 verbose cache add spec randexp@^0.4.2
+231 silly cache add parsed spec Result {
+231 silly cache add   raw: 'randexp@^0.4.2',
+231 silly cache add   scope: null,
+231 silly cache add   name: 'randexp',
+231 silly cache add   rawSpec: '^0.4.2',
+231 silly cache add   spec: '>=0.4.2 <0.5.0',
+231 silly cache add   type: 'range' }
+232 silly addNamed randexp@>=0.4.2 <0.5.0
+233 verbose addNamed ">=0.4.2 <0.5.0" is a valid semver range for randexp
+234 silly addNameRange { name: 'randexp', range: '>=0.4.2 <0.5.0', hasData: false }
+235 silly mapToRegistry name randexp
+236 silly mapToRegistry using default registry
+237 silly mapToRegistry registry https://registry.npmjs.org/
+238 silly mapToRegistry uri https://registry.npmjs.org/randexp
+239 verbose addNameRange registry:https://registry.npmjs.org/randexp not in flight; fetching
+240 silly cache add parsed spec Result {
+240 silly cache add   raw: 'railroad-diagrams@git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add   scope: null,
+240 silly cache add   name: 'railroad-diagrams',
+240 silly cache add   rawSpec: 'git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add   spec: 'git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add   type: 'hosted',
+240 silly cache add   hosted:
+240 silly cache add    { type: 'github',
+240 silly cache add      ssh: 'git@github.com:tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add      sshUrl: 'git+ssh://git@github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add      httpsUrl: 'git+https://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add      gitUrl: 'git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add      shortcut: 'github:tabatkins/railroad-diagrams#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9',
+240 silly cache add      directUrl: 'https://raw.githubusercontent.com/tabatkins/railroad-diagrams/c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9/package.json' } }
+241 verbose addRemoteGit caching git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9
+242 verbose addRemoteGit git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9 is a repository hosted by github
+243 silly tryClone cloning git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9 via git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9
+244 verbose tryClone git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd not in flight; caching
+245 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes correctMkdir not in flight; initializing
+246 verbose request uri https://registry.npmjs.org/randexp
+247 verbose request no auth needed
+248 info attempt registry request try #1 at 09:03:57
+249 verbose etag "SWZ7O7DQGOECVVLWHP0HQWQ7"
+250 http request GET https://registry.npmjs.org/randexp
+251 verbose request uri https://registry.npmjs.org/nomnom
+252 verbose request no auth needed
+253 info attempt registry request try #1 at 09:03:57
+254 verbose etag "9C01783UY3L5ZA16IK3FANSS8"
+255 http request GET https://registry.npmjs.org/nomnom
+256 verbose request uri https://registry.npmjs.org/cli-color
+257 verbose request no auth needed
+258 info attempt registry request try #1 at 09:03:57
+259 verbose etag "4810SF6JLCGM6IGDKEWDPDXRR"
+260 http request GET https://registry.npmjs.org/cli-color
+261 warn addRemoteGit Error: not found: git
+261 warn addRemoteGit     at F (C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:63:19)
+261 warn addRemoteGit     at E (C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:72:29)
+261 warn addRemoteGit     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:81:16
+261 warn addRemoteGit     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\node_modules\isexe\index.js:44:5
+261 warn addRemoteGit     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\node_modules\isexe\windows.js:29:5
+261 warn addRemoteGit     at FSReqWrap.oncomplete (fs.js:82:15)
+261 warn addRemoteGit  git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9 resetting remote C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd because of error: { [Error: not found: git] code: 'ENOGIT' }
+262 info resetRemote resetting C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd for git://github.com/tabatkins/railroad-diagrams.git#c36d1a7d0cf5ee2fdd33fcdc849d91f99ee459b9
+263 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd is being purged
+264 verbose gentlyRm don't care about contents; nuking C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd
+265 silly vacuum-fs purging C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd
+266 silly vacuum-fs quitting because other entries in C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes
+267 error git clone --template=C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\_templates --mirror git://github.com/tabatkins/railroad-diagrams.git C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd: undefined
+267 error git clone --template=C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\_templates --mirror git://github.com/tabatkins/railroad-diagrams.git C:\Users\oskar\AppData\Roaming\npm-cache\_git-remotes\git-github-com-tabatkins-railroad-diagrams-git-0c9c17dd: undefined
+268 http 304 https://registry.npmjs.org/nomnom
+269 verbose headers { date: 'Wed, 18 May 2016 07:04:09 GMT',
+269 verbose headers   via: '1.1 varnish',
+269 verbose headers   'cache-control': 'max-age=300',
+269 verbose headers   etag: '"9C01783UY3L5ZA16IK3FANSS8"',
+269 verbose headers   age: '161',
+269 verbose headers   connection: 'keep-alive',
+269 verbose headers   'x-served-by': 'cache-ams4132-AMS',
+269 verbose headers   'x-cache': 'HIT',
+269 verbose headers   'x-cache-hits': '2',
+269 verbose headers   'x-timer': 'S1463555049.931352,VS0,VE0',
+269 verbose headers   vary: 'Accept-Encoding' }
+270 silly get cb [ 304,
+270 silly get   { date: 'Wed, 18 May 2016 07:04:09 GMT',
+270 silly get     via: '1.1 varnish',
+270 silly get     'cache-control': 'max-age=300',
+270 silly get     etag: '"9C01783UY3L5ZA16IK3FANSS8"',
+270 silly get     age: '161',
+270 silly get     connection: 'keep-alive',
+270 silly get     'x-served-by': 'cache-ams4132-AMS',
+270 silly get     'x-cache': 'HIT',
+270 silly get     'x-cache-hits': '2',
+270 silly get     'x-timer': 'S1463555049.931352,VS0,VE0',
+270 silly get     vary: 'Accept-Encoding' } ]
+271 verbose etag https://registry.npmjs.org/nomnom from cache
+272 verbose get saving nomnom to C:\Users\oskar\AppData\Roaming\npm-cache\registry.npmjs.org\nomnom\.cache.json
+273 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+274 http 304 https://registry.npmjs.org/cli-color
+275 verbose headers { date: 'Wed, 18 May 2016 07:04:09 GMT',
+275 verbose headers   via: '1.1 varnish',
+275 verbose headers   'cache-control': 'max-age=300',
+275 verbose headers   etag: '"4810SF6JLCGM6IGDKEWDPDXRR"',
+275 verbose headers   age: '218',
+275 verbose headers   connection: 'keep-alive',
+275 verbose headers   'x-served-by': 'cache-ams4140-AMS',
+275 verbose headers   'x-cache': 'HIT',
+275 verbose headers   'x-cache-hits': '1',
+275 verbose headers   'x-timer': 'S1463555049.931412,VS0,VE0',
+275 verbose headers   vary: 'Accept-Encoding' }
+276 silly get cb [ 304,
+276 silly get   { date: 'Wed, 18 May 2016 07:04:09 GMT',
+276 silly get     via: '1.1 varnish',
+276 silly get     'cache-control': 'max-age=300',
+276 silly get     etag: '"4810SF6JLCGM6IGDKEWDPDXRR"',
+276 silly get     age: '218',
+276 silly get     connection: 'keep-alive',
+276 silly get     'x-served-by': 'cache-ams4140-AMS',
+276 silly get     'x-cache': 'HIT',
+276 silly get     'x-cache-hits': '1',
+276 silly get     'x-timer': 'S1463555049.931412,VS0,VE0',
+276 silly get     vary: 'Accept-Encoding' } ]
+277 verbose etag https://registry.npmjs.org/cli-color from cache
+278 verbose get saving cli-color to C:\Users\oskar\AppData\Roaming\npm-cache\registry.npmjs.org\cli-color\.cache.json
+279 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+280 silly addNameRange number 2 { name: 'cli-color', range: '>=1.0.0 <2.0.0', hasData: true }
+281 silly addNameRange versions [ 'cli-color',
+281 silly addNameRange   [ '0.1.0',
+281 silly addNameRange     '0.1.1',
+281 silly addNameRange     '0.1.2',
+281 silly addNameRange     '0.1.3',
+281 silly addNameRange     '0.1.4',
+281 silly addNameRange     '0.1.5',
+281 silly addNameRange     '0.1.6',
+281 silly addNameRange     '0.1.7',
+281 silly addNameRange     '0.2.0',
+281 silly addNameRange     '0.2.1',
+281 silly addNameRange     '0.2.2',
+281 silly addNameRange     '0.2.3',
+281 silly addNameRange     '0.3.0',
+281 silly addNameRange     '0.3.1',
+281 silly addNameRange     '0.3.2',
+281 silly addNameRange     '0.3.3',
+281 silly addNameRange     '1.0.0',
+281 silly addNameRange     '1.1.0' ] ]
+282 silly addNamed cli-color@1.1.0
+283 verbose addNamed "1.1.0" is a plain semver version for cli-color
+284 silly addNameRange number 2 { name: 'nomnom', range: '>=1.6.2 <1.7.0', hasData: true }
+285 silly addNameRange versions [ 'nomnom',
+285 silly addNameRange   [ '0.1.2',
+285 silly addNameRange     '0.1.3',
+285 silly addNameRange     '0.2.0',
+285 silly addNameRange     '0.3.0',
+285 silly addNameRange     '0.4.0',
+285 silly addNameRange     '0.4.1',
+285 silly addNameRange     '0.4.2',
+285 silly addNameRange     '0.4.3',
+285 silly addNameRange     '0.4.4',
+285 silly addNameRange     '0.4.6',
+285 silly addNameRange     '0.4.8',
+285 silly addNameRange     '0.5.0',
+285 silly addNameRange     '0.6.0',
+285 silly addNameRange     '0.6.1',
+285 silly addNameRange     '1.0.0',
+285 silly addNameRange     '1.5.0',
+285 silly addNameRange     '1.5.1',
+285 silly addNameRange     '1.5.2',
+285 silly addNameRange     '1.5.3',
+285 silly addNameRange     '1.6.0',
+285 silly addNameRange     '1.6.1',
+285 silly addNameRange     '1.6.2',
+285 silly addNameRange     '1.7.0',
+285 silly addNameRange     '1.8.0',
+285 silly addNameRange     '1.8.1' ] ]
+286 silly addNamed nomnom@1.6.2
+287 verbose addNamed "1.6.2" is a plain semver version for nomnom
+288 silly cache afterAdd cli-color@1.1.0
+289 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\cli-color\1.1.0\package\package.json not in flight; writing
+290 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+291 silly cache afterAdd nomnom@1.6.2
+292 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\nomnom\1.6.2\package\package.json not in flight; writing
+293 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+294 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\nomnom\1.6.2\package\package.json written
+295 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\cli-color\1.1.0\package\package.json written
+296 http 304 https://registry.npmjs.org/randexp
+297 verbose headers { date: 'Wed, 18 May 2016 07:04:09 GMT',
+297 verbose headers   via: '1.1 varnish',
+297 verbose headers   'cache-control': 'max-age=300',
+297 verbose headers   etag: '"SWZ7O7DQGOECVVLWHP0HQWQ7"',
+297 verbose headers   age: '0',
+297 verbose headers   connection: 'keep-alive',
+297 verbose headers   'x-served-by': 'cache-ams4126-AMS',
+297 verbose headers   'x-cache': 'MISS',
+297 verbose headers   'x-cache-hits': '0',
+297 verbose headers   'x-timer': 'S1463555049.933589,VS0,VE102',
+297 verbose headers   vary: 'Accept-Encoding' }
+298 silly get cb [ 304,
+298 silly get   { date: 'Wed, 18 May 2016 07:04:09 GMT',
+298 silly get     via: '1.1 varnish',
+298 silly get     'cache-control': 'max-age=300',
+298 silly get     etag: '"SWZ7O7DQGOECVVLWHP0HQWQ7"',
+298 silly get     age: '0',
+298 silly get     connection: 'keep-alive',
+298 silly get     'x-served-by': 'cache-ams4126-AMS',
+298 silly get     'x-cache': 'MISS',
+298 silly get     'x-cache-hits': '0',
+298 silly get     'x-timer': 'S1463555049.933589,VS0,VE102',
+298 silly get     vary: 'Accept-Encoding' } ]
+299 verbose etag https://registry.npmjs.org/randexp from cache
+300 verbose get saving randexp to C:\Users\oskar\AppData\Roaming\npm-cache\registry.npmjs.org\randexp\.cache.json
+301 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+302 silly addNameRange number 2 { name: 'randexp', range: '>=0.4.2 <0.5.0', hasData: true }
+303 silly addNameRange versions [ 'randexp',
+303 silly addNameRange   [ '0.1.1',
+303 silly addNameRange     '0.3.0',
+303 silly addNameRange     '0.3.1',
+303 silly addNameRange     '0.3.2',
+303 silly addNameRange     '0.3.3',
+303 silly addNameRange     '0.3.4',
+303 silly addNameRange     '0.4.0',
+303 silly addNameRange     '0.4.1',
+303 silly addNameRange     '0.4.2' ] ]
+304 silly addNamed randexp@0.4.2
+305 verbose addNamed "0.4.2" is a plain semver version for randexp
+306 silly cache afterAdd randexp@0.4.2
+307 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\randexp\0.4.2\package\package.json not in flight; writing
+308 verbose correctMkdir C:\Users\oskar\AppData\Roaming\npm-cache correctMkdir not in flight; initializing
+309 verbose afterAdd C:\Users\oskar\AppData\Roaming\npm-cache\randexp\0.4.2\package\package.json written
+310 verbose about to build C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+311 verbose unlock done using C:\Users\oskar\AppData\Roaming\npm-cache\_locks\nearley-d2a08407ea7d7a70.lock for C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+312 verbose stack Error: not found: git
+312 verbose stack     at F (C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:63:19)
+312 verbose stack     at E (C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:72:29)
+312 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\which.js:81:16
+312 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\node_modules\isexe\index.js:44:5
+312 verbose stack     at C:\Program Files\nodejs\node_modules\npm\node_modules\which\node_modules\isexe\windows.js:29:5
+312 verbose stack     at FSReqWrap.oncomplete (fs.js:82:15)
+313 verbose cwd C:\Users\oskar\Documents\GitHub\shrdlite-course-project
+314 error Windows_NT 10.0.10586
+315 error argv "C:\\Program Files\\nodejs\\node.exe" "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js" "install" "-g" "nearley"
+316 error node v4.4.1
+317 error npm  v2.14.20
+318 error code ENOGIT
+319 error not found: git
+320 error Failed using git.
+320 error This is most likely not a problem with npm itself.
+320 error Please check if you have git installed and in your PATH.
+321 verbose exit [ 1, true ]
+322 verbose unbuild node_modules\nearley
+323 info preuninstall nearley@2.4.1
+324 info uninstall nearley@2.4.1
+325 verbose unbuild rmStuff nearley@2.4.1 from C:\Users\oskar\AppData\Roaming\npm\node_modules
+326 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearleyc.cmd is being gently removed
+327 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+328 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-test.cmd is being gently removed
+329 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+330 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-unparse.cmd is being gently removed
+331 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+332 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-railroad.cmd is being gently removed
+333 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+334 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+335 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearleyc.cmd is under C:\Users\oskar\AppData\Roaming\npm
+336 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearleyc.cmd up to C:\Users\oskar\AppData\Roaming\npm
+337 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+338 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-test.cmd is under C:\Users\oskar\AppData\Roaming\npm
+339 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-test.cmd up to C:\Users\oskar\AppData\Roaming\npm
+340 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+341 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-unparse.cmd is under C:\Users\oskar\AppData\Roaming\npm
+342 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-unparse.cmd up to C:\Users\oskar\AppData\Roaming\npm
+343 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+344 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-railroad.cmd is under C:\Users\oskar\AppData\Roaming\npm
+345 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-railroad.cmd up to C:\Users\oskar\AppData\Roaming\npm
+346 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearleyc is being gently removed
+347 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+348 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+349 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearleyc is under C:\Users\oskar\AppData\Roaming\npm
+350 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearleyc up to C:\Users\oskar\AppData\Roaming\npm
+351 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-test is being gently removed
+352 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+353 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+354 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-test is under C:\Users\oskar\AppData\Roaming\npm
+355 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-test up to C:\Users\oskar\AppData\Roaming\npm
+356 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-unparse is being gently removed
+357 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+358 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+359 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-unparse is under C:\Users\oskar\AppData\Roaming\npm
+360 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-unparse up to C:\Users\oskar\AppData\Roaming\npm
+361 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\nearley-railroad is being gently removed
+362 silly gentlyRm verifying C:\Users\oskar\AppData\Roaming\npm is an npm working directory
+363 silly gentlyRm containing path C:\Users\oskar\AppData\Roaming\npm is under npm's control, in C:\Users\oskar\AppData\Roaming\npm
+364 silly gentlyRm deletion target C:\Users\oskar\AppData\Roaming\npm\nearley-railroad is under C:\Users\oskar\AppData\Roaming\npm
+365 verbose gentlyRm vacuuming from C:\Users\oskar\AppData\Roaming\npm\nearley-railroad up to C:\Users\oskar\AppData\Roaming\npm
+366 info postuninstall nearley@2.4.1
+367 silly gentlyRm C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley is being purged from base C:\Users\oskar\AppData\Roaming\npm
+368 verbose gentlyRm don't care about contents; nuking C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+369 silly vacuum-fs purging C:\Users\oskar\AppData\Roaming\npm\node_modules\nearley
+370 silly vacuum-fs quitting because other entries in C:\Users\oskar\AppData\Roaming\npm\node_modules

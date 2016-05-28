@@ -42,6 +42,7 @@ module Interpreter {
     export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
         var errors: Error[] = [];
         var interpretations: InterpretationResult[] = [];
+		
         parses.forEach((parseresult) => {
             try {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
@@ -52,7 +53,7 @@ module Interpreter {
             }
         });
         if (interpretations.length) {
-            return interpretations;
+            return interpretations; 
         } else {
             // only throw the first error found
             throw errors[0];
@@ -117,6 +118,7 @@ module Interpreter {
      */
     function interpretCommand(cmd: Parser.Command, state: WorldState): DNFFormula {
 
+	
         // IDks of all objects placed in the world
         var objects: string[] = Array.prototype.concat.apply([], state.stacks);
         // Return value
@@ -205,12 +207,618 @@ module Interpreter {
                 }
             }
         }
+		else if(cmd.command == "find"){
+			for(var i = 0; i < sourceobj.length; i++){
+				
+				var spos: number[] = currentState.getValue(sourceobj[i]);
+				var sObj: ObjectDefinition = state.objects[sourceobj[i]];
+				
+				// Create SPECIAL CASE LITERAL
+				var special: string[] = [];
+				special[0] = "print";
+				
+				var returnString: string = createFindString(sourceobj[i], spos, sObj, state);
+				
+				// Return the special case literal
+				interpretation.push(makeLiteral(false, returnString, special));
+			}
+			
+		}
+		else if(cmd.command = "what"){
+			
+			var returnString: string = "";
+			
+			for(var i = 0; i < sourceobj.length; i++){
+				
+				var spos: number[] = currentState.getValue(sourceobj[i]);
+				var sObj: ObjectDefinition = state.objects[sourceobj[i]];
+				
+				returnString = createWhatString(sourceobj[i], spos, state, cmd);
+				
+				// Create SPECIAL CASE LITERAL
+				var special: string[] = [];
+				special[0] = "print";
+			
+				interpretation.push(makeLiteral(false, returnString, special));
+			}
+		}
         // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
             interpretation.push(null);
         }
+		
         return interpretation;
     }
+	
+	/**
+     * Function to create a string of neighbours given an object in the world. This to locate
+	 * an object when using the 'find' command (in relation to other objects)
+     *
+     * @param sourceobj - The label of the object searched for
+     * @param spos - The position of the object
+     * @param sObj - The ObjectDefinition of the searched object
+     * 
+     * @param state - The WorldState
+	 * @returns A natural language string describing the position of the object in relation to other objects
+     */
+	function createFindString(sourceobj: string, spos: number[], sObj: ObjectDefinition, state: WorldState) : string {
+		var retVal: string = "";
+		
+		
+		// If the arm is holding the item
+		if(sourceobj == state.holding){
+			
+			return "The " + findAttributes(state.objects[sourceobj], state) + " is in the arm.";
+		}
+		
+		// Check if the item is on the floor or not
+		if(findBelow(spos, state) == null){
+			var retVal: string = "The " + findAttributes(state.objects[sourceobj], state) + " is on the floor,";
+		} else {
+			var retVal: string = "The " + findAttributes(state.objects[sourceobj], state) + " is";
+		}
+	
+		// Count the number of neighbours
+		var foundArray: boolean[] = [];
+		foundArray[0] = findLeft(spos, state) != null;
+		foundArray[1] = findRight(spos, state) != null;
+		foundArray[2] = findBelow(spos, state) != null;
+		foundArray[3] = findAbove(spos, state) != null;
+		
+		var totalFound: number = 0;
+		for(var elem of foundArray){
+			if(elem){
+				totalFound++;
+			}
+		}
+		
+		
+		// Variable to keep track of where we are
+		var currentlyFound: number = 0;
+		
+		// Find the first object to the left
+		if(findLeft(spos, state) != null){
+			currentlyFound++;
+			var currentObject : ObjectDefinition = findLeft(spos, state);
+			
+			// If it is the last neighbour, add a sentence mark.
+			if(currentlyFound == totalFound){
+				retVal = retVal + " to the right of the " + findAttributes(currentObject, state) + ".";
+			}
+			// If it is the second last, add an 'and'
+			else if(currentlyFound == totalFound - 1){
+				retVal = retVal + " to the right of the " + findAttributes(currentObject, state) + " and";
+			}
+			// Else, add a comma
+			else {
+				retVal = retVal + " to the right of the " + findAttributes(currentObject, state) + ",";
+			}
+		}
+		
+		// Find the first object to the right
+		if(findRight(spos, state) != null){
+			currentlyFound++;
+			var currentObject : ObjectDefinition = findRight(spos, state);
+			
+			// If it is the last neighbour, add a sentence mark.
+			if(currentlyFound == totalFound){
+				retVal = retVal + " to the left of the " + findAttributes(currentObject, state) + ".";
+			} 
+			// If it is the second last, add an 'and'
+			else if(currentlyFound == totalFound - 1){
+				retVal = retVal + " to the left of the " + findAttributes(currentObject, state) + " and";
+			} 
+			// Else, add a comma
+			else {
+				retVal = retVal + " to the left of the " + findAttributes(currentObject, state) + ",";
+			}
+		}
+		
+		if(findAbove(spos, state) != null){
+			
+			currentlyFound++;
+			var currentObject : ObjectDefinition = findAbove(spos, state);
+			
+			// For all the following, check if the object is a box and
+			// create the phrasing accordingly
+			
+			// If it is the last neighbour, add a sentence mark.
+			if(currentlyFound == totalFound){
+				if(sObj.form == "box"){
+					retVal = retVal + " contains the " + findAttributes(currentObject, state) + ".";
+				} else {
+					retVal = retVal + " is below the " + findAttributes(currentObject, state) + ".";
+				}
+			} 
+			// If it is the second last, add an 'and'
+			else if(currentlyFound == totalFound - 1){
+				if(sObj.form == "box"){
+					retVal = retVal + " contains the " + findAttributes(currentObject, state) + " and";
+				} else {
+					retVal = retVal + " is below the " + findAttributes(currentObject, state) + " and";
+				}
+			} 
+			// Else, add a comma
+			else {
+				if(sObj.form == "box"){
+					retVal = retVal + " contains the " + findAttributes(currentObject, state) + ",";
+				} else {
+					retVal = retVal + " is below the " + findAttributes(currentObject, state) + ",";
+				}
+			}
+		}
+		
+		if(findBelow(spos, state) != null){
+			currentlyFound++;
+			var currentObject : ObjectDefinition = findBelow(spos, state);
+			
+			// For all the following, check if the neighbour is a box and
+			// create the phrasing accordingly
+
+			// If it is the last neighbour, add a sentence mark.
+			if(currentlyFound == totalFound){
+				if(currentObject.form == "box"){
+					retVal = retVal + " is inside the " + findAttributes(currentObject, state) + ".";
+				} else {
+					retVal = retVal + " is ontop of the " + findAttributes(currentObject, state) + ".";
+				}
+			}
+			// If it is the second last, add an 'and'
+			else if(currentlyFound == totalFound - 1){
+				if(currentObject.form == "box"){
+					retVal = retVal + " is inside the " + findAttributes(currentObject, state) + " and";
+				} else {
+					retVal = retVal + " ontop of the " + findAttributes(currentObject, state) + " and";
+				}
+			}
+			// Else, add a comma
+			else {
+				if(currentObject.form == "box"){
+					retVal = retVal + " is inside the " + findAttributes(currentObject, state) + ",";
+				} else {
+					retVal = retVal + " is ontop of the " + findAttributes(currentObject, state) + ",";
+				}
+			}
+		}
+		
+		return retVal;
+	}
+	
+	
+	/**
+     * Function to create a string of the objects to the <relation> of an object. For example, returns a string
+	 * containing the objects <to the left> of the 'red box'.
+     *
+     * @param sourceobj - The label of the object searched for
+     * @param spos - The position of the object
+     * @param sObj - The ObjectDefinition of the searched object
+	 * @param cmdObj - the object specified by the command
+	 * @param cmmd - the command
+     * @param state - The WorldState
+	 *
+	 * @returns A natural language string telling what is <relation> of the object
+     */
+	function createWhatString(sourceobj: string, spos: number[], state: WorldState, cmd: Parser.Command) : string {
+		var returnString: string = "";
+		
+		// If the arm is holding the item
+		if(sourceobj == state.holding){
+			return "The " + findAttributes(state.objects[sourceobj], state) + " is in the arm.";
+		}
+		
+		// If the relation is "leftof"
+		if(cmd.relation == "leftof"){
+			var leftOfArray: ObjectDefinition[] = findAllLeft(spos, state);
+			var multipleAnswers: boolean = false;
+			
+			if(leftOfArray.length == 0){
+				returnString = "There is nothing to the left of";
+			} else {
+				// For all results, add them to the string with corresponding dividers
+				for (var i = 0; i < leftOfArray.length; i++) {
+					if(i == 0){
+						returnString = returnString + "The " + findAttributes(leftOfArray[i], state);
+					} else if(i == leftOfArray.length - 1){
+						multipleAnswers = true;
+						returnString = returnString + " and " + findAttributes(leftOfArray[i], state);
+					} else {
+						multipleAnswers = true;
+						returnString = returnString + ", the " + findAttributes(leftOfArray[i], state);
+					}
+				}
+				
+				// If there are multiple answers we need to use plural, else singular
+				if(multipleAnswers){
+					returnString = returnString + " are to the left of";
+				} else {
+					returnString = returnString + " is to the left of"
+				}
+			}
+		}
+				
+		if(cmd.relation == "rightof"){
+			var rightOfArray: ObjectDefinition[] = findAllRight(spos, state);
+			var multipleAnswers: boolean = false;
+			
+			if(rightOfArray.length == 0){
+				returnString = "There is nothing to the right of";
+			} else {
+				// For all results, add them to the string with corresponding dividers
+				for (var i = 0; i < rightOfArray.length; i++) {
+					if(i == 0){
+						returnString = returnString + "The " + findAttributes(rightOfArray[i], state);
+					} else if(i == rightOfArray.length - 1){
+						multipleAnswers = true;
+						returnString = returnString + " and " + findAttributes(rightOfArray[i], state);
+					} else {
+						multipleAnswers = true;
+						returnString = returnString + ", the " + findAttributes(rightOfArray[i], state);
+					}
+				}
+				
+				// If there are multiple answers we need to use plural, else singular
+				if(multipleAnswers){
+					returnString = returnString + " are to the right of";
+				} else {
+					returnString = returnString + " is to the right of"
+				}
+			}
+		}
+				
+		if(cmd.relation == "above"){
+			var aboveArray: ObjectDefinition[] = findAllAbove(spos, state);
+			var multipleAnswers: boolean = false;
+			
+			if(aboveArray.length == 0){
+				returnString = "There is nothing above";
+			} else {				
+				// For all results, add them to the string with corresponding dividers
+				for (var i = 0; i < aboveArray.length; i++) {
+					if(i == 0){
+						returnString = returnString + "The " + findAttributes(aboveArray[i], state);
+					} else if(i == aboveArray.length - 1){
+						multipleAnswers = true;
+						returnString = returnString + " and " + findAttributes(aboveArray[i], state);
+					} else {
+						multipleAnswers = true;
+						returnString = returnString + ", the " + findAttributes(aboveArray[i], state);
+					}
+				}
+				
+				// If there are multiple answers we need to use plural, else singular
+				if(multipleAnswers){
+					returnString = returnString + " are above";
+				} else {
+					returnString = returnString + " is above"
+				}
+			}
+		}
+				
+		if(cmd.relation == "under"){
+			var belowArray: ObjectDefinition[] = findAllBelow(spos, state);
+			var multipleAnswers: boolean = false;
+			if(belowArray.length == 0){
+				returnString = "There is nothing below";
+			} else {
+				// For all results, add them to the string with corresponding dividers
+				for (var i = 0; i < belowArray.length; i++) {
+					if(i == 0){
+						returnString = returnString + "The " + findAttributes(belowArray[i], state);
+					} else if(i == belowArray.length - 1){
+						multipleAnswers = true;
+						returnString = returnString + " and " + findAttributes(belowArray[i], state);
+					} else {
+						multipleAnswers = true;
+						returnString = returnString + ", the " + findAttributes(belowArray[i], state);
+					}
+				}
+				
+				// If there are multiple answers we need to use plural, else singular			
+				if(multipleAnswers){
+					returnString = returnString + " are below";
+				} else {
+					returnString = returnString + " is below";
+				}
+			}
+		}
+				
+		if(cmd.relation == "beside"){
+			var rightObj: ObjectDefinition = findRight(spos, state);
+			var leftObj: ObjectDefinition = findLeft(spos, state);
+			
+			// Depending on if there are objects to the right and left, add them to the string with the correct
+			// gramatical structure
+			if(rightObj != null && leftObj != null){
+				returnString = "The " + findAttributes(rightObj, state) + " and the " + findAttributes(leftObj, state) +
+							   " are beside";
+			} else if(rightObj != null){
+				returnString = "The " + findAttributes(rightObj, state) + " is beside";
+			} else if(leftObj != null){
+				returnString = "The " + findAttributes(leftObj, state) + " is beside";
+			} else {
+				returnString = "There is nothing beside"
+			}
+		}
+				
+		if(cmd.relation == "ontop" || cmd.relation == "inside"){
+			
+			// Depending on wheather or not the command is inside or ontop, create the correct
+			// return string
+			var ontopObj: ObjectDefinition = findAbove(spos, state);
+			if(ontopObj == null){
+				if(cmd.relation == "inside"){
+					returnString = "There is nothing inside";
+				} else {	
+					returnString = "There is nothing ontop of";
+				}
+			} else {
+				if(cmd.relation == "inside"){
+					returnString = "The " + findAttributes(ontopObj, state) + " is inside";
+				} else {
+					returnString = "The " + findAttributes(ontopObj, state) + " is ontop of";
+				}
+			}
+		}
+		
+		returnString = returnString + " the " + findAttributes(state.objects[sourceobj], state) + ".";
+		
+		return returnString;
+	}
+	
+	// Finds the first object to the left (on the ground level)
+	function findLeft(sPos : number[], state : WorldState): ObjectDefinition {
+		
+		// Start on position - 1
+		var sPosX : number = sPos[0] - 1;
+		
+		while(sPosX >= 0){
+			if(state.stacks[sPosX][0] == null){
+				sPosX--;
+				continue;
+			} else {
+				return state.objects[state.stacks[sPosX][0]];
+			}
+		}
+		return null;
+	}
+	
+	// Finds all objects to the left (on the ground level)
+	function findAllLeft(sPos : number[], state : WorldState): ObjectDefinition[] {
+		var retVal: ObjectDefinition[] = [];
+		// Start on position - 1
+		var sPosX : number = sPos[0] - 1;
+		
+		while(sPosX >= 0){
+			if(state.stacks[sPosX][0] == null){
+				sPosX--;
+				continue;
+			} else {
+				// Loop through the stack in Y
+				var y: number = 0;
+				while(y < state.stacks[sPosX].length){
+					retVal.push(state.objects[state.stacks[sPosX][y]]);
+					y++;
+				}
+				
+			}
+			sPosX--;
+		}
+		return retVal;
+	}
+	
+	// Finds the first object to the right (on the ground level)
+	function findRight(sPos : number[], state : WorldState): ObjectDefinition {
+		
+		// Start on position + 1
+		var sPosX : number = sPos[0] + 1;
+		
+		while(sPosX <= state.stacks.length - 1){
+			if(state.stacks[sPosX][0] == null){
+				sPosX++;
+				continue;
+			} else {
+				return state.objects[state.stacks[sPosX][0]];
+			}
+		}
+		return null;
+	}
+	
+	// Finds all objects to the right of sPos (a position in the world)
+	function findAllRight(sPos : number[], state : WorldState): ObjectDefinition[] {
+		var retVal: ObjectDefinition[] = [];
+		// Start on position + 1
+		var sPosX : number = sPos[0] + 1;
+		
+		while(sPosX <= state.stacks.length - 1){
+			if(state.stacks[sPosX][0] == null){
+				sPosX++;
+				continue;
+			} else {
+				// Loop through the stack in y-axis
+				var y: number = 0;
+				while(y < state.stacks[sPosX].length){
+					retVal.push(state.objects[state.stacks[sPosX][y]]);
+					y++;
+				}
+				
+			}
+			sPosX++;
+		}
+		return retVal;
+	}
+	
+	// Finds the first object above sPos (a position in the world)
+	function findAbove(sPos : number[], state : WorldState): ObjectDefinition {
+		
+		// Start on position + 1
+		var sPosY : number = sPos[1] + 1;
+		
+		// Same X position
+		var sPosX : number = sPos[0];
+		
+		if(sPosY > state.stacks[sPosX].length - 1){
+			return null;
+		}
+		
+		return state.objects[state.stacks[sPosX][sPosY]];
+	}
+	
+	// Finds all objects above sPos (a position in the world)
+	function findAllAbove(sPos : number[], state : WorldState): ObjectDefinition[] {
+		var retVal: ObjectDefinition[] = [];
+		
+		// Start on position + 1
+		var sPosY : number = sPos[1] + 1;
+		
+		// Same X position
+		var sPosX : number = sPos[0];
+		
+		while(sPosY < state.stacks[sPosX].length){
+			retVal.push(state.objects[state.stacks[sPosX][sPosY]]);
+			sPosY++;
+		}
+		
+		return retVal;
+	}
+	
+	// Finds the first object below sPos (a position in the world)
+	function findBelow(sPos : number[], state : WorldState): ObjectDefinition {
+		
+		// Start on position - 1
+		var sPosY : number = sPos[1] - 1;
+		
+		// Same X position
+		var sPosX : number = sPos[0];
+		
+		if(sPosY < 0){
+			return null;
+		}
+		
+		return state.objects[state.stacks[sPosX][sPosY]];
+	}
+	
+	// Finds all objects below sPos (a position in the world)
+	function findAllBelow(sPos : number[], state : WorldState): ObjectDefinition[] {
+		var retVal: ObjectDefinition[] = [];
+		
+		// Start on position - 1
+		var sPosY : number = sPos[1] - 1;
+		
+		// Same X position
+		var sPosX : number = sPos[0];
+		
+		while(sPosY >= 0){
+			retVal.push(state.objects[state.stacks[sPosX][sPosY]]);
+			sPosY--;
+		}
+		
+		return retVal;
+	}
+	
+	/**
+     * findAttributes will return a string containing all the attributes
+	 * needed in order to specify an object. If, for example, there are 
+	 * two yellow objects, "the yellow object" is not sufficient. Always
+     * returns as few attributes as possible needed to describe the object.
+	 *
+     * @param obj - The object definition of the searched object
+     * @param state - The WorldState in which we currently are
+	 *
+     * @returns a string describing the object
+     */
+	function findAttributes(obj: ObjectDefinition, state: WorldState): string {
+		var stacks: string[][] = state.stacks;
+		
+		var nrForm: number = 0;
+		
+		var multipleSameSize: boolean = false;
+		var multipleSameColor: boolean = false;
+		
+		var foundColors: string[] = [];
+		var foundSizes: string[] = [];
+		
+		for (var i = 0; i < stacks.length; i++) {
+            for (var j = 0; j < stacks[i].length; j++) {
+				// If two objects are of the same form, increase the number of forms
+				// And add the objects attributes to arrays
+				if(state.objects[stacks[i][j]].form == obj.form){
+					nrForm++;
+					foundColors.push(state.objects[stacks[i][j]].color);
+					foundSizes.push(state.objects[stacks[i][j]].size);
+				}
+			}
+		}
+		
+		// Checks if there are multiple objects with same color as
+		// the target object
+		for(var firstColor of foundColors){
+			var i: number = 0;
+			for(var secondColor of foundColors){
+				if(secondColor == obj.color){
+					i++;
+				}
+				if(i > 1){
+					multipleSameColor = true;
+				}
+			}
+		}
+		
+		// Checks if there are multiple objects with same size as
+		// the target object
+		for(var firstSize of foundSizes){
+			var i: number = 0;
+			for(var secondSize of foundSizes){
+				
+				if(secondSize == obj.size){
+					i++;
+				}
+				
+				if(i > 1){
+					multipleSameSize = true;
+				}
+			}
+		}
+		
+		// If there are no object of this form
+		if(nrForm < 1){
+			return "";
+		} 
+		// If there are objects of the same form, check what attributes are needed
+		// in order to describe a unique object
+		else {
+			if(nrForm == 1){
+				return obj.form;
+			} else if(nrForm > 1 && !multipleSameColor){
+				return obj.color + " " + obj.form;
+			} else if(nrForm > 1 && multipleSameColor && !multipleSameSize){
+				return obj.size + " " + obj.form;
+			} else if(nrForm > 1 && multipleSameColor && multipleSameSize){
+				return obj.size + " " + obj.color + " " + obj.form;
+			} else {
+				return ""; 
+			}
+		}
+	}
 
     /**
      * findEntities() recursively finds all of the objects within a given entity.
@@ -222,7 +830,6 @@ module Interpreter {
      * world
      * @param currentState - The Map of objects to its position
      */
-
     function findEntites(
         ent: Parser.Entity,
         state: WorldState,
@@ -258,6 +865,7 @@ module Interpreter {
             filterRelation(obj.location.relation, currobjs, relobjs, state, currentState);
         return result;
     }
+	
     /**
      * findObjects() recursively finds all of the objects within a given object.
      * The indentifiers of the objects are returned in a string[].
@@ -594,11 +1202,98 @@ module Interpreter {
     function makeLiteral(polarity: boolean, relation: string, args: string[]): Literal[] {
         return [{ polarity, relation, args }];
     }
-}
 
-var result: Parser.ParseResult[] = Parser.parse("put the large green brick on a table");
-//Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
-console.log("First parse");
-console.log(Parser.stringify(result[0]));
-console.log(Interpreter.stringify(formula[0]));
+
+	function compareStacks(stackA : string[][], stackB : string[][]){
+		var retVal : boolean = false;
+		if(stackA.length != stackB.length){
+			return false;
+		}
+		for (var i = 0; i < stackA.length; i++) {
+			if(stackA[i].length != stackB[i].length){
+				return false;
+			}
+			for (var j = 0; j < stackA[i].length; j++) {
+				if(stackA[i][j] == stackB[i][j]){
+					retVal = true;
+				} else {
+					return false;
+				}
+			}
+		}	
+	return retVal;
+	}
+
+	function equalNode(stateA : WorldState, stateB : WorldState) : boolean{
+		if(compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
+		   stateA.arm == stateB.arm){
+			return true;
+		} else {
+			return false;
+		}
+	}
+}
+	/*
+	
+var small : WorldState = {
+    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+    "holding": "a",
+    "arm": 0,
+    "objects": {
+        "a": { "form": "brick", "size": "large", "color": "green" },
+        "b": { "form": "brick", "size": "small", "color": "white" },
+        "c": { "form": "plank", "size": "large", "color": "red" },
+        "d": { "form": "plank", "size": "small", "color": "green" },
+        "e": { "form": "ball", "size": "large", "color": "white" },
+        "f": { "form": "ball", "size": "small", "color": "black" },
+        "g": { "form": "table", "size": "large", "color": "blue" },
+        "h": { "form": "table", "size": "small", "color": "red" },
+        "i": { "form": "pyramid", "size": "large", "color": "yellow" },
+        "j": { "form": "pyramid", "size": "small", "color": "red" },
+        "k": { "form": "box", "size": "large", "color": "yellow" },
+        "l": { "form": "box", "size": "large", "color": "red" },
+        "m": { "form": "box", "size": "small", "color": "blue" }
+    },
+    "examples": [
+        "put the white ball in a box on the floor",
+        "put the black ball in a box on the floor",
+        "take a blue object",
+        "take the white ball",
+        "put all boxes on the floor",
+        "move all balls inside a large box"
+    ]
+};
+
+var small2 : WorldState = {
+    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+    "holding": "a",
+    "arm": 0,
+    "objects": {
+        "a": { "form": "brick", "size": "large", "color": "green" },
+        "b": { "form": "brick", "size": "small", "color": "white" },
+        "c": { "form": "plank", "size": "large", "color": "red" },
+        "d": { "form": "plank", "size": "small", "color": "green" },
+        "e": { "form": "ball", "size": "large", "color": "white" },
+        "f": { "form": "ball", "size": "small", "color": "black" },
+        "g": { "form": "table", "size": "large", "color": "blue" },
+        "h": { "form": "table", "size": "small", "color": "red" },
+        "i": { "form": "pyramid", "size": "large", "color": "yellow" },
+        "j": { "form": "pyramid", "size": "small", "color": "red" },
+        "k": { "form": "box", "size": "large", "color": "yellow" },
+        "l": { "form": "box", "size": "large", "color": "red" },
+        "m": { "form": "box", "size": "small", "color": "blue" }
+    },
+    "examples": [
+        "put the white ball in a box on the floor",
+        "put the black ball in a box on the floor",
+        "take a blue object",
+        "take the white ball",
+        "put all boxes on the floor",
+        "move all balls inside a large box"
+    ]
+};
+
+console.log("EQUAL NODE: " + equalNode(small, small2));
+
+*/
+

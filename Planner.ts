@@ -75,11 +75,18 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+		
+		var plan : string[] = [];
+		
+		if(interpretation[0][0].args[0] == "print" && interpretation[0][0].polarity == false){
+			plan.push(interpretation[0][0].relation);
+		}
+		
         // This function returns a dummy plan involving a random stack
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);
-        var plan : string[] = [];
+        
 
         // First move the arm to the leftmost nonempty stack
         if (pickstack < state.arm) {
