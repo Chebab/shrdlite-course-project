@@ -67,7 +67,7 @@ ExampleWorlds["medium"] = {
     ]
 };
 ExampleWorlds["small"] = {
-    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+    "stacks": [["e"], ["g", "l"], ["b"], ["m", "f"], []],
     "holding": "a",
     "arm": 0,
     "objects": {
@@ -83,7 +83,7 @@ ExampleWorlds["small"] = {
         "j": { "form": "pyramid", "size": "small", "color": "red" },
         "k": { "form": "box", "size": "large", "color": "yellow" },
         "l": { "form": "box", "size": "large", "color": "red" },
-        "m": { "form": "box", "size": "small", "color": "blue" }
+        "m": { "form": "box", "size": "small", "color": "red" }
     },
     "examples": [
         "put the white ball in a box on the floor",

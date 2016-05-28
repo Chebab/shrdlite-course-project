@@ -80,7 +80,7 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-
+	
 		function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
 			var positions: collections.Dictionary<string, number[]>
 				= new collections.Dictionary<string, number[]>();
@@ -97,7 +97,6 @@ module Planner {
 				// If the arm is holding an object, add that object to the state
 				// The position [-2,-2] is used for finding the held object
 				positions.setValue(state.holding, [-2, -2]);
-
 			}
 
 			//The first element in the position is used to indentify
@@ -412,6 +411,7 @@ module Planner {
 				
 				bestConjunctVal = Math.min(bestConjunctVal,score); 
 			}
+			
 			return bestConjunctVal;
 		}
 		
@@ -635,6 +635,13 @@ module Planner {
 
 		//Return value
 		var plan : string[] = [];
+		
+		
+		if(interpretation[0][0].args[0] == "print" && interpretation[0][0].polarity == false){
+			plan.push(interpretation[0][0].relation);
+			return plan;
+		}
+		
 		//Create a start node object
 		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
 		//Result from aStarSearch (needs to be massaged to get a list of command strings
@@ -786,7 +793,7 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 			return false;
 		}
 		for (var i = 0; i < stackA.length; i++) {
-			//As soon as non-matching item is found, stacks are not equal, so return false
+
 			if(stackA[i].length != stackB[i].length){
 				return false;
 			}
@@ -801,6 +808,7 @@ class WorldStateGraph implements Graph<WorldStateNode> {
 	}
 
 	compareNodes(stateA : WorldState, stateB : WorldState) : number {
+
 
 		//Compare the stacks, the item held in the arm and the position of the arm
 		if(this.compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&

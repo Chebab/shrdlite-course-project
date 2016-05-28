@@ -19,10 +19,12 @@ var Parser;
     //////////////////////////////////////////////////////////////////////
     // exported functions, classes and interfaces/types
     function parse(input) {
+        console.log("inputString: " + input);
         var nearleyParser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
         var parsestr = input.toLowerCase().replace(/\W/g, "");
         try {
             var results = nearleyParser.feed(parsestr).results;
+            console.log("parsestr: " + results[0]);
         }
         catch (err) {
             if ('offset' in err) {
@@ -2866,11 +2868,202 @@ var Interpreter;
                 }
             }
         }
+        else if (cmd.command == "find") {
+            for (var i = 0; i < sourceobj.length; i++) {
+                var spos = currentState.getValue(sourceobj[i]);
+                var sObj = state.objects[sourceobj[i]];
+                //SPECIAL CASE LITERAL
+                var special = [];
+                special[0] = "find";
+                interpretation.push(makeLiteral(false, createFindString(sourceobj[i], spos, sObj, state), special));
+                console.log("retVal: " + createFindString(sourceobj[i], spos, sObj, state));
+            }
+        }
         // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
             interpretation.push(null);
         }
+        console.log("interpretation: " + interpretation[0][0].relation);
         return interpretation;
+    }
+    function createFindString(sourceobj, spos, sObj, state) {
+        var retVal = "";
+        if (sourceobj == state.holding) {
+            return "The " + sObj.color + " " + sObj.form + " is in the arm.";
+        }
+        if (findBelow(spos, state) == null) {
+            var retVal = "The " + sObj.color + " " + sObj.form + " is on the floor,";
+        }
+        else {
+            var retVal = "The " + sObj.color + " " + sObj.form + " is";
+        }
+        var foundArray = [];
+        foundArray[0] = findLeft(spos, state) != null;
+        foundArray[1] = findRight(spos, state) != null;
+        foundArray[2] = findBelow(spos, state) != null;
+        foundArray[3] = findAbove(spos, state) != null;
+        var totalFound = 0;
+        for (var _i = 0, foundArray_1 = foundArray; _i < foundArray_1.length; _i++) {
+            var elem = foundArray_1[_i];
+            if (elem) {
+                totalFound++;
+            }
+        }
+        var currentlyFound = 0;
+        if (findLeft(spos, state) != null) {
+            currentlyFound++;
+            var currentObject = findLeft(spos, state);
+            if (currentlyFound == totalFound) {
+                retVal = retVal + " to the right of the " + currentObject.color + " " + currentObject.form + ".";
+            }
+            else if (currentlyFound == totalFound - 1) {
+                retVal = retVal + " to the right of the " + currentObject.color + " " + currentObject.form + " and";
+            }
+            else {
+                retVal = retVal + " to the right of the " + currentObject.color + " " + currentObject.form + ",";
+            }
+        }
+        if (findRight(spos, state) != null) {
+            currentlyFound++;
+            var currentObject = findRight(spos, state);
+            if (currentlyFound == totalFound) {
+                retVal = retVal + " to the left of the " + currentObject.color + " " + currentObject.form + ".";
+            }
+            else if (currentlyFound == 1) {
+                retVal = retVal + " to the left of the " + currentObject.color + " " + currentObject.form;
+            }
+            else if (currentlyFound == totalFound - 1) {
+                retVal = retVal + " to the left of the " + currentObject.color + " " + currentObject.form + " and";
+            }
+            else {
+                retVal = retVal + " to the left of the " + currentObject.color + " " + currentObject.form + ",";
+            }
+        }
+        if (findAbove(spos, state) != null) {
+            currentlyFound++;
+            var currentObject = findAbove(spos, state);
+            if (currentlyFound == totalFound) {
+                if (sObj.form == "box") {
+                    retVal = retVal + " contains the " + currentObject.color + " " + currentObject.form + ".";
+                }
+                else {
+                    retVal = retVal + " is below the " + currentObject.color + " " + currentObject.form + ".";
+                }
+            }
+            else if (currentlyFound == 1) {
+                if (sObj.form == "box") {
+                    retVal = retVal + " contains the " + currentObject.color + " " + currentObject.form;
+                }
+                else {
+                    retVal = retVal + " is below the " + currentObject.color + " " + currentObject.form;
+                }
+            }
+            else if (currentlyFound == totalFound - 1) {
+                if (sObj.form == "box") {
+                    retVal = retVal + " contains the " + currentObject.color + " " + currentObject.form + " and";
+                }
+                else {
+                    retVal = retVal + "is below the " + currentObject.color + " " + currentObject.form + " and";
+                }
+            }
+            else {
+                if (sObj.form == "box") {
+                    retVal = retVal + " contains the " + currentObject.color + " " + currentObject.form + ",";
+                }
+                else {
+                    retVal = retVal + " is below the " + currentObject.color + " " + currentObject.form + ",";
+                }
+            }
+        }
+        if (findBelow(spos, state) != null) {
+            currentlyFound++;
+            var currentObject = findBelow(spos, state);
+            console.log("currently: " + currentlyFound + " totalFound " + totalFound);
+            if (currentlyFound == totalFound) {
+                if (currentObject.form == "box") {
+                    retVal = retVal + " is inside the " + currentObject.color + " " + currentObject.form + ".";
+                }
+                else {
+                    retVal = retVal + " is ontop of the " + currentObject.color + " " + currentObject.form + ".";
+                }
+            }
+            else if (currentlyFound == 1) {
+                if (currentObject.form == "box") {
+                    retVal = retVal + " is inside the " + currentObject.color + " " + currentObject.form;
+                }
+                else {
+                    retVal = retVal + " is ontop of the " + currentObject.color + " " + currentObject.form;
+                }
+            }
+            else if (currentlyFound == totalFound - 1) {
+                if (currentObject.form == "box") {
+                    retVal = retVal + " is inside the " + currentObject.color + " " + currentObject.form + " and";
+                }
+                else {
+                    retVal = retVal + " ontop of the " + currentObject.color + " " + currentObject.form + " and";
+                }
+            }
+            else {
+                if (currentObject.form == "box") {
+                    retVal = retVal + " is inside the " + currentObject.color + " " + currentObject.form + ",";
+                }
+                else {
+                    retVal = retVal + " is ontop of the " + currentObject.color + " " + currentObject.form + ",";
+                }
+            }
+        }
+        return retVal;
+    }
+    function findLeft(sPos, state) {
+        // Start on position - 1
+        var sPosX = sPos[0] - 1;
+        while (sPosX >= 0) {
+            if (state.stacks[sPosX][0] == null) {
+                sPosX--;
+                continue;
+            }
+            else {
+                return state.objects[state.stacks[sPosX][0]];
+            }
+        }
+        return null;
+    }
+    function findRight(sPos, state) {
+        // Start on position + 1
+        var sPosX = sPos[0] + 1;
+        while (sPosX <= state.stacks.length - 1) {
+            if (state.stacks[sPosX][0] == null) {
+                sPosX++;
+                continue;
+            }
+            else {
+                return state.objects[state.stacks[sPosX][0]];
+            }
+        }
+        return null;
+    }
+    function findAbove(sPos, state) {
+        // Start on position + 1
+        var sPosY = sPos[1] + 1;
+        // Same X position
+        var sPosX = sPos[0];
+        if (sPosY > state.stacks[sPosX].length - 1) {
+            return null;
+        }
+        return state.objects[state.stacks[sPosX][sPosY]];
+    }
+    function findBelow(sPos, state) {
+        // Start on position + 1
+        var sPosY = sPos[1] - 1;
+        // Same X position
+        var sPosX = sPos[0];
+        if (sPosY < 0) {
+            return null;
+        }
+        return state.objects[state.stacks[sPosX][sPosY]];
+    }
+    function objToString(obj) {
+        return obj.size + " " + obj.color + " " + obj.form;
     }
     /**
      * findEntities() recursively finds all of the objects within a given entity.
@@ -3079,7 +3272,10 @@ var Interpreter;
                 return false;
         }
     }
+<<<<<<< HEAD
     Interpreter.isFeasible = isFeasible;
+=======
+>>>>>>> plannero
     /**
      * Function to check whether or not a relation between two objects are physically possible.
      * The world is ruled by physical laws that constrain the placement and movement of the objects.
@@ -3157,7 +3353,10 @@ var Interpreter;
                 return false;
         }
     }
+<<<<<<< HEAD
     Interpreter.isPhysical = isPhysical;
+=======
+>>>>>>> plannero
     /**
     * Helper function that creates two ObjectDefinitions
     * Contains special cases if the objects are floors
@@ -3200,6 +3399,7 @@ var Interpreter;
     function makeLiteral(polarity, relation, args) {
         return [{ polarity: polarity, relation: relation, args: args }];
     }
+<<<<<<< HEAD
 })(Interpreter || (Interpreter = {}));
 /*
 var result: Parser.ParseResult[] = Parser.parse("put the black ball in the large yellow box");
@@ -3632,3 +3832,102 @@ var result = Parser.parse(hard);
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
 var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
 var plan = Planner.plan(formula, ExampleWorlds["small"]);
+=======
+    function compareStacks(stackA, stackB) {
+        var retVal = false;
+        if (stackA.length != stackB.length) {
+            return false;
+        }
+        for (var i = 0; i < stackA.length; i++) {
+            if (stackA[i].length != stackB[i].length) {
+                return false;
+            }
+            for (var j = 0; j < stackA[i].length; j++) {
+                if (stackA[i][j] == stackB[i][j]) {
+                    retVal = true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+        return retVal;
+    }
+    function equalNode(stateA, stateB) {
+        if (compareStacks(stateA.stacks, stateB.stacks) && stateA.holding == stateB.holding &&
+            stateA.arm == stateB.arm) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+})(Interpreter || (Interpreter = {}));
+/*
+
+var small : WorldState = {
+"stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+"holding": "a",
+"arm": 0,
+"objects": {
+    "a": { "form": "brick", "size": "large", "color": "green" },
+    "b": { "form": "brick", "size": "small", "color": "white" },
+    "c": { "form": "plank", "size": "large", "color": "red" },
+    "d": { "form": "plank", "size": "small", "color": "green" },
+    "e": { "form": "ball", "size": "large", "color": "white" },
+    "f": { "form": "ball", "size": "small", "color": "black" },
+    "g": { "form": "table", "size": "large", "color": "blue" },
+    "h": { "form": "table", "size": "small", "color": "red" },
+    "i": { "form": "pyramid", "size": "large", "color": "yellow" },
+    "j": { "form": "pyramid", "size": "small", "color": "red" },
+    "k": { "form": "box", "size": "large", "color": "yellow" },
+    "l": { "form": "box", "size": "large", "color": "red" },
+    "m": { "form": "box", "size": "small", "color": "blue" }
+},
+"examples": [
+    "put the white ball in a box on the floor",
+    "put the black ball in a box on the floor",
+    "take a blue object",
+    "take the white ball",
+    "put all boxes on the floor",
+    "move all balls inside a large box"
+]
+};
+
+var small2 : WorldState = {
+"stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+"holding": "a",
+"arm": 0,
+"objects": {
+    "a": { "form": "brick", "size": "large", "color": "green" },
+    "b": { "form": "brick", "size": "small", "color": "white" },
+    "c": { "form": "plank", "size": "large", "color": "red" },
+    "d": { "form": "plank", "size": "small", "color": "green" },
+    "e": { "form": "ball", "size": "large", "color": "white" },
+    "f": { "form": "ball", "size": "small", "color": "black" },
+    "g": { "form": "table", "size": "large", "color": "blue" },
+    "h": { "form": "table", "size": "small", "color": "red" },
+    "i": { "form": "pyramid", "size": "large", "color": "yellow" },
+    "j": { "form": "pyramid", "size": "small", "color": "red" },
+    "k": { "form": "box", "size": "large", "color": "yellow" },
+    "l": { "form": "box", "size": "large", "color": "red" },
+    "m": { "form": "box", "size": "small", "color": "blue" }
+},
+"examples": [
+    "put the white ball in a box on the floor",
+    "put the black ball in a box on the floor",
+    "take a blue object",
+    "take the white ball",
+    "put all boxes on the floor",
+    "move all balls inside a large box"
+]
+};
+
+console.log("EQUAL NODE: " + equalNode(small, small2));
+
+*/
+var result = Parser.parse("where is the yellow box");
+//
+console.log("Parse Result: " + Parser.stringify(result[0]));
+var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+>>>>>>> plannero
