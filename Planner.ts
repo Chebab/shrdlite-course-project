@@ -58,7 +58,64 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
-
+	function objectString(od : ObjectDefinition, theState : WorldState) : string {
+		//Is one property enough to single out the object in the world?
+		var obj : Parser.Object = {form : od.form};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return od.form;
+		
+		obj = {form : "any", size : od.size};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return "" + od.size + " object";
+		
+		obj = {form : "any", color : od.color};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return "" + od.color + " object";
+		
+		//Are two properties enough?
+		
+		obj = {form : od.form, color : od.color};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return od.color + " " + od.form;
+		
+		obj = {form : od.form, size : od.size};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return od.size + " " + od.form;
+		
+		obj = {color : od.color, size : od.size, form : "any"};
+		if (Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1)
+			return od.size + " " + od.color + " " + "object";
+		
+		//Need all three properties
+		obj = {form : od.form, color : od.color, size : od.size};
+		return od.size + " " + od.color + " " + od.form;
+	}
+	
+	function getDescribingText(prevState : WorldState, nextState : WorldState) : string {
+		var retString = "";
+		if (prevState.holding == null) {
+			retString += "Picking up the ";
+			retString += objectString(nextState.objects[nextState.holding], prevState);
+			return retString;
+		} else {
+			retString += "Dropping the ";
+			retString += objectString(prevState.objects[prevState.holding], prevState);
+			retString += " on the ";
+			var onString : string;
+			if (prevState.stacks[nextState.arm].length == 0) {
+				onString = "floor of column " + nextState.arm;
+			} else {
+				//Why peek no exist?
+				var topObj = prevState.stacks[nextState.arm].pop();
+				prevState.stacks[nextState.arm].push(topObj);
+				var topObjDef = nextState.objects[topObj];
+				onString = objectString(topObjDef, nextState);
+			}
+				
+			retString += onString;
+			return retString;
+		}
+	}
 
 
     /**
@@ -665,11 +722,12 @@ module Planner {
 						goalIsReached, //goal
 						combinationHeuristic, //heuristic... focusOnOneConjunctHeuristic
 						searchTime);	  //time
-				//break;
+				break; //Remove this line to benchmark cheating, with this line left on cheat if timeouted
 				
 			}
 			
 			catch (error) {
+				//if timeouted, try to cheat
 				if (error.message == "Timed out" && i != attemptStrings.length - 1) {
 					plan.push(attemptStrings[i]);
 					
@@ -677,6 +735,7 @@ module Planner {
 					throw error;
 				}
 			} finally {
+				//This is in the finally-block to allow for benchmarking of cheating
 				penaltyPerLiteral += 4;
 			}
 		}
@@ -695,6 +754,8 @@ module Planner {
 			for(var i = 0;i<nodeResult.length - 1;i++){
 				currNode = nodeResult[i];
 				nextNode = nodeResult[i+1];
+				var dText = getDescribingText(currNode, nextNode);
+				plan.push(dText);
 					if (currNode.arm > nextNode.arm) {
 						for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
 							plan.push('l');

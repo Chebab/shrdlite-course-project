@@ -1019,7 +1019,7 @@ module Interpreter {
      * world
      * @param currentState - The Map of objects to its position
      */
-    function findObjects(
+    export function findObjects(
         obj: Parser.Object,
         state: WorldState,
         objects: string[],
