@@ -24,8 +24,12 @@ interface WorldState {
     stacks: Stack[];
     /** Which object the robot is currently holding. */
     holding: string;
+	/** Which object the 2nd robot is currently holding */
+	holding2: string;
     /** The column position of the robot arm. */
     arm: number;
+	/** The column position of the 2nd robot arm */
+	arm2: number;
     /** A mapping from strings to `ObjectDefinition`s. The strings are meant to be identifiers for the objects (see ExampleWorlds.ts for an example). */
     objects: { [s:string]: ObjectDefinition; };
     /** List of predefined example sentences/utterances that the user can choose from in the UI. */

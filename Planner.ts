@@ -708,7 +708,7 @@ module Planner {
 		}
 		
 		//Create a start node object
-		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.arm, state.objects);
+		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.holding2, state.arm, state.arm2, state.objects);
 		var foundResult : SearchResult<WorldStateNode>;
 		var searchTime : number = 50;
 		var attemptStrings : string[] = [
@@ -762,17 +762,17 @@ module Planner {
 				plan.push(dText);
 					if (currNode.arm > nextNode.arm) {
 						for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
-							plan.push('l');
+							plan.push('ln');
 						}
 					} else {
 						for (var j = 0; j < nextNode.arm - currNode.arm; j++) {
-							plan.push('r');							
+							plan.push('rn');							
 						}
 					}
 				if (currNode.holding) {
-					plan.push('d');
+					plan.push('dn');
 				} else {
-					plan.push('p');
+					plan.push('pn');
 				}
 				console.log(combinationHeuristic(currNode));
 				console.log(currNode.stacks);
@@ -782,6 +782,7 @@ module Planner {
 			//The goal is fulfilled at the starting world state
 			return [];
 		}
+		
 		return plan;
 		}
 
@@ -791,14 +792,18 @@ class WorldStateNode implements WorldState {
 	stacks: Stack[];
     /** Which object the robot is currently holding. */
     holding: string;
+    /** Which object the 2nd robot is currently holding. */
+    holding2: string;
     /** The column position of the robot arm. */
     arm: number;
+	/** The column position of the 2nd robot arm */
+	arm2: number;
     /** A mapping from strings to `ObjectDefinition`s. The strings are meant to be identifiers for the objects (see 	ExampleWorlds.ts for an example). */
     objects: { [s:string]: ObjectDefinition; };
     /** List of predefined example sentences/utterances that the user can choose from in the UI. */
     examples: string[];
-	constructor (stacks : Stack[], holding : string, arm : number, objects : { [s:string]: ObjectDefinition; }) {
-		this.stacks = stacks; this.holding = holding; this.arm = arm; this.objects = objects; this.examples = null;
+	constructor (stacks : Stack[], holding : string, holding2: string, arm : number, arm2 : number, objects : { [s:string]: ObjectDefinition; }) {
+		this.stacks = stacks; this.holding = holding; this.holding2 = holding2; this.arm = arm; this.arm2 = arm2; this.objects = objects; this.examples = null;
 
 	}
 
@@ -822,7 +827,7 @@ class WorldStateNode implements WorldState {
 		for (var i = 0; i < this.stacks.length; i++) {
 			newStacks.push(this.stacks[i].slice());
 		}
-		return new WorldStateNode(newStacks, this.holding, this.arm, this.objects);
+		return new WorldStateNode(newStacks, this.holding, this.holding2, this.arm, this.arm2, this.objects);
 	}
 }
 
