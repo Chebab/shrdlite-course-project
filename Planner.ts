@@ -91,8 +91,8 @@ module Planner {
 		var time : number = 0;
 		var armBusyUntil = [0, 0];
 		var armTimeOfPickup = [-1, -1];
-		var armMoveFrom = [-1,-1];
-		var armMoveTo = [initialLoc1, initialLoc1];
+		var armMoveFrom = [initialLoc1, initialLoc2];
+		var armMoveTo = [initialLoc1, initialLoc2];
 		var first : boolean = true;
 		//TODO: if last move is pickup - treat it special
 		while (moves.length > 0) {
@@ -133,6 +133,7 @@ module Planner {
 	}
 
 	function getPlanStringsFromMoves(moves : Move[], initialLoc : number) : string[] {
+		
 		var result : string[] = [];
 		var location : number = initialLoc;
 		for (var m of moves) {
@@ -811,6 +812,7 @@ module Planner {
 		
 		//Create a start node object
 		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.holding2, state.arm, state.arm2, state.objects);
+		
 		var foundResult : SearchResult<WorldStateNode>;
 		var searchTime : number = 50;
 		var attemptStrings : string[] = [
@@ -856,18 +858,18 @@ module Planner {
 			nodeResult = [startNode].concat(nodeResult);
 			var moves : Move[] = getMoves(nodeResult);
 			
-			var twoArmMoves : Move[][] = getTwoArmMoves(moves, state.arm, state.arm2);
-			console.log("arm 0 plan: ");
+			var twoArmMoves : Move[][] = getTwoArmMoves(moves, startNode.arm, startNode.arm2);
+			/*console.log("arm 0 plan: ");
 			for (var i = 0; i < twoArmMoves[0].length; i++) {
 				console.log(twoArmMoves[0][i]);
 			}
 			console.log("arm 1 plan: ");
 			for (var i = 0; i < twoArmMoves[1].length; i++) {
 				console.log(twoArmMoves[1][i]);
-			}
+			}*/
 			var planStrings : string[][] = [];
 			for (var i = 0; i < 2; i++) {
-				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], 0));
+				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], i?startNode.arm2:startNode.arm));
 			}
 			
 			var diffLength = planStrings[0].length - planStrings[1].length;
