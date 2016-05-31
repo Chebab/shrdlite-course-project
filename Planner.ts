@@ -58,6 +58,108 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
+	interface Move {
+		fromIndex: number;
+		toIndex?: number;
+		initialWait?: number;
+		worldStates: WorldStateNode[];
+	}
+
+	function getMoves(states : WorldStateNode[]) : Move[] {
+		var retMoves : Move[] = [];
+		var i : number;
+		for (i = 0; i < states.length-2; i += 2) {
+			var prevState = states[i];
+			var midState = states[i+1];
+			var nextState = states[i+2];
+			var from : number = midState.arm;
+			var to : number = nextState.arm;
+			retMoves.push({fromIndex: from, toIndex: to, worldStates: [prevState, midState, nextState]});
+		}
+		//goal was to pick up an item
+		if (i != states.length-1) {
+			var prevState = states[i];
+			var nextState = states[i+1];
+			var from : number = prevState.arm;
+			retMoves.push({fromIndex: from, worldStates : [prevState, nextState]});
+		}
+		return retMoves;
+	}
+	
+	function getTwoArmMoves(moves : Move[], initialLoc1 : number, initialLoc2 : number) : Move[][] {
+		var result : Move[][] = [[],[]];
+		var time : number = 0;
+		var armBusyUntil = [0, 0];
+		var armTimeOfPickup = [-1, -1];
+		var armMoveFrom = [-1,-1];
+		var armMoveTo = [initialLoc1, initialLoc1];
+		var first : boolean = true;
+		//TODO: if last move is pickup - treat it special
+		while (moves.length > 0) {
+			//assign move to first free arm
+			for (var arm = 0; arm < 2 && moves.length != 0; arm++) {
+				//but always assign last move to arm 0 to maintain consistency with two-arm-agnostic code
+				if (moves.length == 1 && arm == 1) {
+					arm = 0;
+					time = armBusyUntil[0];
+				}
+				var otherArm = 1 - arm;
+				var initialWait = 0;
+				if (armBusyUntil[arm] == time) {
+					var nextMove = moves.shift();
+					//armMoveTo[arm] gives the current location of the arm
+					var distanceToSource = Math.abs(armMoveTo[arm] - nextMove.fromIndex);
+					armMoveFrom[arm] = nextMove.fromIndex;
+					armMoveTo[arm] = nextMove.toIndex;
+					var distanceToTarget = Math.abs(armMoveTo[arm] - armMoveFrom[arm]);
+					
+					if (armMoveFrom[arm] == armMoveFrom[otherArm] && !first) {
+						initialWait = Math.max(0, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
+					}
+					if (armMoveFrom[arm] == armMoveTo[otherArm] && !first) {
+						initialWait = Math.max(0, armBusyUntil[otherArm] - time + 1 - distanceToSource);
+					}
+					armBusyUntil[arm] = time + initialWait + distanceToSource + distanceToTarget + 2;
+					armTimeOfPickup[arm] = time + initialWait + distanceToSource;
+					nextMove.initialWait = initialWait;
+					
+					result[arm].push(nextMove);
+					first = false;
+				}
+			}
+			time = Math.min(armBusyUntil[0], armBusyUntil[1]);
+		}
+		return result;
+	}
+
+	function getPlanStringsFromMoves(moves : Move[], initialLoc : number) : string[] {
+		var result : string[] = [];
+		var location : number = initialLoc;
+		for (var m of moves) {
+			for(var i = 0; i < m.initialWait; i++) {
+				result.push("n");
+			}
+			var change = location < m.fromIndex ? 1 : -1;
+			var direction = location < m.fromIndex ? "r" : "l";
+			while(location != m.fromIndex) {
+				result.push(direction);
+				location += change;
+			}
+			result.push("p");
+			if (m.toIndex != null) {
+				change = location < m.toIndex ? 1 : -1;
+				direction = location < m.toIndex ? "r" : "l";
+				while (location != m.toIndex) {
+					result.push(direction);
+					location += change;
+				}
+			}
+			result.push("d");
+		}
+		
+		return result;
+	}
+	
 	function objIsUnique(obj : Parser.Object, theState : WorldState) : boolean {
 		return Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1;
 	}
@@ -703,7 +805,7 @@ module Planner {
 				if(i == interpretation.length - 1){
 					return plan;
 				}
-			}
+			} 
 			
 		}
 		
@@ -726,7 +828,7 @@ module Planner {
 						goalIsReached, //goal
 						combinationHeuristic, //heuristic... focusOnOneConjunctHeuristic
 						searchTime);	  //time
-				break; //Remove this line to benchmark cheating, with this line left on cheat if timeouted
+				break; //Remove this line to benchmark cheating, with this line left, do cheat if timeouted
 				
 			}
 			
@@ -750,25 +852,52 @@ module Planner {
 		
 		// If we did not start at a world state that already fulfills the goal
 		if (nodeResult.length > 0) {
-			var nextNode : WorldStateNode;
-			var currNode : WorldStateNode;
 			//The result returned from the search function does not include the start node, so prepend it. 
 			nodeResult = [startNode].concat(nodeResult);
-			//Find a command for each successive world state
-			for(var i = 0;i<nodeResult.length - 1;i++){
+			var moves : Move[] = getMoves(nodeResult);
+			
+			var twoArmMoves : Move[][] = getTwoArmMoves(moves, state.arm, state.arm2);
+			console.log("arm 0 plan: ");
+			for (var i = 0; i < twoArmMoves[0].length; i++) {
+				console.log(twoArmMoves[0][i]);
+			}
+			console.log("arm 1 plan: ");
+			for (var i = 0; i < twoArmMoves[1].length; i++) {
+				console.log(twoArmMoves[1][i]);
+			}
+			var planStrings : string[][] = [];
+			for (var i = 0; i < 2; i++) {
+				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], 0));
+			}
+			
+			var diffLength = planStrings[0].length - planStrings[1].length;
+			if (diffLength < 0) {
+				for( var i = 0; i > diffLength; i--) {
+					planStrings[0].push('n');
+				}
+			} else {
+				for( var i = 0; i < diffLength; i++) {
+					planStrings[1].push('n');
+				}
+			}
+			for(var i = 0; i < planStrings[0].length; i++) {
+				plan.push(planStrings[0][i] + planStrings[1][i]);
+			}
+			
+			/*for(var i = 0;i<nodeResult.length - 1;i++){
 				currNode = nodeResult[i];
 				nextNode = nodeResult[i+1];
 				var dText = getDescribingText(currNode, nextNode);
 				plan.push(dText);
-					if (currNode.arm > nextNode.arm) {
-						for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
-							plan.push('ln');
-						}
-					} else {
-						for (var j = 0; j < nextNode.arm - currNode.arm; j++) {
-							plan.push('rn');							
-						}
+				if (currNode.arm > nextNode.arm) {
+					for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
+						plan.push('ln');
 					}
+				} else {
+					for (var j = 0; j < nextNode.arm - currNode.arm; j++) {
+						plan.push('rn');							
+					}
+				}
 				if (currNode.holding) {
 					plan.push('dn');
 				} else {
@@ -777,16 +906,18 @@ module Planner {
 				console.log(combinationHeuristic(currNode));
 				console.log(currNode.stacks);
 				
-			}
+			}*/
 		} else {
 			//The goal is fulfilled at the starting world state
 			return [];
 		}
 		
 		return plan;
-		}
+	}
 
 }
+
+
 
 class WorldStateNode implements WorldState {
 	stacks: Stack[];
