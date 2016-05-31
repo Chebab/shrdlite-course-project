@@ -147,15 +147,16 @@ module Planner {
 				location += change;
 			}
 			result.push("p");
-			if (m.toIndex != null) {
+			
+			if (moves.length == 3) {
 				change = location < m.toIndex ? 1 : -1;
 				direction = location < m.toIndex ? "r" : "l";
 				while (location != m.toIndex) {
 					result.push(direction);
 					location += change;
 				}
+				result.push("d");
 			}
-			result.push("d");
 		}
 		
 		return result;
