@@ -119,6 +119,7 @@ module Planner {
 					var nextMove = moves.shift();
 					//armMoveTo[arm] gives the current location of the arm
 					var distanceToSource : number = 0;
+					//if drop held item
 					if (nextMove.fromIndex != null) {
 						 distanceToSource = Math.abs(armMoveTo[arm] - nextMove.fromIndex);
 						 armMoveFrom[arm] = nextMove.fromIndex;
@@ -126,15 +127,25 @@ module Planner {
 						//armMoveFrom already at correct value, since this can only happen for the
 						//first move, and the initial value has been set
 					}
-					
+					//if pickup
+					if (nextMove.toIndex == null) {
+						armMoveTo[arm] = nextMove.fromIndex;
+					}
 					armMoveTo[arm] = nextMove.toIndex;
 					var distanceToTarget = Math.abs(armMoveTo[arm] - armMoveFrom[arm]);
 					
 					if (armMoveFrom[arm] == armMoveFrom[otherArm] && !first) {
 						initialWait = Math.max(0, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
 					}
+					
 					if (armMoveFrom[arm] == armMoveTo[otherArm] && !first) {
-						initialWait = Math.max(0, armBusyUntil[otherArm] - time + 1 - distanceToSource - distanceToTarget);
+						initialWait = Math.max(initialWait, armBusyUntil[otherArm] - time + 1 - distanceToSource);
+					}
+					if (armMoveTo[arm] == armMoveTo[otherArm] && !first) {
+						initialWait = Math.max(initialWait, armBusyUntil[otherArm] - time + 1 - distanceToSource - distanceToTarget);
+					}
+					if (armMoveTo[arm] == armMoveFrom[otherArm] && !first) {
+						initialWait = Math.max(initialWait, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
 					}
 					//this +2 is sligthly pessimistic (for initial/final move?)
 					armBusyUntil[arm] = time + initialWait + distanceToSource + distanceToTarget + 2;
