@@ -155,25 +155,43 @@ module Planner {
 		var result : string[] = [];
 		var location : number = initialLoc;
 		for (var m of moves) {
+			//initial wait
 			for(var i = 0; i < m.initialWait; i++) {
 				result.push("n");
 			}
+			
+			//textual description
+			if (m.fromIndex == null || m.toIndex == null) {
+				result.push(getDescribingText(m.worldStates[0], m.worldStates[1]));
+			} else {
+				result.push(getDescribingText(m.worldStates[0], m.worldStates[1]) + " in order to " + 
+						getDescribingText(m.worldStates[1], m.worldStates[2]));
+				
+			}			
+			
+			//actual plan
+			//item is to be picked up
 			if (m.fromIndex != null) {
+				//get to item
 				var change = location < m.fromIndex ? 1 : -1;
 				var direction = location < m.fromIndex ? "r" : "l";
 				while(location != m.fromIndex) {
 					result.push(direction);
 					location += change;
 				}
+				//pick it up
 				result.push("p");
 			}
+			//item is to be dropped
 			if (m.toIndex != null) {
+				//get to item
 				change = location < m.toIndex ? 1 : -1;
 				direction = location < m.toIndex ? "r" : "l";
 				while (location != m.toIndex) {
 					result.push(direction);
 					location += change;
 				}
+				//drop it
 				result.push("d");
 			}
 		}
@@ -183,6 +201,10 @@ module Planner {
 	
 	function objIsUnique(obj : Parser.Object, theState : WorldState) : boolean {
 		return Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1;
+	}
+	
+	function isCommand(str : string) : boolean {
+		return str == 'n' || str == 'd' || str == 'p' || str == 'r' || str == 'l';
 	}
 	
 	function objectString(od : ObjectDefinition, theState : WorldState) : string {
@@ -222,19 +244,22 @@ module Planner {
 	
 	function getDescribingText(prevState : WorldState, nextState : WorldState) : string {
 		var retString = "";
-		if (prevState.holding == null) {
-			retString += "Picking up the ";
-			retString += objectString(nextState.objects[nextState.holding], prevState);
+		var heldItem = nextState.holding;
+		if (heldItem != null) {
+			retString += "pick up the ";
+			retString += objectString(nextState.objects[heldItem], prevState);
 			return retString;
 		} else {
-			retString += "Dropping it on the ";			
+			
+			retString += "drop it on the ";			
 			var onString : string;
-			if (prevState.stacks[nextState.arm].length == 0) {
-				onString = "floor of column " + nextState.arm;
+			var arm = nextState.arm;
+			if (prevState.stacks[arm].length == 0) {
+				onString = "floor of column " + arm;
 			} else {
 				//Why peek no exist?
-				var topObj = prevState.stacks[nextState.arm].pop();
-				prevState.stacks[nextState.arm].push(topObj);
+				var topObj = prevState.stacks[arm].pop();
+				prevState.stacks[arm].push(topObj);
 				var topObjDef = nextState.objects[topObj];
 				onString = objectString(topObjDef, nextState);
 			}
@@ -887,48 +912,33 @@ module Planner {
 			for (var i = 0; i < twoArmMoves[1].length; i++) {
 				console.log(twoArmMoves[1][i]);
 			}
+			
 			var planStrings : string[][] = [];
 			for (var i = 0; i < 2; i++) {
-				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], i?startNode.arm2:startNode.arm));
+				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], i == 0 ? startNode.arm : startNode.arm2));
 			}
 			
-			var diffLength = planStrings[0].length - planStrings[1].length;
-			if (diffLength < 0) {
-				for( var i = 0; i > diffLength; i--) {
-					planStrings[0].push('n');
+			//combine plans
+			while (planStrings[0].length > 0 || planStrings[1].length > 0) {
+				var nextStrs : string[] = [];
+				//push describing texts
+				for(var j = 0; j < 2; j++) {
+					var foundComment : boolean;
+					do {
+						foundComment = false;
+						nextStrs[j] = planStrings[j].shift();
+						if (nextStrs[j] != null && !isCommand(nextStrs[j])) {
+							plan.push("Arm " + j + ": " + nextStrs[j])
+							foundComment = true;
+						}
+					} while (foundComment);
+					//pad plans to equal length
+					if (nextStrs[j] == null) nextStrs[j] = 'n';
 				}
-			} else {
-				for( var i = 0; i < diffLength; i++) {
-					planStrings[1].push('n');
-				}
-			}
-			for(var i = 0; i < planStrings[0].length; i++) {
-				plan.push(planStrings[0][i] + planStrings[1][i]);
+				//push actual plan
+				plan.push(nextStrs[0] + nextStrs[1]);
 			}
 			
-			/*for(var i = 0;i<nodeResult.length - 1;i++){
-				currNode = nodeResult[i];
-				nextNode = nodeResult[i+1];
-				var dText = getDescribingText(currNode, nextNode);
-				plan.push(dText);
-				if (currNode.arm > nextNode.arm) {
-					for (var j = 0; j < currNode.arm - nextNode.arm; j++) {
-						plan.push('ln');
-					}
-				} else {
-					for (var j = 0; j < nextNode.arm - currNode.arm; j++) {
-						plan.push('rn');							
-					}
-				}
-				if (currNode.holding) {
-					plan.push('dn');
-				} else {
-					plan.push('pn');
-				}
-				console.log(combinationHeuristic(currNode));
-				console.log(currNode.stacks);
-				
-			}*/
 		} else {
 			//The goal is fulfilled at the starting world state
 			return [];
