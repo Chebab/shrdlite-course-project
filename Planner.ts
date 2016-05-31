@@ -108,11 +108,11 @@ module Planner {
 		while (moves.length > 0) {
 			//assign move to first free arm
 			for (var arm = 0; arm < 2 && moves.length != 0; arm++) {
-				//but always assign last move to arm 0 to maintain consistency with two-arm-agnostic code
-				/*if (moves.length == 1 && arm == 1) {
+				but always assign last move to arm 0 to maintain consistency with two-arm-agnostic code
+				if (moves.length == 1 && arm == 1) {
 					arm = 0;
 					time = armBusyUntil[0];
-				}*/
+				}
 				var otherArm = 1 - arm;
 				var initialWait = 0;
 				if (armBusyUntil[arm] == time) {
