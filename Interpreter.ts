@@ -184,7 +184,10 @@ module Interpreter {
                 throw new Error("No target objects")
             }
             // Source and target quantifiers
-            var sourceQuant: string = cmd.entity.quantifier;
+            var sourceQuant: string = "the";
+			if (cmd.entity) {
+				sourceQuant = cmd.entity.quantifier;
+			}
             var targetQuant: string = cmd.location.entity.quantifier;
 
             // Variables for keeping track of which elements have been explored
@@ -378,7 +381,6 @@ module Interpreter {
                 interpretation.push(makeLiteral(false, returnString, special));
             }
         }
-        // If there are no interpretations, add null to make the test cases pass
         if (interpretation.length < 1) {
             throw new Error("No interpretation found");
         }

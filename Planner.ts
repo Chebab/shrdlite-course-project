@@ -59,7 +59,7 @@ module Planner {
     // private functions
 
 	interface Move {
-		fromIndex: number;
+		fromIndex?: number;
 		toIndex?: number;
 		initialWait?: number;
 		worldStates: WorldStateNode[];
@@ -67,8 +67,19 @@ module Planner {
 
 	function getMoves(states : WorldStateNode[]) : Move[] {
 		var retMoves : Move[] = [];
-		var i : number;
-		for (i = 0; i < states.length-2; i += 2) {
+		var i : number = 0;
+		
+		//if starting with an item in hand
+		if (states[0].holding != null) {
+			var prevState = states[0];
+			var nextState = states[1];
+			var to : number = nextState.arm;
+			retMoves.push({toIndex : to, worldStates: [prevState, nextState]});
+			i++;
+		}
+		
+		for (; i < states.length-2; i += 2) {
+			
 			var prevState = states[i];
 			var midState = states[i+1];
 			var nextState = states[i+2];
@@ -77,10 +88,10 @@ module Planner {
 			retMoves.push({fromIndex: from, toIndex: to, worldStates: [prevState, midState, nextState]});
 		}
 		//goal was to pick up an item
-		if (i != states.length-1) {
+		if (states[states.length-1].holding != null) {
 			var prevState = states[i];
 			var nextState = states[i+1];
-			var from : number = prevState.arm;
+			var from : number = nextState.arm;
 			retMoves.push({fromIndex: from, worldStates : [prevState, nextState]});
 		}
 		return retMoves;
@@ -94,22 +105,28 @@ module Planner {
 		var armMoveFrom = [initialLoc1, initialLoc2];
 		var armMoveTo = [initialLoc1, initialLoc2];
 		var first : boolean = true;
-		//TODO: if last move is pickup - treat it special
 		while (moves.length > 0) {
 			//assign move to first free arm
 			for (var arm = 0; arm < 2 && moves.length != 0; arm++) {
 				//but always assign last move to arm 0 to maintain consistency with two-arm-agnostic code
-				if (moves.length == 1 && arm == 1) {
+				/*if (moves.length == 1 && arm == 1) {
 					arm = 0;
 					time = armBusyUntil[0];
-				}
+				}*/
 				var otherArm = 1 - arm;
 				var initialWait = 0;
 				if (armBusyUntil[arm] == time) {
 					var nextMove = moves.shift();
 					//armMoveTo[arm] gives the current location of the arm
-					var distanceToSource = Math.abs(armMoveTo[arm] - nextMove.fromIndex);
-					armMoveFrom[arm] = nextMove.fromIndex;
+					var distanceToSource : number = 0;
+					if (nextMove.fromIndex != null) {
+						 distanceToSource = Math.abs(armMoveTo[arm] - nextMove.fromIndex);
+						 armMoveFrom[arm] = nextMove.fromIndex;
+					} else {
+						//armMoveFrom already at correct value, since this can only happen for the
+						//first move, and the initial value has been set
+					}
+					
 					armMoveTo[arm] = nextMove.toIndex;
 					var distanceToTarget = Math.abs(armMoveTo[arm] - armMoveFrom[arm]);
 					
@@ -117,8 +134,9 @@ module Planner {
 						initialWait = Math.max(0, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
 					}
 					if (armMoveFrom[arm] == armMoveTo[otherArm] && !first) {
-						initialWait = Math.max(0, armBusyUntil[otherArm] - time + 1 - distanceToSource);
+						initialWait = Math.max(0, armBusyUntil[otherArm] - time + 1 - distanceToSource - distanceToTarget);
 					}
+					//this +2 is sligthly pessimistic (for initial/final move?)
 					armBusyUntil[arm] = time + initialWait + distanceToSource + distanceToTarget + 2;
 					armTimeOfPickup[arm] = time + initialWait + distanceToSource;
 					nextMove.initialWait = initialWait;
@@ -140,15 +158,16 @@ module Planner {
 			for(var i = 0; i < m.initialWait; i++) {
 				result.push("n");
 			}
-			var change = location < m.fromIndex ? 1 : -1;
-			var direction = location < m.fromIndex ? "r" : "l";
-			while(location != m.fromIndex) {
-				result.push(direction);
-				location += change;
+			if (m.fromIndex != null) {
+				var change = location < m.fromIndex ? 1 : -1;
+				var direction = location < m.fromIndex ? "r" : "l";
+				while(location != m.fromIndex) {
+					result.push(direction);
+					location += change;
+				}
+				result.push("p");
 			}
-			result.push("p");
-			
-			if (moves.length == 3) {
+			if (m.toIndex != null) {
 				change = location < m.toIndex ? 1 : -1;
 				direction = location < m.toIndex ? "r" : "l";
 				while (location != m.toIndex) {
@@ -319,7 +338,7 @@ module Planner {
 
 		
 		//This heurstic looks at all the literals of a conjunct and tries finds
-		//a lower bound for the cost of fulfilling all those literals. 
+		//a lower bound for the cost of fulfilling all those literals in total. 
 		//This should often work less well than focusOnOneConjunctHeuristic on
 		//goals with just one or a few literals. 
 		function combineAllConjunctsheuristic(state : WorldStateNode) : number {
@@ -860,14 +879,14 @@ module Planner {
 			var moves : Move[] = getMoves(nodeResult);
 			
 			var twoArmMoves : Move[][] = getTwoArmMoves(moves, startNode.arm, startNode.arm2);
-			/*console.log("arm 0 plan: ");
+			console.log("arm 0 plan: ");
 			for (var i = 0; i < twoArmMoves[0].length; i++) {
 				console.log(twoArmMoves[0][i]);
 			}
 			console.log("arm 1 plan: ");
 			for (var i = 0; i < twoArmMoves[1].length; i++) {
 				console.log(twoArmMoves[1][i]);
-			}*/
+			}
 			var planStrings : string[][] = [];
 			for (var i = 0; i < 2; i++) {
 				planStrings.push(getPlanStringsFromMoves(twoArmMoves[i], i?startNode.arm2:startNode.arm));
