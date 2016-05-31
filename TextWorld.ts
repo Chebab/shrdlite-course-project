@@ -100,49 +100,82 @@ class TextWorld implements World {
     // The basic actions: left, right, pick, drop
 
     private getAction(act : string) : (callback:()=>void) => void {
-        var actions : {[act:string] : (callback:()=>void) => void}
-            = {p:this.pick, d:this.drop, l:this.left, r:this.right};
-        return actions[act.toLowerCase()];
+        var actions : {[act:string] : (a: number) => void}
+            = {p:this.pick, d:this.drop, l:this.left, r:this.right, n: this.nullAction};
+		var actions2 : {[act:string] : (callback:()=>void) => void} = {};
+		
+		
+				
+		for (var a in actions) {
+			for (var a2 in actions) {
+				
+				actions2[a + a2] = function(str1: string, str2: string) : (callback: () => void) => void  {
+					return function(callback: () => void) {
+						actions[str1].call(this, 1);
+						actions[str2].call(this, 2);
+						
+						if (callback) callback();
+					}
+				}	(a, a2);
+			}
+		}
+        return actions2[act.toLowerCase()];
     }
 
-    private left(callback : () => void) : void {
-        if (this.currentState.arm <= 0) {
+	private nullAction(armNr : number) : void {
+		
+        return ;
+	}
+
+	
+    private left(armNr : number) : void {
+		
+		if ((armNr == 1 && this.currentState.arm <= 0) || (armNr == 2 && this.currentState.arm2 <= 0)) {
             throw "Already at left edge!";
         }
-        this.currentState.arm--;
-        callback();
+		if (armNr == 1) {
+			this.currentState.arm--;
+		} else {
+			this.currentState.arm2--;
+		}
     }
 
-    private right(callback : () => void) : void {
-        if (this.currentState.arm >= this.currentState.stacks.length - 1) {
+    private right(armNr : number) : void {
+		if ((armNr == 1 && this.currentState.arm >= this.currentState.stacks.length - 1) ||
+			 (armNr == 2 && this.currentState.arm2 >= this.currentState.stacks.length - 1)) {
             throw "Already at right edge!";
         }
-        this.currentState.arm++;
-        callback();
+		if (armNr == 1) {
+			this.currentState.arm++;
+		} else {
+			this.currentState.arm2++;
+		}
     }
-
-    private pick(callback: () => void) : void {
-        if (this.currentState.holding) {
-            throw "Already holding something!";
-        }
-        var stack = this.currentState.arm;
-        var pos = this.currentState.stacks[stack].length - 1;
-        if (pos < 0) {
-            throw "Stack is empty!";
-        }
-        this.currentState.holding = this.currentState.stacks[stack].pop();
-        callback();
-    }
-
-    private drop(callback: () => void) : void {
-        if (!this.currentState.holding) {
+	
+    private drop(armNr : number) : void {
+		if ((armNr == 1 && !this.currentState.holding) || (armNr == 2 && !this.currentState.holding2) ) {
             throw "Not holding anything!";
         }
-        var stack = this.currentState.arm;
-        this.currentState.stacks[stack].push(this.currentState.holding);
-        this.currentState.holding = null;
-        callback();
+        if (armNr == 1) {
+			this.currentState.stacks[this.currentState.arm].push(this.currentState.holding);
+			this.currentState.holding = null;
+		} else {
+			this.currentState.stacks[this.currentState.arm2].push(this.currentState.holding2);
+			this.currentState.holding2 = null;
+		}
     }
+
+    private pick(armNr : number) : void {
+		if ((armNr == 1 && this.currentState.holding) || (armNr == 2 && this.currentState.holding2)) {
+            throw "Already holding something!";
+        }
+		if (armNr == 1)  {
+			this.currentState.holding = this.currentState.stacks[this.currentState.arm].pop();
+		} else {
+			this.currentState.holding2 = this.currentState.stacks[this.currentState.arm2].pop();
+		}
+    }
+
 
     //////////////////////////////////////////////////////////////////////
     // Utilities
