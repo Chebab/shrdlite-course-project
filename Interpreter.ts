@@ -215,33 +215,46 @@ module Interpreter {
             }
             console.log("Source: "+sourceobj+" Target: "+targetobj);
             console.log("Sourcechecked: "+sourceChecked+" Targetchecked: "+targetChecked);
+
+            // Simple error check so that the combination generation hasn't
+            // gone wrong
             if(allCombinations.length < 1 ){
               throw new Error("NO combinations to evaluate.");
             }
-
-            var checkedElements: string[]; // Keep tack of
-            // Loop through all combinations and do different things depending
-            // on the quantifier
-
-            var startingElems : Literal[][] = [];
+            // Keep track of which quantifier is all
             var isAllsrc : boolean = sourceQuant == "all";
             var isAlltrgt : boolean = targetQuant == "all";
+
+
+            // The starting elements for finding all feasible combinations
+            // of literals. The methods used for this require a valid
+            // starting state to not generate all permutations
+            var startingElems : Literal[][] = [];
+            // Depending on which is all, find the starting elements
             for(var i = 0;i<allCombinations.length;i++){
               if(isAllsrc&&!isAlltrgt){
                 if(allCombinations[i].args[0]==sourceobj[0]){
+                  // if the source quantifier is all, add all combinations
+                  // containing the first source element to the starting list.
                   startingElems.push([allCombinations[i]]);
                 }
               }
               else if(!isAllsrc&&isAlltrgt){
+                // if the target quantifier is all, add all combinations
+                // containing the first target element to the starting list.
                 if(allCombinations[i].args[1]==targetobj[0]){
                   startingElems.push([allCombinations[i]]);
                 }
               }
               else {
+                // if both are all or none is all, just add the first element
+                // and move on
                 startingElems.push([allCombinations[i]]);
                 break;
               }
             }
+            // Find all possible feasible combinations from all of the possible
+            // combinations
             interpretation = findFeasibleCombinations(
               startingElems,
               allCombinations,
@@ -271,6 +284,22 @@ module Interpreter {
         }
         return interpretation;
     }
+
+    /**
+     * findFeasibleCombinations() is a recursive function that steadily expands
+     * disjunction of literals such that as many literals as possible are combined.
+     * Depending on which has the "all" quantifier the function goes through all
+     * of the IDs to check that all elements have been explored. When it has explored
+     * all, it returns the result. It uses the helper function feasibleCombination().
+     *
+     * @param combinations - Disjunctions between conjunctions which is expanded.
+     * @param allCombinations - All availible combinations which are to be explored
+     * @param isSourceAll - boolean tracking if the source element have the "all" quantifier
+     * @param isTargetAll - boolean tracking if the target element have the "all" quantifier
+     * @param sourceIDs - a list of IDs for the source elements
+     * @param targetIDs - a list of IDs for the target elements
+     * @param index - tracking which source or target element we have explored so far
+     */
     function findFeasibleCombinations(
       combinations : Literal[][],
       allCombinations : Literal[],
@@ -280,16 +309,23 @@ module Interpreter {
       targetIDs :string[],
       index : number
     ): Literal[][]{
+
       if(allCombinations.length < 1){
         throw new Error("No combinations to evaluate");
       }
 
-      var returnVal : Literal[][] = [];
+      var returnVal : Literal[][] = []; // The value to be returned
+
+      // if all or none of the quantifiers are all, do a normal evaluation in
+      // the helper function feasibleCombination
       if(isSourceAll && isTargetAll || !isSourceAll && !isTargetAll){
+        // Since it only needs to act on allCombinations, we don't care about the
+        // first parameter
         return feasibleCombination([],allCombinations,isSourceAll,isTargetAll);
       }
       else if(isSourceAll && !isTargetAll){
-        //console.log("index:"+index);
+
+        // if all of the sourceIDs have been explored, return the found combinations
         if(index > sourceIDs.length-1){
           return combinations;
         }
@@ -307,13 +343,6 @@ module Interpreter {
           newCombinations= newCombinations.concat(
             feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
           );
-        }
-        //console.log("Content of the newCombinations is:")
-        for(var i = 0; i<newCombinations.length;i++){
-          //console.log("newCombination["+i+"], length:" + newCombinations.length);
-          for(var j = 0; j<newCombinations[i].length;j++){
-            //console.log(stringifyLiteral(newCombinations[i][j]));
-          }
         }
         returnVal = findFeasibleCombinations(
           newCombinations,
@@ -344,13 +373,6 @@ module Interpreter {
             feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
           );
         }
-        //console.log("Content of the newCombinations is:")
-        for(var i = 0; i<newCombinations.length;i++){
-          console.log("newCombination["+i+"], length:" + newCombinations.length);
-          for(var j = 0; j<newCombinations[i].length;j++){
-            console.log(stringifyLiteral(newCombinations[i][j]));
-          }
-        }
         returnVal = findFeasibleCombinations(
           newCombinations,
           allCombinations,
@@ -373,7 +395,8 @@ module Interpreter {
       isTargetAll : boolean
     ): Literal[][] {
       if(allCombinations.length < 1){
-        throw new Error("allCombinations empty");
+        //throw new Error("allCombinations empty");
+        //return [];
       }
       var returnVal : Literal[][] = [];
       var srcIndent : string[] = [];
@@ -702,71 +725,74 @@ module Interpreter {
      * @returns If the relation between the object is possible, return true,
 				otherwise return false
      */
-    export function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
+     export function isPhysical(relation: string, sourceObj: ObjectDefinition, targetObj: ObjectDefinition): boolean {
 
-        // Switch statement to find out what rules apply
-        switch (relation) {
-            // If the relation is rightof, leftof or beside
-            case "rightof": case "leftof": case "beside":
-                // The floor can't be placed besides anything
-                // and nothing can be placed beside the floor
-                if (sourceObj.form == "floor" || targetObj.form == "floor") {
-                    return false;
-                }
-                return true;
-            // If the relation is inside
-            case "inside":
-                // Nothing can be placed inside the floor, and the floor cannot be
-                // placed inside anything
-                // Nothing bigger than the box can be placed inside of it and
-                // a pyramid, plank or box cannot be placed inside a box of the same size
-                if (sourceObj.form == "floor" || targetObj.form == "floor" ||
-                    targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
-                        ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
-                            targetObj.size == sourceObj.size))) {
-                    return false;
-                }
-                return true;
-            // If the relation is ontop
-            case "ontop":
-                // Nothing can be placed ontop of a pyramid? or a ball
-                // and balls cannot be placed ontop of tables, bricks and planks
-                // A small box cannot be placed ontop of a small brick
-                // The floor cannot be placed ontop of anything
-                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
-                    (sourceObj.form == "ball" && (targetObj.form == "table" ||
-                        targetObj.form == "brick" || targetObj.form == "plank")) ||
-                    targetObj.form == "box" ||
-                    (sourceObj.form == "box" && sourceObj.size == "small" &&
-                        targetObj.form == "brick" && targetObj.size == "small") ||
-                    sourceObj.form == "floor") {
-                    return false;
-                } else {
-                    return true;
-                }
-            // If the relation is above
-            case "above":
-                // A large object can never be placed above a small object
-                // The floor cannot be placed above anything
-                if (sourceObj.size == "large" && targetObj.size == "small" ||
-                    sourceObj.form == "floor") {
-                    return false;
-                }
-                return true;
-            // If the relation is below
-            case "below":
-                // Nothing can be placed below the floor, a ball or a pyramid
-                // Nothing that is small can be below anything that is big
-                if (targetObj.form == "floor" ||
-                    sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
-                    (sourceObj.size == "small" && targetObj.size == "large")) {
-                    return false;
-                }
-                return true;
-            default:
-                return false;
-        }
-    }
+         // Switch statement to find out what rules apply
+         switch (relation) {
+             // If the relation is rightof, leftof or beside
+             case "rightof": case "leftof": case "beside":
+                 // The floor can't be placed besides anything
+                 // and nothing can be placed beside the floor
+                 if (sourceObj.form == "floor" || targetObj.form == "floor") {
+                     return false;
+                 }
+                 return true;
+             // If the relation is inside
+             case "inside":
+                 // Nothing can be placed inside anything other than a box, and the floor cannot be
+                 // placed inside anything
+                 // Nothing bigger than the box can be placed inside of it and
+                 // a plank, pyramid or box cannot be placed inside a box of the same size
+                 if (sourceObj.form == "floor" || targetObj.form != "box" ||
+                     (targetObj.size == "small" && sourceObj.size == "large") ||
+                     ((sourceObj.form == "plank" || sourceObj.form == "pyramid" || sourceObj.form == "box") &&
+                         targetObj.size == sourceObj.size)) {
+                     return false;
+                 }
+                 return true;
+             // If the relation is ontop
+             case "ontop":
+                 // Small objects cannot support big objects
+                 // Nothing can be placed ontop of a ball
+                 // and balls cannot be placed ontop of tables, bricks and planks
+                 // A small box cannot be placed ontop of a small brick
+                 // The floor cannot be placed ontop of anything
+                 if ((sourceObj.size == "large" && targetObj.size == "small") ||
+                     targetObj.form == "ball" ||
+                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
+                         targetObj.form == "brick" || targetObj.form == "plank" || targetObj.form == "pyramid")) ||
+                     targetObj.form == "box" ||
+                     (sourceObj.form == "box" && sourceObj.size == "small" &&
+                         targetObj.form == "brick" && targetObj.size == "small") ||
+                     sourceObj.form == "floor") {
+                     return false;
+                 } else {
+                     return true;
+                 }
+             // If the relation is above
+             case "above":
+                 // A large object can never be placed above a small object
+                 // The floor cannot be placed above anything
+                 if (sourceObj.size == "large" && targetObj.size == "small" ||
+                     sourceObj.form == "floor") {
+                     return false;
+                 }
+                 return true;
+             // If the relation is below
+             case "under":
+
+                 // Nothing can be placed below the floor or a ball
+                 // Nothing that is small can be below anything that is big
+                 // Do not allow stuff like "put the floor under the table"
+                 if (sourceObj.form == "floor" || targetObj.form == "floor" || sourceObj.form == "ball" ||
+                     (sourceObj.size == "small" && targetObj.size == "large")) {
+                     return false;
+                 }
+                 return true;
+             default:
+                 return false;
+         }
+     }
 
     /**
     * Helper function that creates two ObjectDefinitions
@@ -814,14 +840,15 @@ module Interpreter {
         return [{ polarity, relation, args }];
     }
 }
-
-
-var result: Parser.ParseResult[] = Parser.parse("put any object under all tables");
+//var keys : number[][] = [[1],[2]];
+//console.log(keys.concat([]));
+var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["complex"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["medium"]);
 console.log(Interpreter.stringify(formula[0]));
+
 /*
 //console.log("First parse");
 //console.log(Parser.stringify(result[0]));
