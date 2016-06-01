@@ -1391,6 +1391,210 @@ module Interpreter {
             return false;
         }
     }
+    /**
+     * findFeasibleCombinations() is a recursive function that steadily expands
+     * disjunction of literals such that as many literals as possible are combined.
+     * Depending on which has the "all" quantifier the function goes through all
+     * of the IDs to check that all elements have been explored. When it has explored
+     * all, it returns the result. It uses the helper function feasibleCombination().
+     *
+     * @param combinations - Disjunctions between conjunctions which is expanded.
+     * @param allCombinations - All availible combinations which are to be explored
+     * @param isSourceAll - boolean tracking if the source element have the "all" quantifier
+     * @param isTargetAll - boolean tracking if the target element have the "all" quantifier
+     * @param sourceIDs - a list of IDs for the source elements
+     * @param targetIDs - a list of IDs for the target elements
+     * @param index - tracking which source or target element we have explored so far
+     */
+    function findFeasibleCombinations(
+      combinations : Literal[][],
+      allCombinations : Literal[],
+      isSourceAll : boolean,
+      isTargetAll : boolean,
+      sourceIDs :string[],
+      targetIDs :string[],
+      index : number
+    ): Literal[][]{
+
+      if(allCombinations.length < 1){
+        throw new Error("No combinations to evaluate");
+      }
+
+      var returnVal : Literal[][] = []; // The value to be returned
+
+      // if all or none of the quantifiers are all, do a normal evaluation in
+      // the helper function feasibleCombination
+      if(isSourceAll && isTargetAll || !isSourceAll && !isTargetAll){
+        // Since it only needs to act on allCombinations, we don't care about the
+        // first parameter
+        return feasibleCombination([],allCombinations,isSourceAll,isTargetAll);
+      }
+      else if(isSourceAll && !isTargetAll){
+
+        // if all of the sourceIDs have been explored, return the found combinations
+        if(index > sourceIDs.length-1){
+          return combinations;
+        }
+        // Find all of combinations where the source element is sourceIDs[index]
+        var partCombinations : Literal[] = [];
+        for(var i = 0;i<allCombinations.length;i++){
+          if(sourceIDs[index]==allCombinations[i].args[0]){
+            // When found, add them to the list
+              partCombinations.push(allCombinations[i]);
+
+          }
+        }
+
+        // For all of the input combinations, call the helper function feasibleCombination
+        // which finds all of the possible combinations you can pair with the one you currently
+        // have the ones in partCombinations
+        var newCombinations : Literal[][] = [];
+        for(var i = 0; i<combinations.length;i++){
+          newCombinations= newCombinations.concat(
+            feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
+          );
+        }
+        // Once found all possible combinations, do a recursive call with all of
+        // the new combinations
+        returnVal = findFeasibleCombinations(
+          newCombinations,
+          allCombinations,
+          isSourceAll,
+          isTargetAll,
+          sourceIDs,
+          targetIDs,
+          ++index //Make sure we explore the next source element
+        );
+      }
+
+      else{
+        // if all of the sourceIDs have been explored, return the found combinations
+        if(index > sourceIDs.length-1){
+          return combinations;
+        }
+        // Find all of combinations where the source element is sourceIDs[index]
+        var partCombinations : Literal[] = [];
+        for(var i = 0;i<allCombinations.length;i++){
+          if(targetIDs[index]==allCombinations[i].args[1]){
+            // When found, add them to the list
+              partCombinations.push(allCombinations[i]);
+          }
+        }
+        // For all of the input combinations, call the helper function feasibleCombination
+        // which finds all of the possible combinations you can pair with the one you currently
+        // have the ones in partCombinations
+        var newCombinations : Literal[][] = [];
+        for(var i = 0; i<combinations.length;i++){
+          newCombinations= newCombinations.concat(
+            feasibleCombination(combinations[i],partCombinations,isSourceAll,isTargetAll)
+          );
+        }
+        // Once found all possible combinations, do a recursive call with all of
+        // the new combinations
+        returnVal = findFeasibleCombinations(
+          newCombinations,
+          allCombinations,
+          isSourceAll,
+          isTargetAll,
+          sourceIDs,
+          targetIDs,
+          ++index
+        );
+      }
+
+      return returnVal;
+    }
+
+    /**
+     * feasibleCombination() takes a list of conjunctions(@param combination) and
+     * a list of combinations(@allCombinations) and creates all of the possible
+     * combinations which can be made with any one of the combinations. The
+     * returned value is a list of disjunctions where each elements
+     * is a conjunction containting @param combination and another element from
+     * @param allCombinations.
+     *
+     * @param combination - The current conjunction which is the base to compare against
+     * @param allCombinations - All availible combinations which are to be explored
+     * @param isSourceAll - boolean tracking if the source element have the "all" quantifier
+     * @param isTargetAll - boolean tracking if the target element have the "all" quantifier
+     */
+    function feasibleCombination(
+      combination : Literal[],
+      allCombinations : Literal[],
+      isSourceAll : boolean,
+      isTargetAll : boolean
+    ): Literal[][] {
+      // The return value
+      var returnVal : Literal[][] = [];
+      // List for keeping track of what elements are already in the combination
+      var srcIndent : string[] = [];
+      var trgtIndent : string[]= [];
+      // Find all of these elements
+      for(var i = 0; i<combination.length;i++){
+        srcIndent.push(combination[i].args[0]);
+        trgtIndent.push(combination[i].args[1]);
+      }
+
+      // See if any of the elements in allCombinations can be paired with the current
+      // combination. If so, add it to the list of return values.
+      for(var i = 0;i<allCombinations.length;i++){
+        // Current literal being evaluated
+        var comb : Literal = allCombinations[i];
+        // Booleans for knowing if the source or target element is already mentioned
+        // in the current combination
+        var sourceElemExists: boolean = srcIndent.indexOf(comb.args[0]) >= 0;
+        var targetElemExists: boolean = trgtIndent.indexOf(comb.args[1]) >= 0;
+        // Special cases apply if the target is the floor. Find this out here.
+        var isTargetFloor : boolean = comb.args[1]=="floor";
+
+        // if both of the quantifiers were all simply make one big conjunction
+        if(isSourceAll && isTargetAll){
+          if(returnVal.length < 1){
+            returnVal.push([comb]);
+          }
+          else{
+            returnVal[0].push(comb);
+          }
+        }
+        // if both of the quantifiers are not all, make one big disjunction
+        else if(!isSourceAll && !isTargetAll){
+          returnVal.push([comb]);
+        }
+        // It is now known that one of the quantifiers are all. Do special treatment
+        // for if the relation is inside or ontop since only one element can be
+        // inside or ontop at a given point.
+        else if(combination[0].relation=="inside"||combination[0].relation=="ontop"){
+
+          // if the elements are not already in the combination (with exeption
+          // of the floor) add the conjunction to the return list.
+          if(!sourceElemExists && (!targetElemExists||isTargetFloor)){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+        // Check if the source has the all quantifier
+        else if (isSourceAll && !isTargetAll){
+
+          // check that the element is not already explored in the all list
+          if(!sourceElemExists){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+        // Check if the target has the all quantifier
+        else if (!isSourceAll && isTargetAll){
+
+          // check that the element is not already explored in the all list
+          if(!targetElemExists){
+            returnVal.push(combination.concat([comb]));
+          }
+        }
+      }
+      // if no combinations could be added to the current combination, just returnVal
+      // the starting combination.
+      if(returnVal.length < 1){
+        returnVal = [combination];
+      }
+      return returnVal;
+    }
 }
 var world : string = "medium";
 var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
