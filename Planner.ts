@@ -94,7 +94,7 @@ module Planner {
 		function goalIsReached(state : WorldStateNode) : boolean {
 			//A dictionary of positions, given string id:s of objects
 
-			var positions = Heuristics.getPositions(state);
+			var positions = PlannerHelpers.getPositions(state);
 			//For the goal to be reached...
 			for (var conjunct of interpretation) {
 				var goalReached : boolean = true;
@@ -127,8 +127,6 @@ module Planner {
 			return false;
 		}
 		
-		
-
 		//Return value
 		var plan : string[] = [];
 		
@@ -154,6 +152,7 @@ module Planner {
 		//set up heuristics
 		Heuristics.penaltyPerLiteral = 0;
 		Heuristics.interpretation = interpretation;
+		//Try to find a solution with or without cheating
 		for(var i = 0; i < attemptStrings.length + 1; i++ ) {
 			try {
 				

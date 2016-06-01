@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
+///<reference path="PlannerHelpers.ts"/>
 
 module Heuristics {
 
@@ -144,11 +145,14 @@ module Heuristics {
 		//The result of this heuristic is the minimum of the estimated costs for fulfilling each conjunct. 
 		var bestConjunctVal : number = 1000000000;
 		//A dictionary from string id:s of objects to positions in the world
-		var positions = getPositions(state);
+		var positions = PlannerHelpers.getPositions(state);
 		//A measure of minimum distance to travel between items
 		var minMoveDistance : number = 0;
 		//A measure of distance from arm to an item
 		var closestDistFromArm : number = 1000000;
+		if (interpretation == null) {
+			throw  "You forgot to set Heuristics.interpretation";
+		}
 		for (var conjunct of interpretation) {
 			//added to for each unfulfilled literal (if penaltyPerLiteral != 0)
 			var penalty = 0; 
@@ -283,8 +287,11 @@ module Heuristics {
 		var longest : number = 0;
 		var current : number = 0;
 		//A dictionary from string id:s of objects to positions in the world
-		var positions = getPositions(state);
+		var positions = PlannerHelpers.getPositions(state);
 		//Find the minimum heuristic of any conjunctive expression
+		if (interpretation == null) {
+			throw "You forgot to set Heuristics.interpretation";
+		}
 		for (var conjunct of interpretation) {
 			//heuristic is given by the min of max of of the heuristics 
 			//to satisfy each of the literals. 
@@ -494,27 +501,5 @@ module Heuristics {
 		
 	}
 
-	export function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
-		var positions: collections.Dictionary<string, number[]>
-			= new collections.Dictionary<string, number[]>();
 
-
-		// Add all of the states and their position to the Map
-		for (var i = 0; i < state.stacks.length; i++) {
-			for (var j = 0; j < state.stacks[i].length; j++) {
-				positions.setValue(state.stacks[i][j], [i, j]);
-			}
-		}
-
-		if (state.holding != null) {
-			// If the arm is holding an object, add that object to the state
-			// The position [-2,-2] is used for finding the held object
-			positions.setValue(state.holding, [-2, -2]);
-		}
-
-		//The first element in the position is used to indentify
-		// the floor. The second element is the actual position of the floor§
-		positions.setValue("floor", [-1, -1]);
-		return positions;
-	}
 }

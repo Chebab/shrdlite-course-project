@@ -226,4 +226,27 @@ module PlannerHelpers {
 		
 		return result;
 	}
+		export function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
+		var positions: collections.Dictionary<string, number[]>
+			= new collections.Dictionary<string, number[]>();
+
+
+		// Add all of the states and their position to the Map
+		for (var i = 0; i < state.stacks.length; i++) {
+			for (var j = 0; j < state.stacks[i].length; j++) {
+				positions.setValue(state.stacks[i][j], [i, j]);
+			}
+		}
+
+		if (state.holding != null) {
+			// If the arm is holding an object, add that object to the state
+			// The position [-2,-2] is used for finding the held object
+			positions.setValue(state.holding, [-2, -2]);
+		}
+
+		//The first element in the position is used to indentify
+		// the floor. The second element is the actual position of the floor§
+		positions.setValue("floor", [-1, -1]);
+		return positions;
+	}
 }
