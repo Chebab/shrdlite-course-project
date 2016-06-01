@@ -170,8 +170,6 @@ var Interpreter;
         return returnVal;
     }
     function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
-        if (allCombinations.length < 1) {
-        }
         var returnVal = [];
         var srcIndent = [];
         var trgtIndent = [];
