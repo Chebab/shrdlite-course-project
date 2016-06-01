@@ -94,10 +94,9 @@ var Interpreter;
             if (allCombinations.length < 1) {
                 throw new Error("NO combinations to evaluate.");
             }
-            var checkedElements;
-            var startingElems = [];
             var isAllsrc = sourceQuant == "all";
             var isAlltrgt = targetQuant == "all";
+            var startingElems = [];
             for (var i = 0; i < allCombinations.length; i++) {
                 if (isAllsrc && !isAlltrgt) {
                     if (allCombinations[i].args[0] == sourceobj[0]) {
@@ -150,10 +149,6 @@ var Interpreter;
             for (var i = 0; i < combinations.length; i++) {
                 newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
             }
-            for (var i = 0; i < newCombinations.length; i++) {
-                for (var j = 0; j < newCombinations[i].length; j++) {
-                }
-            }
             returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         else {
@@ -170,19 +165,12 @@ var Interpreter;
             for (var i = 0; i < combinations.length; i++) {
                 newCombinations = newCombinations.concat(feasibleCombination(combinations[i], partCombinations, isSourceAll, isTargetAll));
             }
-            for (var i = 0; i < newCombinations.length; i++) {
-                console.log("newCombination[" + i + "], length:" + newCombinations.length);
-                for (var j = 0; j < newCombinations[i].length; j++) {
-                    console.log(stringifyLiteral(newCombinations[i][j]));
-                }
-            }
             returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         return returnVal;
     }
     function feasibleCombination(combination, allCombinations, isSourceAll, isTargetAll) {
         if (allCombinations.length < 1) {
-            throw new Error("allCombinations empty");
         }
         var returnVal = [];
         var srcIndent = [];
@@ -373,17 +361,18 @@ var Interpreter;
                 }
                 return true;
             case "inside":
-                if (sourceObj.form == "floor" || targetObj.form == "floor" ||
-                    targetObj.form == "box" && (targetObj.size == "small" && sourceObj.size == "large" ||
-                        ((sourceObj.form == "pyramid" || sourceObj.form == "plank" || sourceObj.form == "box") &&
-                            targetObj.size == sourceObj.size))) {
+                if (sourceObj.form == "floor" || targetObj.form != "box" ||
+                    (targetObj.size == "small" && sourceObj.size == "large") ||
+                    ((sourceObj.form == "plank" || sourceObj.form == "pyramid" || sourceObj.form == "box") &&
+                        targetObj.size == sourceObj.size)) {
                     return false;
                 }
                 return true;
             case "ontop":
-                if (targetObj.form == "pyramid" || targetObj.form == "ball" ||
+                if ((sourceObj.size == "large" && targetObj.size == "small") ||
+                    targetObj.form == "ball" ||
                     (sourceObj.form == "ball" && (targetObj.form == "table" ||
-                        targetObj.form == "brick" || targetObj.form == "plank")) ||
+                        targetObj.form == "brick" || targetObj.form == "plank" || targetObj.form == "pyramid")) ||
                     targetObj.form == "box" ||
                     (sourceObj.form == "box" && sourceObj.size == "small" &&
                         targetObj.form == "brick" && targetObj.size == "small") ||
@@ -399,9 +388,8 @@ var Interpreter;
                     return false;
                 }
                 return true;
-            case "below":
-                if (targetObj.form == "floor" ||
-                    sourceObj.form == "ball" || sourceObj.form == "pyramid" ||
+            case "under":
+                if (sourceObj.form == "floor" || targetObj.form == "floor" || sourceObj.form == "ball" ||
                     (sourceObj.size == "small" && targetObj.size == "large")) {
                     return false;
                 }
@@ -434,7 +422,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put any object under all tables");
+var result = Parser.parse("put all balls inside a box");
 console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["complex"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["medium"]);
 console.log(Interpreter.stringify(formula[0]));
