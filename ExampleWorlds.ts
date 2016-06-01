@@ -1,7 +1,5 @@
 ///<reference path="World.ts"/>
-
 var ExampleWorlds : {[s:string]: WorldState} = {};
-
 
 ExampleWorlds["complex"] = {
     "stacks": [["e"],["a","l"],["i","h","j"],["c","k","g","b"],["d","m","f"]],
@@ -23,6 +21,7 @@ ExampleWorlds["complex"] = {
         "m": { "form":"box",     "size":"small",  "color":"blue"  }
     },
     "examples": [
+		"put all planks left of all balls",
         "put a box in a box",
         "put all balls on the floor",
         "take the yellow box",
@@ -69,18 +68,18 @@ ExampleWorlds["medium"] = {
         "put all boxes on the floor",
         "put the large plank under the blue brick",
         "move all bricks on a table",
-        "move all balls inside a large box"
+        "move all balls inside a large box",
+		"move the green plank beside the yellow pyramid"
     ]
 };
 
 
 ExampleWorlds["small"] = {
-    "stacks": [["e"],["g","l"],[],["k","m","f"],[]],
+    "stacks": [["e"],["g","l"],[],["k","m","f"],["b"]],
     "holding": "a",
     "arm": 0,
     "objects": {
         "a": { "form":"brick",   "size":"large",  "color":"green" },
-        "b": { "form":"brick",   "size":"small",  "color":"white" },
         "c": { "form":"plank",   "size":"large",  "color":"red"   },
         "d": { "form":"plank",   "size":"small",  "color":"green" },
         "e": { "form":"ball",    "size":"large",  "color":"white" },
@@ -91,9 +90,12 @@ ExampleWorlds["small"] = {
         "j": { "form":"pyramid", "size":"small",  "color":"red"   },
         "k": { "form":"box",     "size":"large",  "color":"yellow"},
         "l": { "form":"box",     "size":"large",  "color":"red"   },
-        "m": { "form":"box",     "size":"small",  "color":"blue"  }
+		"b": { "form":"box",     "size":"small",  "color":"yellow"},
+        "m": { "form":"box",     "size":"small",  "color":"red"  }
     },
     "examples": [
+		"put all balls beside all boxes",
+		"put a ball in every large box",
         "put the white ball in a box on the floor",
         "put the black ball in a box on the floor",
         "take a blue object",

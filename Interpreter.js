@@ -89,25 +89,30 @@ var Interpreter;
                     }
                 }
             }
+            if (allCombinations.length < 1) {
+                throw new Error("NO combinations to evaluate.");
+            }
             var checkedElements;
-            console.log("starting calculations");
-            var temp = [[allCombinations[0]], [allCombinations[2]]];
-            for (var i = 0; i < temp.length; i++) {
-                for (var j = 0; j < temp[i].length; j++) {
-                    console.log(stringifyLiteral(temp[i][j]));
+            var startingElems = [];
+            var isAllsrc = sourceQuant == "all";
+            var isAlltrgt = targetQuant == "all";
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (isAllsrc && !isAlltrgt) {
+                    if (allCombinations[i].args[0] == sourceobj[0]) {
+                        startingElems.push([allCombinations[i]]);
+                    }
+                }
+                else if (!isAllsrc && isAlltrgt) {
+                    if (allCombinations[i].args[1] == targetobj[0]) {
+                        startingElems.push([allCombinations[i]]);
+                    }
+                }
+                else {
+                    startingElems.push([allCombinations[i]]);
+                    break;
                 }
             }
-            console.log("----------------------");
-            var interptemp = findFeasibleCombinations1(temp, allCombinations, sourceQuant == "all", targetQuant == "all", sourceChecked, targetChecked, 0);
-            console.log("new interp, length:" + interptemp.length);
-            for (var i = 0; i < interptemp.length; i++) {
-                console.log("new interp[" + i + "], length:" + interptemp.length);
-                for (var j = 0; j < interptemp[i].length; j++) {
-                    console.log(stringifyLiteral(interptemp[i][j]));
-                }
-            }
-            console.log("----------------------");
-            interpretation = interptemp;
+            interpretation = findFeasibleCombinations(startingElems, allCombinations, isAllsrc, isAlltrgt, sourceChecked, targetChecked, 0);
         }
         else if (cmd.command == "take") {
             for (var i = 0; i < sourceobj.length; i++) {
@@ -121,26 +126,7 @@ var Interpreter;
         }
         return interpretation;
     }
-    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll) {
-        var returnVal = [];
-        if (allCombinations.length < 1) {
-            return combinations;
-        }
-        var isDone = true;
-        for (var i = 0; i < combinations.length; i++) {
-            var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
-            var unchanged = res.length == 1 && res[0].length == combinations[i].length;
-            if (res == null) {
-            }
-            isDone = isDone && unchanged;
-            var returnVal = returnVal.concat(res);
-        }
-        if (!isDone) {
-            returnVal = findFeasibleCombinations(returnVal, allCombinations, isSourceAll, isTargetAll);
-        }
-        return returnVal;
-    }
-    function findFeasibleCombinations1(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
+    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
         if (allCombinations.length < 1) {
             throw new Error("No combinations to evaluate");
         }
@@ -166,7 +152,7 @@ var Interpreter;
                 for (var j = 0; j < newCombinations[i].length; j++) {
                 }
             }
-            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+            returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         else {
             if (index > sourceIDs.length - 1) {
@@ -188,7 +174,7 @@ var Interpreter;
                     console.log(stringifyLiteral(newCombinations[i][j]));
                 }
             }
-            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+            returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         return returnVal;
     }
@@ -207,6 +193,7 @@ var Interpreter;
             var comb = allCombinations[i];
             var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
             var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
+            var isTargetFloor = comb.args[1] == "floor";
             if (isSourceAll && isTargetAll) {
                 if (returnVal.length < 1) {
                     returnVal.push([comb]);
@@ -219,7 +206,7 @@ var Interpreter;
                 returnVal.push([comb]);
             }
             else if (combination[0].relation == "inside" || combination[0].relation == "ontop") {
-                if (!sourceElemExists && !targetElemExists) {
+                if (!sourceElemExists && (!targetElemExists || isTargetFloor)) {
                     returnVal.push(combination.concat([comb]));
                 }
             }
@@ -445,7 +432,7 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put a ball in every large box");
+var result = Parser.parse("put any object under all tables");
 console.log(Parser.stringify(result[0]));
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["complex"]);
 console.log(Interpreter.stringify(formula[0]));

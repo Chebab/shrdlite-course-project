@@ -79,6 +79,7 @@ ExampleWorlds["complex"] = {
         "m": { "form": "box", "size": "small", "color": "blue" }
     },
     "examples": [
+        "put all planks left of all balls",
         "put a box in a box",
         "put all balls on the floor",
         "take the yellow box",
@@ -123,16 +124,16 @@ ExampleWorlds["medium"] = {
         "put all boxes on the floor",
         "put the large plank under the blue brick",
         "move all bricks on a table",
-        "move all balls inside a large box"
+        "move all balls inside a large box",
+        "move the green plank beside the yellow pyramid"
     ]
 };
 ExampleWorlds["small"] = {
-    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
+    "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], ["b"]],
     "holding": "a",
     "arm": 0,
     "objects": {
         "a": { "form": "brick", "size": "large", "color": "green" },
-        "b": { "form": "brick", "size": "small", "color": "white" },
         "c": { "form": "plank", "size": "large", "color": "red" },
         "d": { "form": "plank", "size": "small", "color": "green" },
         "e": { "form": "ball", "size": "large", "color": "white" },
@@ -143,9 +144,12 @@ ExampleWorlds["small"] = {
         "j": { "form": "pyramid", "size": "small", "color": "red" },
         "k": { "form": "box", "size": "large", "color": "yellow" },
         "l": { "form": "box", "size": "large", "color": "red" },
-        "m": { "form": "box", "size": "small", "color": "blue" }
+        "b": { "form": "box", "size": "small", "color": "yellow" },
+        "m": { "form": "box", "size": "small", "color": "red" }
     },
     "examples": [
+        "put all balls beside all boxes",
+        "put a ball in every large box",
         "put the white ball in a box on the floor",
         "put the black ball in a box on the floor",
         "take a blue object",
@@ -200,7 +204,7 @@ ExampleWorlds["example"] = {
         "put the white ball in a box on the floor"
     ]
 };
-*/
+*/ 
 // Copyright 2013 Basarat Ali Syed. All Rights Reserved.
 //
 // Licensed under MIT open source license http://opensource.org/licenses/MIT
@@ -2875,30 +2879,32 @@ var Interpreter;
                     }
                 }
             }
-            ////console.log("sourceChecked:"+sourceChecked);
-            ////console.log("targetChecked:"+targetChecked);
+            if (allCombinations.length < 1) {
+                throw new Error("NO combinations to evaluate.");
+            }
             var checkedElements; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
-            console.log("starting calculations");
-            var temp = [[allCombinations[0]], [allCombinations[2]]];
-            for (var i = 0; i < temp.length; i++) {
-                //temp.push([allCombinations[i]]);
-                for (var j = 0; j < temp[i].length; j++) {
-                    console.log(stringifyLiteral(temp[i][j]));
+            var startingElems = [];
+            var isAllsrc = sourceQuant == "all";
+            var isAlltrgt = targetQuant == "all";
+            for (var i = 0; i < allCombinations.length; i++) {
+                if (isAllsrc && !isAlltrgt) {
+                    if (allCombinations[i].args[0] == sourceobj[0]) {
+                        startingElems.push([allCombinations[i]]);
+                    }
+                }
+                else if (!isAllsrc && isAlltrgt) {
+                    if (allCombinations[i].args[1] == targetobj[0]) {
+                        startingElems.push([allCombinations[i]]);
+                    }
+                }
+                else {
+                    startingElems.push([allCombinations[i]]);
+                    break;
                 }
             }
-            console.log("----------------------");
-            var interptemp = findFeasibleCombinations1(temp, allCombinations, sourceQuant == "all", targetQuant == "all", sourceChecked, targetChecked, 0);
-            console.log("new interp, length:" + interptemp.length);
-            for (var i = 0; i < interptemp.length; i++) {
-                console.log("new interp[" + i + "], length:" + interptemp.length);
-                for (var j = 0; j < interptemp[i].length; j++) {
-                    console.log(stringifyLiteral(interptemp[i][j]));
-                }
-            }
-            console.log("----------------------");
-            interpretation = interptemp;
+            interpretation = findFeasibleCombinations(startingElems, allCombinations, isAllsrc, isAlltrgt, sourceChecked, targetChecked, 0);
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
@@ -2917,26 +2923,7 @@ var Interpreter;
         }
         return interpretation;
     }
-    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll) {
-        var returnVal = [];
-        if (allCombinations.length < 1) {
-            return combinations;
-        }
-        var isDone = true;
-        for (var i = 0; i < combinations.length; i++) {
-            var res = feasibleCombination(combinations[i], allCombinations, isSourceAll, isTargetAll);
-            var unchanged = res.length == 1 && res[0].length == combinations[i].length;
-            if (res == null) {
-            }
-            isDone = isDone && unchanged;
-            var returnVal = returnVal.concat(res);
-        }
-        if (!isDone) {
-            returnVal = findFeasibleCombinations(returnVal, allCombinations, isSourceAll, isTargetAll);
-        }
-        return returnVal;
-    }
-    function findFeasibleCombinations1(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
+    function findFeasibleCombinations(combinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, index) {
         if (allCombinations.length < 1) {
             throw new Error("No combinations to evaluate");
         }
@@ -2967,7 +2954,7 @@ var Interpreter;
                 for (var j = 0; j < newCombinations[i].length; j++) {
                 }
             }
-            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+            returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         else {
             if (index > sourceIDs.length - 1) {
@@ -2991,7 +2978,7 @@ var Interpreter;
                     console.log(stringifyLiteral(newCombinations[i][j]));
                 }
             }
-            returnVal = findFeasibleCombinations1(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
+            returnVal = findFeasibleCombinations(newCombinations, allCombinations, isSourceAll, isTargetAll, sourceIDs, targetIDs, ++index);
         }
         return returnVal;
     }
@@ -3011,6 +2998,7 @@ var Interpreter;
             var comb = allCombinations[i];
             var sourceElemExists = srcIndent.indexOf(comb.args[0]) >= 0;
             var targetElemExists = trgtIndent.indexOf(comb.args[1]) >= 0;
+            var isTargetFloor = comb.args[1] == "floor";
             if (isSourceAll && isTargetAll) {
                 if (returnVal.length < 1) {
                     returnVal.push([comb]);
@@ -3023,12 +3011,7 @@ var Interpreter;
                 returnVal.push([comb]);
             }
             else if (combination[0].relation == "inside" || combination[0].relation == "ontop") {
-                ////console.log("Inside entered")
-                ////console.log("srcIndent:"+srcIndent);
-                ////console.log("trgtIndent:"+trgtIndent);
-                ////console.log("Unpushed Literal: "+stringifyLiteral(comb));
-                if (!sourceElemExists && !targetElemExists) {
-                    ////console.log("Pushed to return, literal: "+stringifyLiteral(comb));
+                if (!sourceElemExists && (!targetElemExists || isTargetFloor)) {
                     returnVal.push(combination.concat([comb]));
                 }
             }
@@ -3382,10 +3365,10 @@ var Interpreter;
         return [{ polarity: polarity, relation: relation, args: args }];
     }
 })(Interpreter || (Interpreter = {}));
-var result = Parser.parse("put a ball in every large box");
+var result = Parser.parse("put any object under all tables");
 console.log(Parser.stringify(result[0]));
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula = Interpreter.interpret(result, ExampleWorlds["complex"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 //console.log("First parse");
