@@ -228,115 +228,54 @@ module Interpreter {
                     }
                 }
             }
-
-            var checkedElements: string[]; // Keep tack of the explored elements
-            // Loop through all combinations and do different things depending
-            // on the quantifier
-            for (var i = 0; i < allCombinations.length; i++) {
-                // Initialize the checkedElements list
-                checkedElements = [];
-                console.log("cComb:"+stringifyLiteral(allCombinations[i]));
-                // Fetch the current combination
-                var cComb: Literal = allCombinations[i];
-
-                var isAllsrc: boolean = sourceQuant == "all";
-                var isAlltrgt: boolean = targetQuant == "all";
-
-                if (!isAllsrc && !isAlltrgt) {
-                    // if none of the quantifiers are all, any combination of
-                    // the elements are a valid goal
-                    interpretation.push([cComb]);
-                }
-                else if ((!isAllsrc && isAlltrgt) ||
-                    (isAllsrc && !isAlltrgt)) {
-                    // if either of source or target quantifiers specify
-                    // all, do the following
-
-                    var conjunctions: Literal[] = []; // Conjunctions to be added
-
-                    // Add the current combination to the conjunctions list and
-                    // add the indentifiers of the elements to the list of checkedElements.
-                    conjunctions.push(cComb);
-                    checkedElements.push(cComb.args[0]);
-                    checkedElements.push(cComb.args[1]);
-
-                    // Check for each combination if it is valid for different conjunctions.
-                    // if it is, add it
-                    for (var j = i + 1; j < allCombinations.length; j++) {
-                        // The element we are currently looking at
-                        var nComb: Literal = allCombinations[j];
-
-                        // Check if any of the elements have already been explored in
-                        // the conjunctions
-                        var sourceElemExists: boolean = checkedElements.indexOf(nComb.args[0]) >= 0;
-                        var targetElemExists: boolean = checkedElements.indexOf(nComb.args[1]) >= 0;
-
-
-                        if (cmd.location.relation == "inside" || cmd.location.relation == "ontop") {
-                            // Only one element can be inside or ontop of another,
-                            // therefor this check exists
-                            if (!targetElemExists && !sourceElemExists || nComb.args[1] == "floor") {
-                                // If none of the elements have been explored, or if the
-                                // target is the floor, add i to the conjunction
-                                conjunctions.push(nComb);
-
-                                // Mark the elements explored
-                                checkedElements.push(nComb.args[0]);
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                        // If the relation is not inside or ontop, check which
-                        // has the all quantifier
-                        else if (isAllsrc) {
-                            if (!sourceElemExists) {
-                                // Since the all quantifier is on the source,
-                                // make sure that is not already explored
-                                conjunctions.push(nComb);
-                                //Mark the element explored
-                                checkedElements.push(nComb.args[0]);
-
-                            }
-
-                        }
-                        else if (isAlltrgt) {
-                            if (!targetElemExists) {
-                                // Since the all quantifier is on the target,
-                                // make sure that is not already explored
-                                conjunctions.push(nComb);
-                                // Mark the element is explored
-                                checkedElements.push(nComb.args[1]);
-                            }
-                        }
-                    }
-
-                    var qualified: string[];
-                    if (isAllsrc) {
-                        qualified = sourceChecked;
-                    }
-                    else {
-                        qualified = targetChecked;
-                    }
-                    //console.log("qualified:" + qualified);
-                    //console.log("checkedElements:" + checkedElements);
-                    // Make sure that the elements of the all quantifier have
-                    // all been explored. If it has, then push the conjunctions
-                    if (qualified.every(function(val) { return checkedElements.indexOf(val) >= 0 })) {
-
-                        interpretation.push(conjunctions);
-                    }
-                }
-
-                else if (isAllsrc && isAlltrgt) {
-                    // If both are all
-                    if (interpretation.length == 0) {
-                        interpretation.push([cComb]);
-                    }
-                    else {
-                        interpretation[0].push(cComb);
-                    }
-                }
-
+            // Simple error check so that the combination generation hasn't
+            // gone wrong
+            if(allCombinations.length < 1 ){
+              throw new Error("NO combinations to evaluate.");
             }
+            // Keep track of which quantifier is all
+            var isAllsrc : boolean = sourceQuant == "all";
+            var isAlltrgt : boolean = targetQuant == "all";
+
+
+            // The starting elements for finding all feasible combinations
+            // of literals. The methods used for this require a valid
+            // starting state to not generate all permutations
+            var startingElems : Literal[][] = [];
+            // Depending on which is all, find the starting elements
+            for(var i = 0;i<allCombinations.length;i++){
+              if(isAllsrc&&!isAlltrgt){
+                if(allCombinations[i].args[0]==sourceobj[0]){
+                  // if the source quantifier is all, add all combinations
+                  // containing the first source element to the starting list.
+                  startingElems.push([allCombinations[i]]);
+                }
+              }
+              else if(!isAllsrc&&isAlltrgt){
+                // if the target quantifier is all, add all combinations
+                // containing the first target element to the starting list.
+                if(allCombinations[i].args[1]==targetobj[0]){
+                  startingElems.push([allCombinations[i]]);
+                }
+              }
+              else {
+                // if both are all or none is all, just add the first element
+                // and move on
+                startingElems.push([allCombinations[i]]);
+                break;
+              }
+            }
+            // Find all possible feasible combinations from all of the possible
+            // combinations
+            interpretation = findFeasibleCombinations(
+              startingElems,
+              allCombinations,
+              isAllsrc,
+              isAlltrgt,
+              sourceChecked,
+              targetChecked,
+              0
+            );
         }
         else if (cmd.command == "take") {
             // Since the command is take, there is no need for checking the target
