@@ -17,6 +17,10 @@ module Heuristics {
 	//goals with just one or a few literals. 
 	export function combineAllConjunctsheuristic(state : WorldStateNode) : number {
 		//Private helper functions
+		
+		//Check whether no item has already been counted as moved between either of 
+		//the two stacks mentioned by the literal. If not so, count the distance
+		//between the stacks, and record that we have moved an item between the stacks
 		function filterMoveNeeded(moved : string[], literal : Interpreter.Literal, distance : number) : number { 
 			if (moved.indexOf(literal.args[0]) == -1 &&
 				moved.indexOf(literal.args[1]) == -1) {
@@ -29,24 +33,28 @@ module Heuristics {
 			}
 		}
 
+		//Given an array of lists of numbers (connections) signifying which items (and their position data)
+		//are mentioned in the same literal, find out a lower bound for each column for how many items 
+		//need to be removed in these columns, where prior values for these lower bounds may already be known. 
+		//Also find a lower bound for the distance the arm needs to travel between the columns where 
+		//items need to be removed
 		function updateDigDepthsFromConnections(minDigDepths : number[], connections : number[][]) : number[] {
 			
 			var moveDistance : number = 0;
 			var closestArmDistance : number = 0;
 			while (connections.length > 0) {
 				
-				//Find deepest pair
+				//Find deepest pair mentioned in one literal
 				var deepest : number [] = [];
 				var deepestValue : number = 0;
 				var xcoord : number;
 				var depth : number;
 				//Look for the deepest pair of items (the item with the largest minimum depth)
 				//after accounting for stuff that has already been removed to deal with 
-				//above/under/ontop/inside - literals. 
+				//above/under/ontop/inside - literals, and prior iterations of this loop. 
 				//A connection is an array of the form [x1, y1, depth1, x2, y2, depth2, z] where z
 				//is -1 if this comes from a beside-literal and 1 if it is a leftof/rightof-literal
-				//corresponding to a literal with leftof/rightof as the relation
-				//console.log("entering loop ---------------");
+				
 				//This should maybe be expressed as       if (connections.length > 0){ while (true) {...
 				for (var c of connections) {
 					var depth1 : number = Math.max(c[2] - minDigDepths[c[0]],0);
@@ -68,7 +76,7 @@ module Heuristics {
 						xcoord = xcoordtemp;
 					}
 				}
-				//Break when no new literal can be found, under the ones already accounted for. 
+				//Break when no new literal can be found, with shallowest item under the ones already accounted for. 
 				if (deepest.length == 0) {
 					break;
 				}
@@ -83,6 +91,7 @@ module Heuristics {
 				}
 				else {
 					//exactly one of objects is in hand
+					//TODO: this looks fishy
 					closestArmDistance = Math.abs(state.arm - Math.max(deepest[0],deepest[3]));
 				}
 				
@@ -90,6 +99,9 @@ module Heuristics {
 			return [moveDistance, closestArmDistance];
 		}
 		
+		//Given how many items need to be removed in each stack, how many items need to be placed on the floor
+		//the minimum distance the arm needs to travel, the distance to the closest item from the arm, 
+		//a penalty for unfulfilled literals, and a world state, calculate the heuristic
 		function sumUpAllCostFactors(minDigDepths : number[], toFloorCount : number, 
 									minMoveDistance : number, closestDistFromArm : number, 
 									penalty : number, state: WorldState) : number {
@@ -119,6 +131,7 @@ module Heuristics {
 			}
 			
 			//If closestDistFromArm was not updated in the for loops, we do not have a value for this
+			//TODO: fix the magic number
 			if (closestDistFromArm == 1000000) closestDistFromArm = 0;
 			
 			if (state.arm == null) {
@@ -139,9 +152,6 @@ module Heuristics {
 		//For leftof/rightof/under/above - tracks where stuff is that needs to be moved and how much stuff is 
 		//above that stuff 
 		var connections : number[][] = [];
-		//Set this to any other value than 0 to get a non-admissible heuristic that
-		//penalizes states where more literals are unfulfilled
-		//The result of this heuristic is the minimum of the estimated costs for fulfilling each conjunct. 
 		var bestConjunctVal : number = 1000000000;
 		//A dictionary from string id:s of objects to positions in the world
 		var positions = PlannerHelpers.getPositions(state);
@@ -153,12 +163,12 @@ module Heuristics {
 			throw  "You forgot to set Heuristics.interpretation";
 		}
 		for (var conjunct of interpretation) {
-			//added to for each unfulfilled literal (if penaltyPerLiteral != 0)
+			//this is added to for each unfulfilled literal (if penaltyPerLiteral != 0)
 			var penalty = 0; 
 			//Number of items that need to be placed ontop of floor
 			var toFloorCount : number = 0;
 			for (var literal of conjunct) {
-				//moved is used to keep track so that no double-counting is done. 
+				//the variable 'moved' is used to keep track so that no double-counting is done. 
 				//If an object is mentioned in more than one literal, only allow one of 
 				//those literals to be used in this heuristic. Should maybe be a set
 				//but since the number of items is so small, this should work just as well
@@ -180,6 +190,7 @@ module Heuristics {
 					ypos2 = positions.getValue(literal.args[1])[1];
 					if (xpos2 == -2) {
 						abovecount2 = 0;
+						//TODO: something fishy here
 					} else if (xpos2 == -1) {
 						//Count the number of items that need to be placed on the floor
 						toFloorCount++;
