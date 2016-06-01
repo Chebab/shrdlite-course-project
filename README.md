@@ -8,7 +8,8 @@ For more information, see the course webpages:
 - <http://ChalmersGU-AI-course.github.io/>
 
 For the original README please visit:
--<https://github.com/ChalmersGU-AI-course/shrdlite-course-project>
+
+- <https://github.com/ChalmersGU-AI-course/shrdlite-course-project>
 
 ##Extensions
 
@@ -34,5 +35,5 @@ when the all quantifier is found. The process is step by step explained bellow:
 5. return interpretation
 ```
 
-For more information about what `findFeasibleCombinations(...)` can be found
-in the file `Interpreter.ts`.
+For more information about what `findFeasibleCombinations(...)` does, see file
+`Interpreter.ts`.
