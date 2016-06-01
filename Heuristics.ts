@@ -11,12 +11,11 @@ module Heuristics {
 		return Math.max(combineAllConjunctsheuristic(state), focusOnOneConjunctHeuristic(state));
 	}
 
-	
 	//This heurstic looks at all the literals of a conjunct and tries finds
 	//a lower bound for the cost of fulfilling all those literals in total. 
 	//This should often work less well than focusOnOneConjunctHeuristic on
 	//goals with just one or a few literals. 
-	function combineAllConjunctsheuristic(state : WorldStateNode) : number {
+	export function combineAllConjunctsheuristic(state : WorldStateNode) : number {
 		//Private helper functions
 		function filterMoveNeeded(moved : string[], literal : Interpreter.Literal, distance : number) : number { 
 			if (moved.indexOf(literal.args[0]) == -1 &&
@@ -282,7 +281,7 @@ module Heuristics {
 	
 	//Detailed heuristic that returns the largest estimated cost of fulfilling one of the 
 	//conjuncts in the DNFFormula. Should work well for goals with only a few easily reached subgoals left
-	function focusOnOneConjunctHeuristic(state : WorldStateNode) : number {
+	export function focusOnOneConjunctHeuristic(state : WorldStateNode) : number {
 		var shortest : number = 100000000;
 		var longest : number = 0;
 		var current : number = 0;

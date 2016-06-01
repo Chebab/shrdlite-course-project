@@ -3,18 +3,28 @@
 
 module PlannerHelpers {
 
-
+	//A useful represetation of the plan for some parts of the planning is as a series of moves of items
+	//from a given stack index to another given stack index. 
 	export interface Move {
+		//this is null if only dropping an item
 		fromIndex?: number;
+		//this is null if only picking up an item
 		toIndex?: number;
+		//time to wait before starting to move the item
 		initialWait?: number;
 		worldStates: WorldStateNode[];
 	}
 
+	//Given a partial description of an object, return true if the description only
+	//matches one object in the world
 	export function objIsUnique(obj : Parser.Object, theState : WorldState) : boolean {
 		return Interpreter.findObjects(obj, theState, Object.keys(theState.objects), null).length == 1;
 	}
 	
+	//Returns a string describing an object, containing as few descriptors as possible 
+	//such that the description singles out the object in the world state. If there are
+	//several identical objects in the world, it returns a full item description that matches 
+	//either of those. 
 	export function objectString(od : ObjectDefinition, theState : WorldState) : string {
 		//Is one property enough to single out the object in the world?
 		var obj : Parser.Object = {form : od.form};
@@ -50,24 +60,27 @@ module PlannerHelpers {
 		//TODO: what if multiple objects have all properties in common?
 	}
 	
-
-	
-	
+	//Given the world state before and after an object is either picked up or
+	//dropped, return a string describing what item is either picked up or dropped
 	export function getDescribingText(prevState : WorldState, nextState : WorldState) : string {
 		var retString = "";
 		var heldItem = nextState.holding;
+		//Picking up an item
 		if (heldItem != null) {
 			retString += "pick up the ";
 			retString += objectString(nextState.objects[heldItem], prevState);
 			return retString;
 		} else {
-			
+			//Dropping an item
 			retString += "drop it on the ";			
 			var onString : string;
 			var arm = nextState.arm;
+			//Dropped on floor
 			if (prevState.stacks[arm].length == 0) {
 				onString = "floor of column " + arm;
-			} else {
+			} 
+			//Dropped on another item
+			else {
 				//Why peek no exist?
 				var topObj = prevState.stacks[arm].pop();
 				prevState.stacks[arm].push(topObj);
@@ -81,7 +94,7 @@ module PlannerHelpers {
 	}
 	
 	
-	
+	//Change representation of a plan from (a series of world states) to (a series of moves)
 	export function getMoves(states : WorldStateNode[]) : Move[] {
 		var retMoves : Move[] = [];
 		var i : number = 0;
@@ -94,7 +107,8 @@ module PlannerHelpers {
 			retMoves.push({toIndex : to, worldStates: [prevState, nextState]});
 			i++;
 		}
-		
+	
+		//If a full move (pick up + drop)
 		for (; i < states.length-2; i += 2) {
 			
 			var prevState = states[i];
@@ -104,7 +118,7 @@ module PlannerHelpers {
 			var to : number = nextState.arm;
 			retMoves.push({fromIndex: from, toIndex: to, worldStates: [prevState, midState, nextState]});
 		}
-		//goal was to pick up an item
+		//if only picking up an item
 		if (states[states.length-1].holding != null) {
 			var prevState = states[i];
 			var nextState = states[i+1];
@@ -114,11 +128,17 @@ module PlannerHelpers {
 		return retMoves;
 	}
 	
+	//Splits a list of moves into two lists, where the two lists of moves can be performed in parallell
+	//by two arms. Also inserts waiting times to maintain result consistency with the initial plan. 
 	export function getTwoArmMoves(moves : Move[], initialLoc1 : number, initialLoc2 : number) : Move[][] {
 		var result : Move[][] = [[],[]];
+		//counter for current time
 		var time : number = 0;
-		var armBusyUntil = [0, 0];
+		//Initial values not actually used for the following two
+		//these give the next time when each arm will pick up an item or drop it
 		var armTimeOfPickup = [-1, -1];
+		var armBusyUntil = [0, 0];
+		//at the current time, these describe where each arm is going
 		var armMoveFrom = [initialLoc1, initialLoc2];
 		var armMoveTo = [initialLoc1, initialLoc2];
 		var first : boolean = true;
@@ -132,6 +152,7 @@ module PlannerHelpers {
 				}
 				var otherArm = 1 - arm;
 				var initialWait = 0;
+				//arm is avaliable
 				if (armBusyUntil[arm] == time) {
 					var nextMove = moves.shift();
 					//armMoveTo[arm] gives the current location of the arm
@@ -147,13 +168,14 @@ module PlannerHelpers {
 					//if pickup
 					if (nextMove.toIndex == null) {
 						armMoveTo[arm] = nextMove.fromIndex;
+					} else  {
+						armMoveTo[arm] = nextMove.toIndex;
 					}
-					armMoveTo[arm] = nextMove.toIndex;
 					var distanceToTarget = Math.abs(armMoveTo[arm] - armMoveFrom[arm]);
 					
+					//Handle conflicting moves by inserting wait time
 					if (armMoveFrom[arm] == armMoveFrom[otherArm] && !first) {
 						initialWait = Math.max(0, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
-						
 					}
 					
 					if (armMoveFrom[arm] == armMoveTo[otherArm] && !first) {
@@ -174,11 +196,17 @@ module PlannerHelpers {
 					first = false;
 				}
 			}
+			//fast forward until one of the arms is free again
+			//note that this is outside the for loop to allow 
+			//for the case when two arms are available at the same time
 			time = Math.min(armBusyUntil[0], armBusyUntil[1]);
 		}
 		return result;
 	}
 
+	//Changes representation of a plan from (a list of moves) to (a list of strings to send to the UI)
+	//Each returned string is either a letter (the familiar 'd', 'p', 'l', 'r' or'n' denoting a waiting (null) 
+	//action) or a comment describing what the arm is about to do
 	export function getPlanStringsFromMoves(moves : Move[], initialLoc : number) : string[] {
 		
 		var result : string[] = [];
@@ -188,14 +216,12 @@ module PlannerHelpers {
 			for(var i = 0; i < m.initialWait; i++) {
 				result.push("n");
 			}
-			
-			//textual description
+			//textual description at start of move
 			if (m.fromIndex == null || m.toIndex == null) {
 				result.push(getDescribingText(m.worldStates[0], m.worldStates[1]));
 			} else {
 				result.push(getDescribingText(m.worldStates[0], m.worldStates[1]) + " in order to " + 
 						getDescribingText(m.worldStates[1], m.worldStates[2]));
-				
 			}			
 			
 			//actual plan
@@ -227,12 +253,13 @@ module PlannerHelpers {
 		
 		return result;
 	}
-		export function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
+	
+	//Creates a dictionary where you can lookup the position of an item given its id in the given world state
+	export function getPositions(state : WorldStateNode) : collections.Dictionary<string, number[]> {
 		var positions: collections.Dictionary<string, number[]>
 			= new collections.Dictionary<string, number[]>();
 
-
-		// Add all of the states and their position to the Map
+		// Add all of the states and their position to the dictionary
 		for (var i = 0; i < state.stacks.length; i++) {
 			for (var j = 0; j < state.stacks[i].length; j++) {
 				positions.setValue(state.stacks[i][j], [i, j]);

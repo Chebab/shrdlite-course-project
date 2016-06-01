@@ -201,12 +201,13 @@ module Planner {
 				console.log(twoArmMoves[1][i]);
 			}
 			
+			//turn the lists of moves into lists of strings to send to the UI
 			var planStrings : string[][] = [];
 			for (var i = 0; i < 2; i++) {
 				planStrings.push(PlannerHelpers.getPlanStringsFromMoves(twoArmMoves[i], i == 0 ? startNode.arm : startNode.arm2));
 			}
 			
-			//combine plans
+			//combine the two plans for the two arms
 			while (planStrings[0].length > 0 || planStrings[1].length > 0) {
 				var nextStrs : string[] = [];
 				//push describing texts
@@ -220,7 +221,7 @@ module Planner {
 							foundComment = true;
 						}
 					} while (foundComment);
-					//pad plans to equal length
+					//pad plans to equal length if we found a move for one arm and the other arm is done
 					if (nextStrs[j] == null) nextStrs[j] = 'n';
 				}
 				//push actual plan
