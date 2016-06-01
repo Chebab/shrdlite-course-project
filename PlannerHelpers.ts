@@ -153,6 +153,7 @@ module PlannerHelpers {
 					
 					if (armMoveFrom[arm] == armMoveFrom[otherArm] && !first) {
 						initialWait = Math.max(0, armTimeOfPickup[otherArm] - time + 1 - distanceToSource);
+						
 					}
 					
 					if (armMoveFrom[arm] == armMoveTo[otherArm] && !first) {
@@ -166,7 +167,7 @@ module PlannerHelpers {
 					}
 					//this +2 is sligthly pessimistic (for initial/final move?)
 					armBusyUntil[arm] = time + initialWait + distanceToSource + distanceToTarget + 2;
-					armTimeOfPickup[arm] = time + initialWait + distanceToSource;
+					armTimeOfPickup[arm] = time + initialWait + distanceToSource + 1;
 					nextMove.initialWait = initialWait;
 					
 					result[arm].push(nextMove);
