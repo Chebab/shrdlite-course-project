@@ -213,7 +213,8 @@ module Interpreter {
                     }
                 }
             }
-
+            console.log("Source: "+sourceobj+" Target: "+targetobj);
+            console.log("Sourcechecked: "+sourceChecked+" Targetchecked: "+targetChecked);
             if(allCombinations.length < 1 ){
               throw new Error("NO combinations to evaluate.");
             }
