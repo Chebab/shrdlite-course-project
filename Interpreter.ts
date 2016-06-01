@@ -190,6 +190,7 @@ module Interpreter {
             // Variables for keeping track of which elements have been explored
             var sourceChecked: string[] = [];
             var targetChecked: string[] = [];
+            console.log("Source: "+sourceobj+" "+"Target: "+targetobj);
             // Find all of the combinations of goals
             var allCombinations: Literal[] = [];
             for (var i = 0; i < sourceobj.length; i++) {
@@ -230,6 +231,7 @@ module Interpreter {
             for (var i = 0; i < allCombinations.length; i++) {
                 // Initialize the checkedElements list
                 checkedElements = [];
+                console.log("cComb:"+stringifyLiteral(allCombinations[i]));
                 // Fetch the current combination
                 var cComb: Literal = allCombinations[i];
 
@@ -1387,3 +1389,10 @@ module Interpreter {
         }
     }
 }
+var world : string = "medium";
+var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
+console.log(Parser.stringify(result[0]));
+
+//Interpreter.interpretCommand(result, ExampleWorlds["small"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds[world]);
+console.log(Interpreter.stringify(formula[0]));
