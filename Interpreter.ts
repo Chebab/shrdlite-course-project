@@ -216,11 +216,36 @@ module Interpreter {
             ////console.log("sourceChecked:"+sourceChecked);
             ////console.log("targetChecked:"+targetChecked);
 
+            if(allCombinations.length < 1 ){
+              throw new Error("NO combinations to evaluate.");
+            }
+
             var checkedElements: string[]; // Keep tack of
             // Loop through all combinations and do different things depending
             // on the quantifier
             console.log("starting calculations")
-            var temp : Literal[][]= [[allCombinations[0]],[allCombinations[2]]];
+            var startingElems : Literal[][] = [];
+            var isAllsrc : boolean = sourceQuant == "all";
+            var isAlltrgt : boolean = targetQuant == "all";
+            for(var i = 0;i<allCombinations.length;i++){
+              console.log("cComb: "+stringifyLiteral(allCombinations[i]));
+              if(isAllsrc&&!isAlltrgt){
+                if(allCombinations[i].args[0]==sourceobj[0]){
+                  startingElems.push([allCombinations[i]]);
+                }
+              }
+              else if(!isAllsrc&&isAlltrgt){
+                if(allCombinations[i].args[1]==targetobj[0]){
+                  startingElems.push([allCombinations[i]]);
+                }
+              }
+              else {
+                startingElems.push([allCombinations[i]]);
+                break;
+              }
+            }
+
+            var temp : Literal[][]= startingElems;//[[allCombinations[0]],[allCombinations[2]]];
             for(var i = 0; i<temp.length;i++){
               //temp.push([allCombinations[i]]);
               for(var j = 0;j<temp[i].length;j++){
@@ -498,6 +523,7 @@ module Interpreter {
         var comb : Literal = allCombinations[i];
         var sourceElemExists: boolean = srcIndent.indexOf(comb.args[0]) >= 0;
         var targetElemExists: boolean = trgtIndent.indexOf(comb.args[1]) >= 0;
+        var isTargetFloor : boolean = comb.args[1]=="floor";
         if(isSourceAll && isTargetAll){
           if(returnVal.length < 1){
             returnVal.push([comb]);
@@ -510,11 +536,11 @@ module Interpreter {
           returnVal.push([comb]);
         }
         else if(combination[0].relation=="inside"||combination[0].relation=="ontop"){
-          ////console.log("Inside entered")
+          //console.log("Inside entered")
           ////console.log("srcIndent:"+srcIndent);
           ////console.log("trgtIndent:"+trgtIndent);
-          ////console.log("Unpushed Literal: "+stringifyLiteral(comb));
-          if(!sourceElemExists && !targetElemExists){
+          //console.log("Unpushed Literal: "+stringifyLiteral(comb));
+          if(!sourceElemExists && (!targetElemExists||isTargetFloor)){
             ////console.log("Pushed to return, literal: "+stringifyLiteral(comb));
             returnVal.push(combination.concat([comb]));
           }
@@ -931,11 +957,11 @@ module Interpreter {
 }
 
 
-var result: Parser.ParseResult[] = Parser.parse("put a ball in every large box");
+var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
 console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["small"]);
+var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds["medium"]);
 console.log(Interpreter.stringify(formula[0]));
 /*
 //console.log("First parse");
