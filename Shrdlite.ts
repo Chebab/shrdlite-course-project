@@ -102,7 +102,7 @@ module Shrdlite {
 			//Ask the user which parse of the input she/he intended
             if (plans.length > 1) {
 				try {
-					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:" + successIndices)
+					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:")
 					for(var s of ParenthesizedCommandParser.parsesToStrings(parses, successIndices)) {
 						world.printSystemOutput(s);
 					}
