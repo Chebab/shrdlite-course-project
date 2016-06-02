@@ -12,6 +12,12 @@ For the original README please visit:
 - <https://github.com/ChalmersGU-AI-course/shrdlite-course-project>
 
 ##Extensions
+In this project we decided to implement five different extensions. The extensions being: 
+the "all" extension - to handle the all quantifier,
+a smart heuristics extension - to speed up the planner,
+a user questions extensions - so that the users can ask questions about objects whereabouts,
+a multiple arms extension - because it is cool,
+and finally an extension to handle ambiguities in a smart way.
 
 ### "all" extension
 One of the currently implemented extensions in the project is the so called
