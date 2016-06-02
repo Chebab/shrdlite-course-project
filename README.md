@@ -152,7 +152,7 @@ Depending on what type of question the user asks, the method `createFindString` 
 
 
 The User Questions have implementation in several different files
-####Interpreter.ts:
+####Functions in Interpreter.ts:
 
 `function interpretCommand`
 
@@ -179,7 +179,7 @@ Help function to return all the objects to the specified side of the object
 findAttributes will return a string containing all the attributes needed in order to specify an object. If, for example, there are two yellow objects, "the yellow object" is not sufficient. Always returns as few attributes as possible, needed to describe the object.
 
 
-####Grammar.ne
+####Changes to Grammar.ne
 
 Added the following lines to enable the user to ask questions to the system.
 
@@ -190,6 +190,6 @@ command --> what relation entity  {% R({command:"what", relation:1, entity:2}) %
 find --> "where" | "where" "is" | "where" "are" | "find"
 what --> "what" | "what" "is" | "what" "are"
 ```
-####Planner.ts
+####Changes to Planner.ts
 
 In order to find the special case Literals, we need to search the interpretation and find find them, in order to make them visible to the user. This is done in the end of function `planInterpretation`.
