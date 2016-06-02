@@ -2,6 +2,7 @@
 ///<reference path="Parser.ts"/>
 ///<reference path="Interpreter.ts"/>
 ///<reference path="Planner.ts"/>
+///<reference path="ParenthesizedCommandParser.ts"/>
 
 module Shrdlite {
 
@@ -68,7 +69,7 @@ module Shrdlite {
         }
         catch(err) {
             world.printError("Parsing error", err);
-            return;
+            callback(null);
         }
 
         // Interpretation
@@ -86,7 +87,7 @@ module Shrdlite {
         }
         catch(err) {
             world.printError("Interpretation error", err);
-            return;
+            callback(null);
         }
 
         // Planning
@@ -99,11 +100,11 @@ module Shrdlite {
 
             if (plans.length > 1) {
 				try {
-					world.printSystemOutput("What to do? There are " + plans.length + " ways of parenthesizing what you wrote that make sense:")
-					for(var s of parsesToStrings(parses, successIndices)) {
+					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:")
+					for(var s of ParenthesizedCommandParser.parsesToStrings(parses, successIndices)) {
 						world.printSystemOutput(s);
 					}
-					world.readUserInput("Answer with a number please.", function (s : string): void {
+					world.readUserInput("What to do? Answer with a number please.", function (s : string): void {
 						var answer : number = parseInt(s);
 						if (isNaN(answer) || answer > plans.length - 1) {
 							world.printSystemOutput("You did not answer the question with a valid number, so I will just pick the first option");
@@ -119,10 +120,15 @@ module Shrdlite {
 				} 
 				//unimplemented readUserInput, just pick the first plan
 				catch (err) {
-					plans = [plans[0]];
-					var finalPlan : string[] = plans[0].plan;
-					world.printDebugInfo("Final plan: " + finalPlan.join(", "));
-					callback(finalPlan);
+					if (err == "Not implemented!") {
+						world.printSystemOutput("Since your world implementation does not allow me to ask you anything, I'm just picking the first of those possible interpretations");
+						plans = [plans[0]];
+						var finalPlan : string[] = plans[0].plan;
+						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
+						callback(finalPlan);
+					} else {
+						throw err;
+					}
 				}
 				
 				
@@ -142,67 +148,10 @@ module Shrdlite {
         }
         catch(err) {
             world.printError("Planning error", err);
-            return;
+            callback(null);
         }
     }
 
-	function parsesToStrings(parses: Parser.ParseResult[], indices : number[]) : string[] {
-		var result : string[] = [];
-		var count : number = 0;
-		for (var i of indices) {
-			result.push("(" + count + ") " + parseToString(parses[i]));
-			count++;
-		}
-		
-		return result;
-	}
-
-	function parseToString(parse: Parser.ParseResult) : string {
-		var result = parse.parse.command + " ";
-		if (parse.parse.entity == null) {
-			result += "it ";
-		} else {
-			result += entityToString(parse.parse.entity) + " ";
-		}
-		if (parse.parse.location != null) {
-			result += locationToString(parse.parse.location);
-		}
-		
-		return result;
-	}
-	
-	function entityToString(ent : Parser.Entity) : string {
-		var result = "(" + ent.quantifier + " ";
-		result += objectToString(ent.object);
-		return result + ")";
-	}
-	
-	function objectToString(obj : Parser.Object) : string {
-		var result = "";
-		var strings : string[] = [];
-		if (obj.location == null) {
-			if (obj.size != null) {
-				strings.push(obj.size);
-			}
-			if (obj.color != null) {
-				strings.push(obj.color);
-			}
-			if (obj.form != null) {
-				strings.push(obj.form);
-			}
-			result += strings.join(" ");
-		} else {
-			result += "(" + objectToString(obj.object) + " " + locationToString(obj.location) + ")";
-		}
-		return result;
-	}
-	
-	function locationToString(rel : Parser.Location) : string {
-		var result = "(" + rel.relation + " ";
-		result += entityToString(rel.entity);
-		return result + ")";
-	}
-	
     /** This is a convenience function that recognizes strings
      * of the form "p r r d l p r d"
      */
