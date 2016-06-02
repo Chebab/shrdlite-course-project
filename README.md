@@ -106,3 +106,90 @@ combineAllLiteralsHeuristic uses the value of the variable penaltyPerLiteral to 
 
 ### Ambiguity resolution
 If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts was rewritten in a continuation-passing style for this to be easier.
+
+### User Questions Extension
+We have implemented an extension which handles user questions. This means that the user can ask two types of questions - `Where` and `What`. 
+
+The `Where` question will return a text that specifies the whereabouts of the object, in relation to other objects. A couple of examples:
+
+```
+Q: where is the ball inside a box
+A: The white ball is to the right of the black ball, to the left of the yellow pyramid and is inside the red box.
+```
+
+If you ask where ALL bricks are, you will get two answers, one for each brick.
+```
+Q: where are all bricks
+A: The yellow brick is on the floor, to the right of the black ball, 
+to the left of the yellow pyramid and is below the red box.
+A: The white brick is to the right of the yellow pyramid, 
+to the left of the green plank and is ontop of the blue table.
+```
+How to use the Where question:
+
+`Where <is/are> <entity>`
+
+`Find <entity>`
+
+The `What` question will return a text that specifies what objects are in a specific relation to a specified object. Some examples:
+```
+Q: what are to the right of the red plank
+A: The green plank and blue box are to the right of the red plank.
+```
+You can specify any type of entity that exists in the world:
+```
+Q: what is inside the box ontop of the red plank
+A: The blue table is inside the yellow box.
+```
+How to use the What question:
+
+`What <is/are> <relation> <entity>`
+
+All the above examples are from the complex world.
+
+Depending on what type of question the user asks, the method `createFindString` or `createWhatString` will be run. These methods returns a natural language string. Each method finds the objects specified by the relation, using the find helper-functions. In order to describe the objects in a minimalistic fashion using `findAttributes`.
+
+
+
+The User Questions have implementation in several different files
+####Functions in Interpreter.ts:
+
+`function interpretCommand`
+
+Two if-statements which handle if the command is either “find” or “what”. Creates a special case Literal with a natural language answer to the question. This special case will be caught in the Planner.
+
+`function createFindString`
+
+Function to create a natural language string of neighbours given an object in the world. This to locate an object (in relation to neighbouring objects) when using the 'find' command
+
+`function createWhatString`
+
+Function to create a natural language string of the objects in a relation of an object. For example, returns a string containing the objects <to the left> of ’the red box'.
+
+`function findLeft, findRight, findAbove, findBelow`
+
+Help functions to return the first object adjacent to the specified object
+
+`function findAllLeft, findAllRight, findAllAbove, findAllBelow`
+
+Help function to return all the objects to the specified side of the object
+
+`function findAttributes`
+
+findAttributes will return a string containing all the attributes needed in order to specify an object. If, for example, there are two yellow objects, "the yellow object" is not sufficient. Always returns as few attributes as possible, needed to describe the object.
+
+
+####Changes to Grammar.ne
+
+Added the following lines to enable the user to ask questions to the system.
+
+```
+command --> find entity 		  {% R({command:"find", entity:1}) %}
+command --> what relation entity  {% R({command:"what", relation:1, entity:2}) %}
+
+find --> "where" | "where" "is" | "where" "are" | "find"
+what --> "what" | "what" "is" | "what" "are"
+```
+####Changes to Planner.ts
+
+In order to find the special case Literals, we need to search the interpretation and find find them, in order to make them visible to the user. This is done in the end of function `planInterpretation`.
