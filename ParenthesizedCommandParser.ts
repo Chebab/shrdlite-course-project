@@ -33,13 +33,15 @@ module ParenthesizedCommandParser {
 	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function entityToString(ent : Parser.Entity) : string {
 		var result = "(" + ent.quantifier + " ";
-		result += objectToString(ent.object);
+		result += objectToString(ent.object, ent.quantifier == "all");
 		return result + ")";
 	}
 	
 	//Nothing fancy, just boilerplate traversal of the parse tree
-	export function objectToString(obj : Parser.Object) : string {
+	export function objectToString(obj : Parser.Object, isPlural : boolean) : string {
 		var result = "";
+		var plurals : { [s:string]: string; } = {"thing" : "s", "box" : "es", "plank" : "s", "ball": "s", 
+			"pyramid" : "s", "brick" : "s"};
 		var strings : string[] = [];
 		if (obj.location == null) {
 			if (obj.size != null) {
@@ -49,19 +51,26 @@ module ParenthesizedCommandParser {
 				strings.push(obj.color);
 			}
 			if (obj.form != null) {
-				
-				strings.push(obj.form);
+				if (obj.form != "anyform") {
+					strings.push(obj.form + (isPlural ? plurals[obj.form] : ""));
+				} else {
+					strings.push("thing" + (isPlural ? "s" : ""));
+				}
 			}
 			result += strings.join(" ");
 		} else {
-			result += "(" + objectToString(obj.object) + " " + locationToString(obj.location) + ")";
+			result += "(" + objectToString(obj.object, isPlural) + " " + locationToString(obj.location) + ")";
 		}
 		return result;
 	}
 	
+	
 	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function locationToString(rel : Parser.Location) : string {
-		var result = "(" + rel.relation + " ";
+		var relations : { [s:string]: string; } = {"leftof" : "left of", 
+				"rightof" : "right of ", "inside" : "inside",  
+				"ontop" : "on top of", "under" : "under", "beside" : "beside", "above" : "above"};
+		var result : string = "(" + relations[rel.relation] + " ";
 		result += entityToString(rel.entity);
 		return result + ")";
 	}
