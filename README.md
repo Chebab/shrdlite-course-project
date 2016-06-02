@@ -76,17 +76,21 @@ First, we descibe how Literals which require the arguments to be in the same col
 
 For "leftof", "rightof" and "beside" Literals (henceforth called lateral Literals), it is a bit more complicated. If there are two or more lateral Literals in a conjunct and they have an argument in the same column, one cannot be sure that more than one of the arguments in any of those Literals needs to be moved. Thus: 
 
- we find all arguments mentioned in all lateral Literals in the conjunct, then loop through those Literals, l --- with the arguments, a_deeper and a_shallower --- and mark the objects above a_shallower to be moved for all Literals. The depth is updated when this is done, so that no double counting is performed. 
+```
+1. We find all arguments mentioned in all lateral Literals in the conjunct
+2. Then we loop through those Literals, marking the objects above the shallower of the arguments of each literal to be moved. 
+3. The depths of all objects are updated when this is done, so that no double counting is performed. 
+```
 
 #### The distance the arm needs to travel
 For lateral Literals, when a literal is considered as needed to be moved, the distance between its arguments plus a constant is added to the lower bound for the required travel distance. The constant is +1 for "leftof"/"rightof" Literals since the object needs to be put on the other side of the item from where it is currently and it is -1 for "beside" Literals, since it might be that an item can be left on the same side as it currently is. 
 
-For non-lateral Literals where at least one argument needs to be moved, the distance between the arguments is added to the lower bound for the distance to be travelled. 
+For non-lateral Literals where at least one argument object needs to be moved, the distance between the objects is added to the lower bound for the distance to be travelled. 
 
 #### Non-admissible heuristic, "cheating"
 combineAllConjunctsHeuristic uses the value of the variable penaltyPerLiteral to add a constant for each unfulfilled Literal in a conjunct. This can be used to create a non-admissible heuristic that results in states where there are few goals left to fulfill being prioritized. Setting the value of penaltyPerLiteral to 0 disables this feature. 
 
 ### Ambiguity resolution
-If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts and the world files were rewritten in a continuation-passing style for this to be easier. 
+If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts was rewritten in a continuation-passing style for this to be easier. 
 
 
