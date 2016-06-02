@@ -126,6 +126,7 @@ A: The white brick is to the right of the yellow pyramid,
 to the left of the green plank and is ontop of the blue table.
 ```
 How to use the Where question:
+
 `Where <is/are> <entity>`
 
 `Find <entity>`
@@ -141,14 +142,16 @@ Q: what is inside the box ontop of the red plank
 A: The blue table is inside the yellow box.
 ```
 How to use the What question:
+
 `What <is/are> <relation> <entity>`
 
 All the above examples are from the complex world.
 
 Depending on what type of question the user asks, the method `createFindString` or `createWhatString` will be run. These methods returns a natural language string. Each method finds the objects specified by the relation, using the find helper-functions. In order to describe the objects in a minimalistic fashion using `findAttributes`.
 
-The User Questions have implementation in several different files:
 
+
+The User Questions have implementation in several different files
 ####Interpreter.ts:
 
 `function interpretCommand`
