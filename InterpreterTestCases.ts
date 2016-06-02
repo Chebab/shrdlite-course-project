@@ -97,15 +97,14 @@ var allTestCases : TestCase[] = [
  allTestCases.push(
      {world: "small",
       utterance: "put a ball in every large box",
-      interpretations: [["inside(e,k) & inside(f,k)", "inside(e,l) & inside(f,k)",
-                         "inside(e,k) & inside(f,l)", "inside(e,l) & inside(f,l)"]]
+      interpretations: [["inside(e,l) & inside(f,k)",
+                         "inside(e,k) & inside(f,l)"]]
      },
 
      {world: "small",
       utterance: "put every ball in a box",
-      interpretations: [["inside(e,k) & inside(f,k)", "inside(e,l) & inside(f,k)",
-                         "inside(e,k) & inside(f,l)", "inside(e,l) & inside(f,l)",
+      interpretations: [[ "inside(e,l) & inside(f,k)",
+                         "inside(e,k) & inside(f,l)", 
                          "inside(e,k) & inside(f,m)", "inside(e,l) & inside(f,m)"]]
      }
  );
-
