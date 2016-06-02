@@ -86,3 +86,5 @@ For non-lateral Literals where at least one argument needs to be moved, the dist
 #### Non-admissible heuristic, "cheating"
 combineAllConjunctsHeuristic uses the value of the variable penaltyPerLiteral to add a constant for each unfulfilled Literal in a conjunct. This can be used to create a non-admissible heuristic that results in states where there are few goals left to fulfill being prioritized. Setting the value of penaltyPerLiteral to 0 disables this feature. 
 
+### Ambiguity resolution
+If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts and the world files were rewritten in a continuation-passing style for this to be easier. 
