@@ -136,10 +136,8 @@ module Planner {
 				if(i == interpretation.length - 1){
 					return plan;
 				}
-			} 
-			
+			} 	
 		}
-		
 		//Create a start node object
 		var startNode : WorldStateNode = new WorldStateNode(state.stacks, state.holding, state.holding2, state.arm, state.arm2, state.objects);
 		
@@ -185,21 +183,23 @@ module Planner {
 
 		var nodeResult : WorldStateNode[] = foundResult.path;
 		
+		
+		
 		// If we did not start at a world state that already fulfills the goal
 		if (nodeResult.length > 0) {
 			//The result returned from the search function does not include the start node, so prepend it. 
 			nodeResult = [startNode].concat(nodeResult);
 			var moves : PlannerHelpers.Move[] = PlannerHelpers.getMoves(nodeResult);
-			
+				
 			var twoArmMoves : PlannerHelpers.Move[][] = PlannerHelpers.getTwoArmMoves(moves, startNode.arm, startNode.arm2);
-			console.log("arm 0 plan: ");
-			for (var i = 0; i < twoArmMoves[0].length; i++) {
-				console.log(twoArmMoves[0][i]);
-			}
-			console.log("arm 1 plan: ");
-			for (var i = 0; i < twoArmMoves[1].length; i++) {
-				console.log(twoArmMoves[1][i]);
-			}
+			//console.log("arm 0 plan: ");
+			//for (var i = 0; i < twoArmMoves[0].length; i++) {
+			//	console.log(twoArmMoves[0][i]);
+			//}
+			//console.log("arm 1 plan: ");
+			//for (var i = 0; i < twoArmMoves[1].length; i++) {
+			//	console.log(twoArmMoves[1][i]);
+			//}
 			
 			//turn the lists of moves into lists of strings to send to the UI
 			var planStrings : string[][] = [];
@@ -232,7 +232,6 @@ module Planner {
 			//The goal is fulfilled at the starting world state
 			return [];
 		}
-		
 		return plan;
 	}
 

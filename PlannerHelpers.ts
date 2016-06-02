@@ -143,6 +143,7 @@ module PlannerHelpers {
 		var armMoveTo = [initialLoc1, initialLoc2];
 		var first : boolean = true;
 		while (moves.length > 0) {
+			
 			//assign move to first free arm
 			for (var arm = 0; arm < 2 && moves.length != 0; arm++) {
 				//but always assign last move to arm 0 to maintain consistency with two-arm-agnostic code
@@ -154,6 +155,7 @@ module PlannerHelpers {
 				var initialWait = 0;
 				//arm is avaliable
 				if (armBusyUntil[arm] == time) {
+					
 					var nextMove = moves.shift();
 					//armMoveTo[arm] gives the current location of the arm
 					var distanceToSource : number = 0;
@@ -191,14 +193,14 @@ module PlannerHelpers {
 					armBusyUntil[arm] = time + initialWait + distanceToSource + distanceToTarget + 2;
 					armTimeOfPickup[arm] = time + initialWait + distanceToSource + 1;
 					nextMove.initialWait = initialWait;
-					
 					result[arm].push(nextMove);
 					first = false;
-				}
+				} 
 			}
 			//fast forward until one of the arms is free again
 			//note that this is outside the for loop to allow 
 			//for the case when two arms are available at the same time
+			
 			time = Math.min(armBusyUntil[0], armBusyUntil[1]);
 		}
 		return result;

@@ -2,6 +2,7 @@
 ///<reference path="Parser.ts"/>
 ///<reference path="Interpreter.ts"/>
 ///<reference path="Planner.ts"/>
+///<reference path="ParenthesizedCommandParser.ts"/>
 
 module Shrdlite {
 
@@ -12,15 +13,21 @@ module Shrdlite {
             if (utterance.trim()) {
                 var plan : string[] = splitStringIntoPlan(utterance);
                 if (!plan) {
-                    plan = parseUtteranceIntoPlan(world, utterance);
+					parseUtteranceIntoPlan(world, utterance, function(s : string[]) {
+						
+						if (s) {
+							world.printDebugInfo("Plan: " + s.join(", "));
+							world.performPlan(s, nextInput);
+
+						} else {
+							nextInput();
+						}
+					});
                 }
-                if (plan) {
-                    world.printDebugInfo("Plan: " + plan.join(", "));
-                    world.performPlan(plan, nextInput);
-                    return;
-                }
-            }
-            nextInput();
+                
+            } else {
+				nextInput();
+			}
         }
         world.printWorld(endlessLoop);
     }
@@ -49,9 +56,10 @@ module Shrdlite {
      * @param utterance The string that represents the command.
      * @returns A plan in the form of a stack of strings, where each element is either a robot action, like "p" (for pick up) or "r" (for going right), or a system utterance in English that describes what the robot is doing.
      */
-    export function parseUtteranceIntoPlan(world : World, utterance : string) : string[] {
+    export function parseUtteranceIntoPlan(world : World, utterance : string,  callback: (s : string[]) => void) : void{
         // Parsing
         world.printDebugInfo('Parsing utterance: "' + utterance + '"');
+		var successIndices : number[] = [];
         try {
             var parses : Parser.ParseResult[] = Parser.parse(utterance);
             world.printDebugInfo("Found " + parses.length + " parses");
@@ -61,27 +69,27 @@ module Shrdlite {
         }
         catch(err) {
             world.printError("Parsing error", err);
-            return;
+            callback(null);
+			return;
         }
 
         // Interpretation
         try {
-            var interpretations : Interpreter.InterpretationResult[] = Interpreter.interpret(parses, world.currentState);
+            var interpretations : Interpreter.InterpretationResult[] = Interpreter.interpret(parses, world.currentState, successIndices);
             world.printDebugInfo("Found " + interpretations.length + " interpretations");
             interpretations.forEach((result, n) => {
                 world.printDebugInfo("  (" + n + ") " + Interpreter.stringify(result));
             });
 
             if (interpretations.length > 1) {
-                // several interpretations were found -- how should this be handled?
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we let the planner decide?
+                // First let planner try to do something with both plans, then let user decide if there are 
+				// several possible solutions
             }
         }
         catch(err) {
             world.printError("Interpretation error", err);
-            return;
+            callback(null);
+			return;
         }
 
         // Planning
@@ -93,24 +101,53 @@ module Shrdlite {
             });
 
             if (plans.length > 1) {
-                // several plans were found -- how should this be handled?
-                // this means that we have several interpretations,
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we select the interpretation with the shortest plan?
-                // ... plans.sort((a, b) => {return a.length - b.length});
-            }
+				try {
+					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:")
+					for(var s of ParenthesizedCommandParser.parsesToStrings(parses, successIndices)) {
+						world.printSystemOutput(s);
+					}
+					world.readUserInput("What to do? Answer with a number please.", function (s : string): void {
+						var answer : number = parseInt(s);
+						if (isNaN(answer) || answer > plans.length - 1) {
+							world.printSystemOutput("You did not answer the question with a valid number, so I will just pick the first option");
+							plans = [plans[0]];
+						} else {
+							plans = [plans[answer]];
+						}
+						var finalPlan : string[] = plans[0].plan;
+						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
+ 
+						callback(finalPlan);
+					});
+				} 
+				//unimplemented readUserInput, just pick the first plan
+				catch (err) {
+					if (err == "Not implemented!") {
+						world.printSystemOutput("Since your world implementation does not allow me to ask you anything, I'm just picking the first of those possible interpretations");
+						plans = [plans[0]];
+						var finalPlan : string[] = plans[0].plan;
+						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
+						callback(finalPlan);
+					} else {
+						throw err;
+					}
+				}
+				
+            } 
+			//only one plan found
+			else {
+				var finalPlan : string[] = plans[0].plan;
+				world.printDebugInfo("Final plan: " + finalPlan.join(", "));
+				callback(finalPlan);
+				return;
+			}
         }
         catch(err) {
             world.printError("Planning error", err);
-            return;
+            callback(null);
+			return;
         }
-
-        var finalPlan : string[] = plans[0].plan;
-        world.printDebugInfo("Final plan: " + finalPlan.join(", "));
-        return finalPlan;
     }
-
 
     /** This is a convenience function that recognizes strings
      * of the form "p r r d l p r d"

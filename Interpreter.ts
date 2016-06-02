@@ -40,7 +40,7 @@ module Interpreter {
     var relationStr: string[] = ["leftof", "rightof", "inside", "ontop", "under", "beside", "above"];
     var quantm: string[] = ["any", "all", "a"];
     var quants: string[] = ["the"];
-    export function interpret(parses: Parser.ParseResult[], currentState: WorldState): InterpretationResult[] {
+    export function interpret(parses: Parser.ParseResult[], currentState: WorldState, successIndices : number[]): InterpretationResult[] {
         var errors: Error[] = [];
         var interpretations: InterpretationResult[] = [];
 
@@ -49,6 +49,7 @@ module Interpreter {
                 var result: InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 interpretations.push(result);
+				successIndices.push(parses.indexOf(parseresult));
             } catch (err) {
                 errors.push(err);
             }
@@ -1535,10 +1536,10 @@ module Interpreter {
       return returnVal;
     }
 }
-var world : string = "medium";
-var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
-console.log(Parser.stringify(result[0]));
+//var world : string = "medium";
+//var result: Parser.ParseResult[] = Parser.parse("put all balls inside a box");
+//console.log(Parser.stringify(result[0]));
 
 //Interpreter.interpretCommand(result, ExampleWorlds["small"]);
-var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds[world]);
-console.log(Interpreter.stringify(formula[0]));
+//var formula: Interpreter.InterpretationResult[] = Interpreter.interpret(result, ExampleWorlds[world]);
+//console.log(Interpreter.stringify(formula[0]));

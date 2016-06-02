@@ -43,7 +43,7 @@ ExampleWorlds["complex"] = {
 
 ExampleWorlds["medium"] = {
     "stacks": [["e"],["a","l"],[],[],["i","h","j"],[],[],["k","g","c","b"],[],["d","m","f"]],
-	"holding": null,
+    "holding": null,
 	"holding2": null,
     "arm": 0,
 	"arm2": 0,
@@ -81,7 +81,7 @@ ExampleWorlds["medium"] = {
 
 ExampleWorlds["small"] = {
     "stacks": [["e"],["g","l"],[],["k","m","f"],[]],
-	"holding": "a",
+    "holding": "a",
 	"holding2": null,
     "arm": 0,
 	"arm2": 0,
@@ -115,7 +115,7 @@ ExampleWorlds["impossible"] = {
     "stacks": [["lbrick1","lball1","sbrick1"], [],
                ["lpyr1","lbox1","lplank2","sball2"], [],
                ["sbrick2","sbox1","spyr1","ltable1","sball1"]],
-	"holding": null,
+    "holding": null,
 	"holding2": null,
     "arm": 0,
 	"arm2": 0,
@@ -147,7 +147,9 @@ ExampleWorlds["impossible"] = {
 ExampleWorlds["example"] = {
     "stacks": [["c1"],["t3","b4"],[],["b5","b6","c2"],[]],
     "holding": null,
+	"holding2": null,
     "arm": 0,
+	"arm2": 0,
     "objects": {
         "c1": { "form":"ball",   "size":"small",  "color":"white" },
         "c2": { "form":"ball",   "size":"small",  "color":"black" },
