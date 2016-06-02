@@ -149,7 +149,7 @@ function aStarSearch<Node> (
 			addTargetOfEdgeToFrontier(nextEdge);
 			// If the target node is a goal, save it and break
             if (goal(nextEdge.to)) {
-				console.log("found a goal");
+				console.log("Found a goal");
 				goalNode = nextEdge.to;
 
 				break;
@@ -164,7 +164,7 @@ function aStarSearch<Node> (
 			}
 		}
 	}
-	console.log("Done in " + i + " iterations");
+	console.log("Stopped after " + i + " iterations");
 	if (!frontier.peek()) {
 		throw new Error("There is no solution");
 	}
@@ -174,7 +174,8 @@ function aStarSearch<Node> (
 		console.log("Timeouted");
 		throw new Error("Timed out");
 	}
-  if (!goalNode) throw new Error("No path found");
+    
+	if (!goalNode) throw new Error("No path found");
 
     // Save the goalNode to a dummy variable
     var n: Node = goalNode;
@@ -195,7 +196,6 @@ function aStarSearch<Node> (
 
     // Result must be in end to start order, so we have to reverse it
     result.path = result.path.reverse();
-
 
     return result;
 }

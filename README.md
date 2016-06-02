@@ -46,11 +46,17 @@ The planner tries to run the aStarSearch to find a solution, using the combinati
 The first step of the planning is to find a plan for a one-arm system. After this is done, the plan in transformed into a plan for a two-arm system, by assigning each move in the plan in a (mostly) FCFS manner to one of two arms. The exception to FCFS is that the last move is always given to the first arm, so that the final state is the same as it would be if there was only one arm in the system. The two-arm planning works as follows:
 
 ```
-1) aStarSearch returns a list of world states. 
-2) The list of world states is transformed into a list of pairs of columns, or moves, where each pair corresponds to an item to be moved from the first to the second column. (PlannerHelpers.getMoves)
-3) The list of moves is split into two lists, one for each arm. Waiting times are also inserted in the plans, to avoid either arm disturbing the other. (PlannerHelpers.getTwoArmMoves)
-4) The plans are turned into lists of command strings that a one-arm system can perform. (PlannerHelpers.getPlanStringsFromMoves)
-5) The two lists of strings are combined into one list of strings with all commands for both arms. 
+1. aStarSearch returns a list of world states. 
+2. The list of world states is transformed into a list of pairs of columns, 
+or moves, where each pair corresponds to an item to be moved from the first 
+to the second column. (PlannerHelpers.getMoves)
+3. The list of moves is split into two lists, one for each arm. Waiting times 
+are also inserted in the plans, to avoid either arm disturbing the other. 
+(PlannerHelpers.getTwoArmMoves)
+4. The plans are turned into lists of command strings that a one-arm system 
+can perform. (PlannerHelpers.getPlanStringsFromMoves)
+5. The two lists of strings are combined into one list of strings with all 
+commands for both arms. 
 ```
 
 Both the graphical UI the textual UI have been updated to allow commands strings of the form xx where x is either  d, p, l, r, or n where n is a null (waiting) move. 
@@ -68,7 +74,9 @@ Some ideas are common for both heuristics. They both try to find the distance th
 #### Finding the number of objects that need to be moved to get to the items mentioned in the Literals
 First, we descibe how Literals which require the arguments to be in the same column are investigated. For "ontop" and "inside" Literals, we need to remove the number of objects above both arguments. For "under" and "above" Literals, one can only be sure that the objects above the second argument and the first argument, respectively, need to be moved. Of course, if there are several items in the same column that all share the same objects above them, we cannot count these items multiple times, so we keep track of the number of already counted objects for each column. 
 
-For "leftof", "rightof" and "beside" Literals (henceforth called lateral Literals), it is a bit more complicated. If there are two or more lateral Literals in a conjunct and they have an argument in the same column, one cannot be sure that more than one of the arguments in any of those Literals needs to be moved. Thus, we find all arguments mentioned in all lateral Literals in the conjunct, then loop through those Literals, l --- with the arguments, a_deeper and a_shallower --- and mark the objects above a_shallower to be moved for all Literals. The depth is updated when this is done, so that no double counting is performed. 
+For "leftof", "rightof" and "beside" Literals (henceforth called lateral Literals), it is a bit more complicated. If there are two or more lateral Literals in a conjunct and they have an argument in the same column, one cannot be sure that more than one of the arguments in any of those Literals needs to be moved. Thus: 
+
+ we find all arguments mentioned in all lateral Literals in the conjunct, then loop through those Literals, l --- with the arguments, a_deeper and a_shallower --- and mark the objects above a_shallower to be moved for all Literals. The depth is updated when this is done, so that no double counting is performed. 
 
 #### The distance the arm needs to travel
 For lateral Literals, when a literal is considered as needed to be moved, the distance between its arguments plus a constant is added to the lower bound for the required travel distance. The constant is +1 for "leftof"/"rightof" Literals since the object needs to be put on the other side of the item from where it is currently and it is -1 for "beside" Literals, since it might be that an item can be left on the same side as it currently is. 

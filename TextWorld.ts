@@ -69,7 +69,7 @@ class TextWorld implements World {
     }
 
     public performPlan(plan : string[], callback? : () => void) : void {
-        var planctr = 0;
+		var planctr = 0;
         var world = this;
         function performNextAction() {
             planctr++;
