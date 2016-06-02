@@ -61,7 +61,7 @@ module Planner {
     //////////////////////////////////////////////////////////////////////
     // private functions
 
-	
+	//Helper function. Returns true if the string corresponds to a one-arm one-letter command. 
 	function isCommand(str : string) : boolean {
 		return str == 'n' || str == 'd' || str == 'p' || str == 'r' || str == 'l';
 	}
@@ -193,15 +193,7 @@ module Planner {
 			var moves : PlannerHelpers.Move[] = PlannerHelpers.getMoves(nodeResult);
 				
 			var twoArmMoves : PlannerHelpers.Move[][] = PlannerHelpers.getTwoArmMoves(moves, startNode.arm, startNode.arm2);
-			//console.log("arm 0 plan: ");
-			//for (var i = 0; i < twoArmMoves[0].length; i++) {
-			//	console.log(twoArmMoves[0][i]);
-			//}
-			//console.log("arm 1 plan: ");
-			//for (var i = 0; i < twoArmMoves[1].length; i++) {
-			//	console.log(twoArmMoves[1][i]);
-			//}
-			
+
 			//turn the lists of moves into lists of strings to send to the UI
 			var planStrings : string[][] = [];
 			for (var i = 0; i < 2; i++) {

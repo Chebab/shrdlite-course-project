@@ -82,7 +82,6 @@ module Heuristics {
 				}
 				//Set the minimum dig depth to the 
 				//depth of the shallowest item in the found literal for the column in which it is found
-				//console.log("setting x: " + xcoord  + " to " + deepestValue);
 				minDigDepths[xcoord] += deepestValue;
 				//The last term is either 1 or -1 depending on whether this is a "beside" or "leftof/rightof"
 				//literal
@@ -503,7 +502,6 @@ module Heuristics {
 			//Find smallest heuristic for any of the disjunctive expressions
 			shortest = Math.min(longest, shortest);
 		}
-		//console.log(shortest);
 		return shortest;
 		
 	}

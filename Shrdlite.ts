@@ -5,7 +5,7 @@
 ///<reference path="ParenthesizedCommandParser.ts"/>
 
 module Shrdlite {
-
+	
     export function interactive(world : World) : void {
         function endlessLoop(utterance : string = "") : void {
             var inputPrompt = "What can I do for you today? ";
@@ -92,7 +92,7 @@ module Shrdlite {
 			return;
         }
 
-        // Planning
+        // Planning. In part rewritten in a  continuation-passing style
         try {
             var plans : Planner.PlannerResult[] = Planner.plan(interpretations, world.currentState, successIndices);
             world.printDebugInfo("Found " + plans.length + " plans");
@@ -106,6 +106,7 @@ module Shrdlite {
 					for(var s of ParenthesizedCommandParser.parsesToStrings(parses, successIndices)) {
 						world.printSystemOutput(s);
 					}
+					//Try to ask the user (if not possible in world, expect an error to be thrown)
 					world.readUserInput("What to do? Answer with a number please.", function (s : string): void {
 						var answer : number = parseInt(s);
 						if (isNaN(answer) || answer > plans.length - 1) {
@@ -116,10 +117,10 @@ module Shrdlite {
 						}
 						var finalPlan : string[] = plans[0].plan;
 						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
- 
+						
 						callback(finalPlan);
-						return;
 					});
+					return;
 				} 
 				//unimplemented readUserInput, just pick the first plan
 				catch (err) {

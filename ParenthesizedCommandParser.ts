@@ -2,7 +2,8 @@
 
 
 module ParenthesizedCommandParser {
-
+	//Returns an array of strings of stringified parses where parentheses are added to make it clear
+	//how the sentence was parsed
 	export function parsesToStrings(parses: Parser.ParseResult[], indices : number[]) : string[] {
 		var result : string[] = [];
 		var count : number = 0;
@@ -14,6 +15,7 @@ module ParenthesizedCommandParser {
 		return result;
 	}
 
+	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function parseToString(parse: Parser.ParseResult) : string {
 		var result = parse.parse.command + " ";
 		if (parse.parse.entity == null) {
@@ -28,12 +30,14 @@ module ParenthesizedCommandParser {
 		return result;
 	}
 	
+	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function entityToString(ent : Parser.Entity) : string {
 		var result = "(" + ent.quantifier + " ";
 		result += objectToString(ent.object);
 		return result + ")";
 	}
 	
+	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function objectToString(obj : Parser.Object) : string {
 		var result = "";
 		var strings : string[] = [];
@@ -55,6 +59,7 @@ module ParenthesizedCommandParser {
 		return result;
 	}
 	
+	//Nothing fancy, just boilerplate traversal of the parse tree
 	export function locationToString(rel : Parser.Location) : string {
 		var result = "(" + rel.relation + " ";
 		result += entityToString(rel.entity);
