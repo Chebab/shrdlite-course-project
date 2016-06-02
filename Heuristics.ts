@@ -91,8 +91,7 @@ module Heuristics {
 				}
 				else {
 					//exactly one of objects is in hand
-					//TODO: this looks fishy
-					closestArmDistance = Math.abs(state.arm - Math.max(deepest[0],deepest[3]));
+					closestArmDistance = Math.max(Math.abs(state.arm - deepest[0]),Math.abs(state.arm-deepest[3]));
 				}
 				
 			}
@@ -131,8 +130,7 @@ module Heuristics {
 			}
 			
 			//If closestDistFromArm was not updated in the for loops, we do not have a value for this
-			//TODO: fix the magic number
-			if (closestDistFromArm == 1000000) closestDistFromArm = 0;
+			if (closestDistFromArm == Number.MAX_VALUE) closestDistFromArm = 0;
 			
 			if (state.arm == null) {
 				return sum + minMoveDistance + closestDistFromArm + penalty;
@@ -152,15 +150,15 @@ module Heuristics {
 		//For leftof/rightof/under/above - tracks where stuff is that needs to be moved and how much stuff is 
 		//above that stuff 
 		var connections : number[][] = [];
-		var bestConjunctVal : number = 1000000000;
+		var bestConjunctVal : number = Number.MAX_VALUE;
 		//A dictionary from string id:s of objects to positions in the world
 		var positions = PlannerHelpers.getPositions(state);
 		//A measure of minimum distance to travel between items
 		var minMoveDistance : number = 0;
 		//A measure of distance from arm to an item
-		var closestDistFromArm : number = 1000000;
+		var closestDistFromArm : number = Number.MAX_VALUE;
 		if (interpretation == null) {
-			throw  "You forgot to set Heuristics.interpretation";
+			throw  "Programmer forgot to set Heuristics.interpretation";
 		}
 		for (var conjunct of interpretation) {
 			//this is added to for each unfulfilled literal (if penaltyPerLiteral != 0)
@@ -190,7 +188,6 @@ module Heuristics {
 					ypos2 = positions.getValue(literal.args[1])[1];
 					if (xpos2 == -2) {
 						abovecount2 = 0;
-						//TODO: something fishy here
 					} else if (xpos2 == -1) {
 						//Count the number of items that need to be placed on the floor
 						toFloorCount++;
@@ -293,14 +290,14 @@ module Heuristics {
 	//Detailed heuristic that returns the largest estimated cost of fulfilling one of the 
 	//conjuncts in the DNFFormula. Should work well for goals with only a few easily reached subgoals left
 	export function focusOnOneConjunctHeuristic(state : WorldStateNode) : number {
-		var shortest : number = 100000000;
+		var shortest : number = Number.MAX_VALUE;
 		var longest : number = 0;
 		var current : number = 0;
 		//A dictionary from string id:s of objects to positions in the world
 		var positions = PlannerHelpers.getPositions(state);
 		//Find the minimum heuristic of any conjunctive expression
 		if (interpretation == null) {
-			throw "You forgot to set Heuristics.interpretation";
+			throw "Programmer forgot to set Heuristics.interpretation";
 		}
 		for (var conjunct of interpretation) {
 			//heuristic is given by the min of max of of the heuristics 
@@ -326,7 +323,7 @@ module Heuristics {
 				var xpos2 : number;
 				var ypos2 : number;
 				var abovecount2 : number;
-				var smallestStackSize : number  = 1000000;
+				var smallestStackSize : number  = Number.MAX_VALUE;
 				var smallestStackIndices : [number];
 				for (var i :number = 0; i < state.stacks.length; i++) {
 					if (smallestStackSize == state.stacks[i].length) {
@@ -513,3 +510,5 @@ module Heuristics {
 
 
 }
+
+

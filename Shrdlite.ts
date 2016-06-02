@@ -82,7 +82,7 @@ module Shrdlite {
             });
 
             if (interpretations.length > 1) {
-                // First let planner try to do something with both plans, then let user decide if there are 
+                // First let planner try to do something with all plans, then let user decide if there are 
 				// several possible solutions
             }
         }
@@ -94,15 +94,15 @@ module Shrdlite {
 
         // Planning
         try {
-            var plans : Planner.PlannerResult[] = Planner.plan(interpretations, world.currentState);
+            var plans : Planner.PlannerResult[] = Planner.plan(interpretations, world.currentState, successIndices);
             world.printDebugInfo("Found " + plans.length + " plans");
             plans.forEach((result, n) => {
                 world.printDebugInfo("  (" + n + ") " + Planner.stringify(result));
             });
-
+			//Ask the user which parse of the input she/he intended
             if (plans.length > 1) {
 				try {
-					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:")
+					world.printSystemOutput("There are " + plans.length + " ways of parenthesizing what you wrote that make sense:" + successIndices)
 					for(var s of ParenthesizedCommandParser.parsesToStrings(parses, successIndices)) {
 						world.printSystemOutput(s);
 					}
@@ -118,6 +118,7 @@ module Shrdlite {
 						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
  
 						callback(finalPlan);
+						return;
 					});
 				} 
 				//unimplemented readUserInput, just pick the first plan
@@ -128,6 +129,7 @@ module Shrdlite {
 						var finalPlan : string[] = plans[0].plan;
 						world.printDebugInfo("Final plan: " + finalPlan.join(", "));
 						callback(finalPlan);
+						return;
 					} else {
 						throw err;
 					}

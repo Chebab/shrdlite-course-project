@@ -25,9 +25,10 @@ module Planner {
      * @param currentState The current state of the world.
      * @returns Augments Interpreter.InterpretationResult with a plan represented by a list of strings.
      */
-    export function plan(interpretations : Interpreter.InterpretationResult[], currentState : WorldState) : PlannerResult[] {
+    export function plan(interpretations : Interpreter.InterpretationResult[], currentState : WorldState, successIndices : number[]) : PlannerResult[] {
         var errors : Error[] = [];
         var plans : PlannerResult[] = [];
+		var count : number = 0;
         interpretations.forEach((interpretation) => {
             try {
                 var result : PlannerResult = <PlannerResult>interpretation;
@@ -37,8 +38,8 @@ module Planner {
                 }
                 plans.push(result);
             } catch(err) {
-				console.log("----------------------ERRRORRRRR----------------------");
-                errors.push(err);
+				successIndices.splice(count,1);
+				errors.push(err);
             }
         });
         if (plans.length) {

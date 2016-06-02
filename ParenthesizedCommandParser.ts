@@ -45,6 +45,7 @@ module ParenthesizedCommandParser {
 				strings.push(obj.color);
 			}
 			if (obj.form != null) {
+				
 				strings.push(obj.form);
 			}
 			result += strings.join(" ");

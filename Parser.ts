@@ -22,7 +22,7 @@ module Parser {
             var results : Command[] = nearleyParser.feed(parsestr).results;
         } catch(err) {
             if ('offset' in err) {
-                throw new Error('Parsing failed after ' + err.offset + ' characters');
+                throw new Error('I am not able to understand what you typed after ' + err.offset + ' characters. (Parse failed)');
             } else {
                 throw err;
             }

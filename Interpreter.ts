@@ -160,7 +160,7 @@ module Interpreter {
             sourceobj = findEntites(cmd.entity, state, objects, currentState);
             if (sourceobj.length < 1) {
                 // If there are no objects found, throw error.
-                throw new Error("No source objects found");
+                throw new Error("I cannot find any objects to move that matches your description.");
             }
         } else {
             if (state.holding) {
@@ -183,7 +183,7 @@ module Interpreter {
             if (targetobj.length < 1) {
                 // If no target object is found, we cannot continue the move,
                 // throw error.
-                throw new Error("No target objects")
+                throw new Error("I cannot find a target location that matches your description.")
             }
             // Source and target quantifiers
             var sourceQuant: string = "the";
@@ -925,9 +925,9 @@ module Interpreter {
 
 
         if (ent.quantifier == "the" && currobjs.length > 1) {
-            // In case there are several ofjects when the entity specifies
+            // In case there are several objects when the entity specifies
             // one specific, throw error
-            throw new Error("Too many indentifications of type THE");
+            throw new Error("You used the word \'the\'			but there are more than one objects that match your description. ");
         }
 
         if (obj.location == null) {

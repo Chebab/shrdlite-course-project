@@ -57,7 +57,6 @@ module PlannerHelpers {
 		obj = {form : od.form, color : od.color, size : od.size};
 		
 		return od.size + " " + od.color + " " + od.form;
-		//TODO: what if multiple objects have all properties in common?
 	}
 	
 	//Given the world state before and after an object is either picked up or
