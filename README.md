@@ -120,11 +120,14 @@ A: The white ball is to the right of the black ball, to the left of the yellow p
 If you ask where ALL bricks are, you will get two answers, one for each brick.
 ```
 Q: where are all bricks
-A :The yellow brick is on the floor, to the right of the black ball, to the left of the yellow pyramid and is below the red box.
-A: The white brick is to the right of the yellow pyramid, to the left of the green plank and is ontop of the blue table.
+A: The yellow brick is on the floor, to the right of the black ball, 
+to the left of the yellow pyramid and is below the red box.
+A: The white brick is to the right of the yellow pyramid, 
+to the left of the green plank and is ontop of the blue table.
 ```
 How to use the Where question:
 `Where <is/are> <entity>`
+
 `Find <entity>`
 
 The `What` question will return a text that specifies what objects are in a specific relation to a specified object. Some examples:
@@ -150,7 +153,7 @@ The User Questions have implementation in several different files:
 
 `function interpretCommand`
 
-Two if-statements which handle if the command is either “find” or “what”. Creates a special case Literal with a natural language answer to the question.
+Two if-statements which handle if the command is either “find” or “what”. Creates a special case Literal with a natural language answer to the question. This special case will be caught in the Planner.
 
 `function createFindString`
 
@@ -172,7 +175,7 @@ Help function to return all the objects to the specified side of the object
 
 findAttributes will return a string containing all the attributes needed in order to specify an object. If, for example, there are two yellow objects, "the yellow object" is not sufficient. Always returns as few attributes as possible, needed to describe the object.
 
-Since we need to access the command specified by the user, in Interpreter.
+
 ####Grammar.ne
 
 Added the following lines to enable the user to ask questions to the system.
