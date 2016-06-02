@@ -59,7 +59,7 @@ can perform. (PlannerHelpers.getPlanStringsFromMoves)
 commands for both arms. 
 ```
 
-Both the graphical UI the textual UI have been updated to allow commands strings of the form xx where x is either  d, p, l, r, or n where n is a null (waiting) move. 
+Both the graphical UI the textual UI have been updated to allow commands strings of the form xx where x is either  d, p, l, r, or n where n is a null (waiting) move. For the graphical UI, both arms always take the same time to perform each move. (This sometimes makes the movements to seem a big choppy, since the arms sometimes wait for the other arm to finish the current move.)
 
 In step 4, comments are also added to the list of command strings. These comments are displayed to the user and they describe what the arm is about to do. This is described in the next section. 
 
@@ -78,8 +78,10 @@ For "leftof", "rightof" and "beside" Literals (henceforth called lateral Literal
 
 ```
 1. We find all arguments mentioned in all lateral Literals in the conjunct
-2. Then we loop through those Literals, marking the objects above the shallower of the arguments of each literal to be moved. 
-3. The depths of all objects are updated when this is done, so that no double counting is performed. 
+2. Then we loop through those Literals, marking the objects above the shallower 
+of the arguments of each literal to be moved. 
+3. The depths of all objects are updated when this is done, so that no double 
+counting is performed. 
 ```
 
 #### The distance the arm needs to travel
