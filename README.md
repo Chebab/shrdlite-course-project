@@ -110,8 +110,16 @@ For non-lateral Literals where at least one argument object needs to be moved, t
 #### Non-admissible heuristic, "cheating"
 combineAllLiteralsHeuristic uses the value of the variable penaltyPerLiteral to add a constant for each unfulfilled Literal in a conjunct. This can be used to create a non-admissible heuristic that results in states where there are few goals left to fulfill being prioritized. Setting the value of penaltyPerLiteral to 0 disables this feature.
 
+As a simple example, in the complex world, and example input 2, the search concludes in 1196, 463, 156 or 99 iterations (investigated nodes), with penaltyPerLiteral set to 0, 4, 8 or 12 respectively. For example input 0 in the complex world, on my old computer, the computation times out with  penaltyPerLiteral set to 0 or 4, concludes after 30855 iterations or 13586 iterations with penaltyPerLiteral set to 8 or 12 respectively. 
+
 ### Ambiguity resolution
 If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts was rewritten in a continuation-passing style for this to be easier.
+
+For an example, try the small world and give the command 
+
+`put the black ball in a box on the floor
+
+The user is then asked to reply either 0 or 1 depending on what was the intended meaning. (If the user inputs something other than 0 or 1, the program just replies that it will just take the first suggested interpretation.)
 
 ### User Questions Extension
 We have implemented an extension which handles user questions. This means that the user can ask two types of questions - `Where` and `What`. 
