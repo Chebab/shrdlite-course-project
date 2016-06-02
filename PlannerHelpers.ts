@@ -24,7 +24,7 @@ module PlannerHelpers {
 	//Returns a string describing an object, containing as few descriptors as possible 
 	//such that the description singles out the object in the world state. If there are
 	//several identical objects in the world, it returns a full item description that matches 
-	//either of those. 
+	//any of those. 
 	export function objectString(od : ObjectDefinition, theState : WorldState) : string {
 		//Is one property enough to single out the object in the world?
 		var obj : Parser.Object = {form : od.form};

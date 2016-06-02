@@ -8,14 +8,14 @@ module Heuristics {
 	export var penaltyPerLiteral : number = 0;
 
 	export function combinationHeuristic(state: WorldStateNode) : number {			
-		return Math.max(combineAllConjunctsheuristic(state), focusOnOneConjunctHeuristic(state));
+		return Math.max(combineAllConjunctsHeuristic(state), focusOnOneConjunctHeuristic(state));
 	}
 
 	//This heurstic looks at all the literals of a conjunct and tries finds
 	//a lower bound for the cost of fulfilling all those literals in total. 
 	//This should often work less well than focusOnOneConjunctHeuristic on
 	//goals with just one or a few literals. 
-	export function combineAllConjunctsheuristic(state : WorldStateNode) : number {
+	export function combineAllConjunctsHeuristic(state : WorldStateNode) : number {
 		//Private helper functions
 		
 		//Check whether no item has already been counted as moved between either of 
