@@ -70,6 +70,7 @@ module Shrdlite {
         catch(err) {
             world.printError("Parsing error", err);
             callback(null);
+			return;
         }
 
         // Interpretation
@@ -88,6 +89,7 @@ module Shrdlite {
         catch(err) {
             world.printError("Interpretation error", err);
             callback(null);
+			return;
         }
 
         // Planning
@@ -131,24 +133,19 @@ module Shrdlite {
 					}
 				}
 				
-				
-                // several plans were found -- how should this be handled?
-                // this means that we have several interpretations,
-                // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
-                // or should we select the interpretation with the shortest plan?
-                // ... plans.sort((a, b) => {return a.length - b.length});
             } 
 			//only one plan found
 			else {
 				var finalPlan : string[] = plans[0].plan;
 				world.printDebugInfo("Final plan: " + finalPlan.join(", "));
 				callback(finalPlan);
+				return;
 			}
         }
         catch(err) {
             world.printError("Planning error", err);
             callback(null);
+			return;
         }
     }
 
