@@ -88,3 +88,5 @@ combineAllConjunctsHeuristic uses the value of the variable penaltyPerLiteral to
 
 ### Ambiguity resolution
 If the user types something that is ambiguous, the planner first tries to make a plan for each of the possible parses of the input. If there is a plan for more than one such parse, then the user is shown a parenthesized version of the input for each parse and gets to choose which input the user wants. Parts of the file Shrdlite.ts and the world files were rewritten in a continuation-passing style for this to be easier. 
+
+
