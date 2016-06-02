@@ -90,15 +90,10 @@ For "leftof", "rightof" and "beside" Literals (henceforth called lateral Literal
 
 ```
 1. We find all arguments mentioned in all lateral Literals in the conjunct
-<<<<<<< HEAD
-2. Then we loop through those Literals, marking the objects above the shallower of the arguments of each literal to be moved.
-3. The depths of all objects are updated when this is done, so that no double counting is performed.
-=======
 2. Then we loop through those Literals, marking the objects above the shallower
 of the arguments of each literal to be moved.
 3. The depths of all objects are updated when this is done, so that no double
 counting is performed.
->>>>>>> ba1d9f26a4ba87d5660765d515d62d311897cefd
 ```
 
 #### The distance the arm needs to travel
